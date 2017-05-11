@@ -1,0 +1,302 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		38497F251C3C090900F4E0C9 /* json_reader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38497F221C3C090900F4E0C9 /* json_reader.cpp */; };
+		38497F261C3C090900F4E0C9 /* json_value.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38497F231C3C090900F4E0C9 /* json_value.cpp */; };
+		38497F271C3C090900F4E0C9 /* json_writer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38497F241C3C090900F4E0C9 /* json_writer.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		38EC90CA1C3AC853008AE1A3 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		38497F221C3C090900F4E0C9 /* json_reader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = json_reader.cpp; path = source/json_reader.cpp; sourceTree = "<group>"; };
+		38497F231C3C090900F4E0C9 /* json_value.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = json_value.cpp; path = source/json_value.cpp; sourceTree = "<group>"; };
+		38497F241C3C090900F4E0C9 /* json_writer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = json_writer.cpp; path = source/json_writer.cpp; sourceTree = "<group>"; };
+		38497F281C3C091F00F4E0C9 /* assertions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = assertions.h; path = include/json/assertions.h; sourceTree = "<group>"; };
+		38497F291C3C091F00F4E0C9 /* autolink.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = autolink.h; path = include/json/autolink.h; sourceTree = "<group>"; };
+		38497F2A1C3C091F00F4E0C9 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = config.h; path = include/json/config.h; sourceTree = "<group>"; };
+		38497F2B1C3C091F00F4E0C9 /* features.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = features.h; path = include/json/features.h; sourceTree = "<group>"; };
+		38497F2C1C3C091F00F4E0C9 /* forwards.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = forwards.h; path = include/json/forwards.h; sourceTree = "<group>"; };
+		38497F2D1C3C091F00F4E0C9 /* json.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = json.h; path = include/json/json.h; sourceTree = "<group>"; };
+		38497F2E1C3C091F00F4E0C9 /* reader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = reader.h; path = include/json/reader.h; sourceTree = "<group>"; };
+		38497F2F1C3C091F00F4E0C9 /* value.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = value.h; path = include/json/value.h; sourceTree = "<group>"; };
+		38497F301C3C091F00F4E0C9 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = version.h; path = include/json/version.h; sourceTree = "<group>"; };
+		38497F311C3C091F00F4E0C9 /* writer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = writer.h; path = include/json/writer.h; sourceTree = "<group>"; };
+		3871E9AD1C3C07D200A2EC70 /* libjsoncpp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libjsoncpp.a; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		38EC90C91C3AC853008AE1A3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3871E9AE1C3C084600A2EC70 /* Product */ = {
+			isa = PBXGroup;
+			children = (
+				3871E9AD1C3C07D200A2EC70 /* libjsoncpp.a */,
+			);
+			name = Product;
+			sourceTree = "<group>";
+		};
+		38EC90C31C3AC853008AE1A3 = {
+			isa = PBXGroup;
+			children = (
+				38EC90ED1C3AC92E008AE1A3 /* Header Files */,
+				38EC90EE1C3AC974008AE1A3 /* Source Files */,
+				3871E9AE1C3C084600A2EC70 /* Product */,
+			);
+			sourceTree = "<group>";
+		};
+		38EC90ED1C3AC92E008AE1A3 /* Header Files */ = {
+			isa = PBXGroup;
+			children = (
+				38497F281C3C091F00F4E0C9 /* assertions.h */,
+				38497F291C3C091F00F4E0C9 /* autolink.h */,
+				38497F2A1C3C091F00F4E0C9 /* config.h */,
+				38497F2B1C3C091F00F4E0C9 /* features.h */,
+				38497F2C1C3C091F00F4E0C9 /* forwards.h */,
+				38497F2D1C3C091F00F4E0C9 /* json.h */,
+				38497F2E1C3C091F00F4E0C9 /* reader.h */,
+				38497F2F1C3C091F00F4E0C9 /* value.h */,
+				38497F301C3C091F00F4E0C9 /* version.h */,
+				38497F311C3C091F00F4E0C9 /* writer.h */,
+			);
+			name = "Header Files";
+			sourceTree = "<group>";
+		};
+		38EC90EE1C3AC974008AE1A3 /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				38497F221C3C090900F4E0C9 /* json_reader.cpp */,
+				38497F231C3C090900F4E0C9 /* json_value.cpp */,
+				38497F241C3C090900F4E0C9 /* json_writer.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		38EC90CB1C3AC853008AE1A3 /* jsoncpp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 38EC90D51C3AC853008AE1A3 /* Build configuration list for PBXNativeTarget "jsoncpp" */;
+			buildPhases = (
+				38EC90C81C3AC853008AE1A3 /* Sources */,
+				38EC90C91C3AC853008AE1A3 /* Frameworks */,
+				38EC90CA1C3AC853008AE1A3 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = jsoncpp;
+			productName = yggdrasil;
+			productReference = 3871E9AD1C3C07D200A2EC70 /* libjsoncpp.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		38EC90C41C3AC853008AE1A3 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0800;
+				TargetAttributes = {
+					38EC90CB1C3AC853008AE1A3 = {
+						CreatedOnToolsVersion = 7.2;
+					};
+				};
+			};
+			buildConfigurationList = 38EC90C71C3AC853008AE1A3 /* Build configuration list for PBXProject "jsoncpp" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 38EC90C31C3AC853008AE1A3;
+			productRefGroup = 38EC90C31C3AC853008AE1A3;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				38EC90CB1C3AC853008AE1A3 /* jsoncpp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		38EC90C81C3AC853008AE1A3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				38497F251C3C090900F4E0C9 /* json_reader.cpp in Sources */,
+				38497F271C3C090900F4E0C9 /* json_writer.cpp in Sources */,
+				38497F261C3C090900F4E0C9 /* json_value.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		38EC90D31C3AC853008AE1A3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEPLOYMENT_LOCATION = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = c11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_SHADOW = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = include;
+				INSTALL_PATH = /;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		38EC90D41C3AC853008AE1A3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEPLOYMENT_LOCATION = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = c11;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = "NDEBUG=1";
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_SHADOW = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = include;
+				INSTALL_PATH = /;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		38EC90D61C3AC853008AE1A3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = "$(SRCROOT)/../../lib/ios";
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = jsoncpp;
+			};
+			name = Debug;
+		};
+		38EC90D71C3AC853008AE1A3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = "$(SRCROOT)/../../lib/ios";
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = jsoncpp;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		38EC90C71C3AC853008AE1A3 /* Build configuration list for PBXProject "jsoncpp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				38EC90D31C3AC853008AE1A3 /* Debug */,
+				38EC90D41C3AC853008AE1A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		38EC90D51C3AC853008AE1A3 /* Build configuration list for PBXNativeTarget "jsoncpp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				38EC90D61C3AC853008AE1A3 /* Debug */,
+				38EC90D71C3AC853008AE1A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 38EC90C41C3AC853008AE1A3 /* Project object */;
+}
