@@ -696,11 +696,12 @@ namespace hms
         ENetworkResponseType responseType = pParam.mResponseType;
         long timeoutCopy = mTimeout;
         long progressTimePeriodCopy = mProgressTimePeriod;
+        auto flagCopy = mFlag;
         
         bool allowCache = pParam.mAllowCache;
         u_int32_t cacheLifetime = pParam.mCacheLifetime;
 
-        auto request = [this, requestType, responseType, timeoutCopy, progressTimePeriodCopy, allowCache, cacheLifetime](std::string lpRequestUrl, std::string lpRequestBody,
+        auto request = [this, requestType, responseType, timeoutCopy, progressTimePeriodCopy, allowCache, cacheLifetime, flagCopy](std::string lpRequestUrl, std::string lpRequestBody,
             std::vector<std::pair<std::string, std::string>> lpHeader, std::function<void(NetworkResponse pResponse)> lpCallback,
             std::function<void(const long long& lpDN, const long long& lpDT, const long long& lpUN, const long long& lpUT)> lpProgress, unsigned lpRepeatCount) -> void
         {
@@ -785,7 +786,7 @@ namespace hms
             }
             
             configureHandle(handle, requestType, responseType, lpRequestUrl, lpRequestBody, &responseMessage, &responseRawData, &responseHeader, header,
-                timeoutCopy, (enableProgressInfo) ? &progressData : nullptr, errorBuffer);
+                timeoutCopy, flagCopy, (enableProgressInfo) ? &progressData : nullptr, errorBuffer);
             
             CURLcode curlCode = CURLE_OK;
             unsigned step = 0;
@@ -859,8 +860,9 @@ namespace hms
     {
         long timeoutCopy = mTimeout;
         long progressTimePeriodCopy = mProgressTimePeriod;
+        auto flagCopy = mFlag;
         
-        auto requestTask = [this, timeoutCopy, progressTimePeriodCopy](std::vector<NetworkRequestParam> lpParam) -> void
+        auto requestTask = [this, timeoutCopy, progressTimePeriodCopy, flagCopy](std::vector<NetworkRequestParam> lpParam) -> void
         {
             std::vector<NetworkRequestParam> param;
             param.reserve(lpParam.size());
@@ -964,7 +966,7 @@ namespace hms
                 }
                 
                 configureHandle(multiRequestData[i].mHandle, param[i].mRequestType, param[i].mResponseType, requestUrl, param[i].mRequestBody, &multiRequestData[i].mResponseMessage,
-                    &multiRequestData[i].mResponseRawData, &multiRequestData[i].mResponseHeader, header, timeoutCopy, (enableProgressInfo) ? &progressData : nullptr, multiRequestData[i].mErrorBuffer);
+                    &multiRequestData[i].mResponseRawData, &multiRequestData[i].mResponseHeader, header, timeoutCopy, flagCopy, (enableProgressInfo) ? &progressData : nullptr, multiRequestData[i].mErrorBuffer);
                 
                 curl_multi_add_handle(handle, multiRequestData[i].mHandle);
             }
@@ -1118,6 +1120,20 @@ namespace hms
         mTimeout = pTimeout;
     }
     
+    bool NetworkManager::getFlag(ENetworkFlag pFlag) const
+    {
+        assert(pFlag < ENetworkFlag::Count);
+            
+        return mFlag[static_cast<size_t>(pFlag)];
+    }
+    
+    void NetworkManager::setFlag(ENetworkFlag pFlag, bool pState)
+    {
+        assert(pFlag < ENetworkFlag::Count);
+        
+        mFlag[static_cast<size_t>(pFlag)] = pState;
+    }
+    
     long NetworkManager::getProgressTimePeriod() const
     {
         return mProgressTimePeriod;
@@ -1220,8 +1236,8 @@ namespace hms
     }
 
     void NetworkManager::configureHandle(CURL* pHandle, ENetworkRequestType pRequestType, ENetworkResponseType pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody,
-        std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader, long pTimeout,
-        ProgressData* pProgressData, char* pErrorBuffer) const
+        std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader,
+        long pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer) const
     {
         switch (pRequestType)
         {
@@ -1267,8 +1283,11 @@ namespace hms
             assert(false);
             break;
         }
-
-        curl_easy_setopt(pHandle, CURLOPT_TIMEOUT, pTimeout);
+            
+        if (pFlag[static_cast<size_t>(ENetworkFlag::Redirect)])
+            curl_easy_setopt(pHandle, CURLOPT_FOLLOWLOCATION, 1);
+        
+        curl_easy_setopt(pHandle, pFlag[static_cast<size_t>(ENetworkFlag::TimeoutInMilliseconds)] ? CURLOPT_TIMEOUT_MS : CURLOPT_TIMEOUT, pTimeout);
         curl_easy_setopt(pHandle, CURLOPT_HEADERDATA, pResponseHeader);
         curl_easy_setopt(pHandle, CURLOPT_HTTPHEADER, pHeader);
         curl_easy_setopt(pHandle, CURLOPT_URL, pRequestUrl.c_str());

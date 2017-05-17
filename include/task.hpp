@@ -11,6 +11,15 @@
 
 namespace hms
 {
+    class Spinlock
+    {
+    public:
+        void lock();
+        void unlock();
+        
+    private:
+        std::atomic_flag mFlag = ATOMIC_FLAG_INIT;
+    };
 
 	class ThreadPool
     {

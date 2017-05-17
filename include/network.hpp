@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 #include <functional>
 #include <queue>
 #include <utility>
@@ -68,6 +69,13 @@ namespace hms
         Ping = 0x9,
         Pong = 0xA,
         // B-F reserved.
+    };
+        
+    enum class ENetworkFlag : size_t
+    {
+        TimeoutInMilliseconds = 0,
+        Redirect,
+        Count
     };
     
     struct NetworkResponse
@@ -283,6 +291,9 @@ namespace hms
 		long getTimeout() const;
 		void setTimeout(long pTimeout);
         
+        bool getFlag(ENetworkFlag pFlag) const;
+        void setFlag(ENetworkFlag pFlag, bool pState);
+        
         long getProgressTimePeriod() const;
         void setProgressTimePeriod(long pTimePeriod);
         
@@ -350,8 +361,8 @@ namespace hms
         std::vector<std::pair<std::string, std::string>> createUniqueHeader(const std::vector<std::pair<std::string, std::string>>& pHeader) const;
 
         void configureHandle(CURL* pHandle, ENetworkRequestType pRequestType, ENetworkResponseType pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody,
-            std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader, long pTimeout,
-            ProgressData* pProgressData, char* pErrorBuffer) const;
+            std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader,
+            long pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer) const;
         
         void resetHandle(CURL* pHandle) const;
         
@@ -379,6 +390,10 @@ namespace hms
         int mThreadPoolID = -1;
         int mThreadPoolSimpleSocketID = -1;
         std::pair<int, int> mHttpCodeSuccess = {200, 299};
+        std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> mFlag = {
+            false,
+            false
+        };
         
         std::atomic<uint32_t> mInitialized {0};
         std::atomic<uint32_t> mCacheInitialized {0};
