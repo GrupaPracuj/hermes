@@ -7,6 +7,18 @@
 namespace hms
 {
     
+    /* Spinlock */
+    
+    void Spinlock::lock()
+    {
+        while (mFlag.test_and_set(std::memory_order_acquire)) {}
+    }
+    
+    void Spinlock::unlock()
+    {
+        mFlag.clear(std::memory_order_release);
+    }
+    
     /* ThreadPool */
     
     ThreadPool::ThreadPool(int pID, size_t pThreadCount) : mThreadCount(pThreadCount), mId(pID)
