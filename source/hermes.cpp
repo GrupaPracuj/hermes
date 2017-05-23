@@ -534,7 +534,7 @@ Hermes::Hermes()
 {
     mVersion[0] = 1;
     mVersion[1] = 0;
-    mVersion[2] = 0;
+    mVersion[2] = 1;
     
     mDataManager = new DataManager();
     mNetworkManager = new NetworkManager();
