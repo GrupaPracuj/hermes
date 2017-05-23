@@ -780,7 +780,7 @@ namespace hms
                     {
                         lastTick = std::chrono::system_clock::now();
                         
-                        Hermes::getInstance()->getTaskManager()->execute(-1, std::move(lpProgress), lpDN, lpDT, lpUN, lpUT);
+                        Hermes::getInstance()->getTaskManager()->execute(-1, lpProgress, lpDN, lpDT, lpUN, lpUT);
                     }
                 };
             }
