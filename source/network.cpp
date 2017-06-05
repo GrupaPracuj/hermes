@@ -1094,6 +1094,8 @@ namespace hms
             {
                 curl_multi_remove_handle(handle, multiRequestData[i].mHandle);
                 curl_easy_cleanup(multiRequestData[i].mHandle);
+                
+                delete[] multiRequestData[i].mErrorBuffer;
             }
             
             delete[] multiRequestData;
