@@ -1,5 +1,9 @@
-#ifndef _YGGDRASIL_HPP_
-#define _YGGDRASIL_HPP_
+// Copyright (C) 2017 Grupa Pracuj Sp. z o.o.
+// This file is part of the "Hermes" library.
+// For conditions of distribution and use, see copyright notice in license.txt.
+
+#ifndef _HERMES_HPP_
+#define _HERMES_HPP_
 
 #include "data.hpp"
 #include "network.hpp"

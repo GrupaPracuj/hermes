@@ -1,3 +1,7 @@
+// Copyright (C) 2017 Grupa Pracuj Sp. z o.o.
+// This file is part of the "Hermes" library.
+// For conditions of distribution and use, see copyright notice in license.txt.
+
 #include "network.hpp"
 
 #include "hermes.hpp"
@@ -21,7 +25,7 @@
 namespace hms
 {
 
-    /* cURL callback */
+    /* libcurl callback */
     
     static int CURL_HEADER_CALLBACK(char* pData, size_t pCount, size_t pSize, std::vector<std::pair<std::string, std::string>>* pUserData)
     {
