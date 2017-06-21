@@ -25,7 +25,7 @@ SUPPORTED PLATFORMS:
 
 LICENSE:
 
-  MIT
+  zlib
 
 CREDITS:
 
@@ -34,8 +34,10 @@ CREDITS:
 
 DEPENDENCIES:
 
-  libcurl - https://curl.haxx.se/libcurl/
-  JsonCpp - https://github.com/open-source-parsers/jsoncpp
+  libcurl library - https://curl.haxx.se/libcurl/
+  JsonCpp library - https://github.com/open-source-parsers/jsoncpp
+  base64 code - https://github.com/ReneNyffenegger/cpp-base64
+  sha1 code - https://github.com/etodd/sha1
 
 QUICK START (iOS):
   * Open Xcode, go to XCode -> Preferences -> Locations -> Custom Paths and add new entry [Name:

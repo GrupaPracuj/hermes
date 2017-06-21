@@ -1,3 +1,7 @@
+// Copyright (C) 2017 Grupa Pracuj Sp. z o.o.
+// This file is part of the "Hermes" library.
+// For conditions of distribution and use, see copyright notice in license.txt.
+
 #include "hermes.hpp"
 
 #include <random>
@@ -29,7 +33,7 @@ namespace hms
 
 namespace tools
 {
-    // code from http://www.adp-gmbh.ch/cpp/common/base64.html
+    // base64 code from http://www.adp-gmbh.ch/cpp/common/base64.html
     
     std::string encodeBase64(unsigned char const* bytes_to_encode, size_t in_len)
     {
