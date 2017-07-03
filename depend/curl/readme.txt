@@ -1,3 +1,4 @@
-Prebuild libcurl version: 7.52.1
+Version of attached binary libcurl: 7.54.1
+Supported development environments: Linux, macOS
 
-For build a custom version of libcurl please copy a content of libcurl root directory (this is a drirectory where the "configure" file exists) to tmp/ directory and next run a dedicated build_X.sh.
+To build a custom version of libcurl run build_X.sh (where 'X' is a destination platform name).

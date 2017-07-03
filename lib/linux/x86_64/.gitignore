@@ -1,3 +1,5 @@
 *
+!libcrypto.a
 !libcurl.a
+!libssl.a
 !.gitignore

@@ -2,7 +2,7 @@
 
 cd tmp
 
-ARCH="i386"
+ARCH="x86"
 rm ../../../lib/linux/${ARCH}/libcurl.a
 export CFLAGS="-m32 -pipe -O2"
 make distclean

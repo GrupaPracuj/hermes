@@ -26,7 +26,8 @@ namespace hms
         uint32_t byteSwap32(uint32_t pX);
         uint64_t byteSwap64(uint64_t pX);
         
-        inline bool isLittleEndian() {
+        inline bool isLittleEndian()
+        {
             uint16_t word = 0x0001;
             char* byte = (char*)&word;
             return byte[0];

@@ -21,7 +21,7 @@ VERSION:
 
 SUPPORTED PLATFORMS:
 
-  iOS, Linux (partially)
+  iOS, Android (NDK partially), Linux (partially)
 
 LICENSE:
 
@@ -36,6 +36,7 @@ DEPENDENCIES:
 
   libcurl library - https://curl.haxx.se/libcurl/
   JsonCpp library - https://github.com/open-source-parsers/jsoncpp
+  OpenSSL library - https://www.openssl.org/
   base64 code - https://github.com/ReneNyffenegger/cpp-base64
   sha1 code - https://github.com/etodd/sha1
 
@@ -46,9 +47,13 @@ QUICK START (iOS):
     a custom libcurl library check readme.txt at depend/curl path.
   * In your project settings add '$(HERMES_HOME)/include $(HERMES_HOME)/depend/curl/include
     $(HERMES_HOME)/depend/jsoncpp/include' entry to 'Header Search Paths' and '$(HERMES_HOME)/lib/ios'
-    entry to 'Library Search Paths'. Next add following libraries: libhermes.a, libcurl.a
-    and libjsoncpp.a (make sure that these libraries were added to 'Link Binary With Libraries'
-    section in 'Build Phases' project settings). Finaly you need to switch 'C++ Language Dialect'
-    to 'C++11 [-std=c++11]' or higher and 'C++ Standard Library' to 'libc++'.
+    entry to 'Library Search Paths'. Next add libhermes.a, libcurl.a, libjsoncpp.a from Hermes
+    library path and libz.tbd, Security.framework from Xcode library set. Make sure that these
+    libraries were added to 'Link Binary With Libraries' section in 'Build Phases' project settings).
+    Finally you need to switch 'C++ Language Dialect' to 'C++11 [-std=c++11]' or higher
+    and 'C++ Standard Library' to 'libc++'.
   * Check 'sample.cpp' for use.
-  
+
+MISCELLANEOUS:
+  * This product includes software developed by the OpenSSL Project for use
+    in the OpenSSL Toolkit (http://www.openssl.org/)"  
