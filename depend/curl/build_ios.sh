@@ -69,7 +69,6 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	fi
 	
 	rm -rf ${TMP_DIR}
-	make distclean
 
 	./configure --prefix=${TMP_DIR} \
 		--host=${TOOLCHAIN_NAME[$i]} \
@@ -98,6 +97,8 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 		cp ${WORKING_DIR}/include/curl/curlbuild.h ${WORKING_DIR}/include/curl/ios/curlbuild-${ARCH_NAME[$i]}.h
         cp ${TMP_DIR}/lib/libcurl.a ${TMP_LIB_DIR}/libcurl-${ARCH_NAME[$i]}.a
 	fi
+
+	make distclean
 done
 
 cd ${TMP_LIB_DIR}

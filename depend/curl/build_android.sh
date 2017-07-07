@@ -76,7 +76,6 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 
 	rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcurl.a
 	rm -rf ${TMP_DIR}
-	make distclean
 
 	./configure --prefix=${TMP_DIR} \
 		--host=${TOOLCHAIN_NAME[$i]} \
@@ -105,6 +104,8 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 		cp ${WORKING_DIR}/include/curl/curlbuild.h ${WORKING_DIR}/include/curl/android/curlbuild-${ARCH_NAME[$i]}.h
         cp ${TMP_DIR}/lib/libcurl.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
 	fi
+
+    make distclean
 done
 
 cp ${WORKING_DIR}/curlbuild_shared.h.in ${WORKING_DIR}/include/curl/curlbuild.h

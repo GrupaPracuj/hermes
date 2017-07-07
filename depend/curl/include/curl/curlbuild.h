@@ -18,6 +18,26 @@
 	#else
 		#error "Not supported Apple platform"
 	#endif
+#elif defined(ANDROID) || defined(__ANDROID__)
+	#if defined(__arm__)
+		#if defined(__ARM_ARCH_7A__)
+			#include "android/curlbuild-armv7.h"
+		#else
+			#include "android/curlbuild-arm.h"
+		#endif
+	#elif defined(__aarch64__)
+		#include "android/curlbuild-arm64.h"
+	#elif defined(__i386__)
+		#include "android/curlbuild-x86.h"
+	#elif defined(__x86_64__)
+		#include "android/curlbuild-x86_64.h"
+	#elif defined(__mips64)
+		#include "android/curlbuild-mips64.h"
+	#elif defined(__mips__)
+		#include "android/curlbuild-mips.h"
+	#else
+		#error "Not supported Android platform"
+	#endif
 #elif __linux__
 	#if defined(__LP64__) && __LP64__
 		#include "linux/curlbuild-x86_64.h"

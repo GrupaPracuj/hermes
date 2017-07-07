@@ -34,7 +34,7 @@ public:
 		bool status = false;    
 		Json::Value root;
 
-		if (hms::Hermes::Hermes::getInstance()->getDataManager()->convertJSON(pData, root))
+		if (hms::Hermes::getInstance()->getDataManager()->convertJSON(pData, root))
 		{
 			status = true;
 		

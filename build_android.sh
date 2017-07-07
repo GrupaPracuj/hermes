@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # User configuration
-LIBRARY_NAME="openssl-1.1.0f"
 ANDROID_NDK_ROOT="${ANDROID_HOME}/ndk-bundle"
 ANDROID_API="android-21"
 
@@ -27,11 +26,6 @@ else
   exit 1
 fi
 
-if [ -z `which wget` ]; then
-  echo "Error: wget is not installed." >&2
-  exit 1
-fi
-
 # Internal variables
 WORKING_DIR=`pwd`
 TMP_DIR=${WORKING_DIR}/tmp
@@ -50,63 +44,34 @@ for ((i=0; i<${#TOOLCHAIN_ARCH[@]}; i++)); do
 	fi
 done
 
-# Download and extract library
-rm -rf ${LIBRARY_NAME}
-[ -f ${LIBRARY_NAME}.tar.gz ] || wget --no-check-certificate https://www.openssl.org/source/${LIBRARY_NAME}.tar.gz;
-tar xfz ${LIBRARY_NAME}.tar.gz
-
-# Fix for clang
-sed -i -e 's/-mandroid//g' ${LIBRARY_NAME}/Configurations/10-main.conf
-
-# Clean include directory
-rm ${WORKING_DIR}/include/openssl/*
-rm ${WORKING_DIR}/include/openssl/android/*
-
 # Build for all architectures and copy data
-cd ${LIBRARY_NAME}
-
 for ((i=0; i<${#ARCH[@]}; i++)); do
 	TOOLCHAIN_BIN_PATH=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/bin/${TOOLCHAIN_NAME[$i]}
-	export CC=${TOOLCHAIN_BIN_PATH}-clang
+	export CXX=${TOOLCHAIN_BIN_PATH}-clang++
 	export LD=${TOOLCHAIN_BIN_PATH}-ld
 	export AR=${TOOLCHAIN_BIN_PATH}-ar
 	export RANLIB=${TOOLCHAIN_BIN_PATH}-ranlib
 	export STRIP=${TOOLCHAIN_BIN_PATH}-strip
 	export SYSROOT=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/sysroot
-	export CROSS_SYSROOT=${SYSROOT}
-	export CFLAGS="${ARCH_FLAGS} -O2 -fPIC -fno-strict-aliasing -fstack-protector"
-	export LDFLAGS="${ARCH_LINK}"
+	export CXXFLAGS="${ARCH_FLAGS} --sysroot=${SYSROOT}"
+	export LDFLAGS="${ARCH_LINK} --sysroot=${SYSROOT}"
 
-	rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcrypto.a
-	rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libssl.a
+    if [ "${ARCH[$i]}" = "linux64-mips64" ]; then
+		export CXXFLAGS="${CXXFLAGS} -fintegrated-as"
+	fi
+
+	rm -f ${WORKING_DIR}/lib/android/${ARCH_NAME[$i]}/libhermes.a
 	rm -rf ${TMP_DIR}
+    mkdir ${TMP_DIR}
 
-	./Configure ${ARCH[$i]} --prefix=${TMP_DIR} \
-		--openssldir=${TMP_DIR} \
-        --with-zlib-include=${SYSROOT}/usr/include \
-        --with-zlib-lib=${SYSROOT}/usr/lib \
-        zlib \
-        no-asm \
-        no-shared \
-        no-unit-test
-
-	if make -j${CPU_CORE}; then
-		make install
-
-		cp ${TMP_DIR}/include/openssl/* ${WORKING_DIR}/include/openssl/
-		cp ${WORKING_DIR}/include/openssl/opensslconf.h ${WORKING_DIR}/include/openssl/android/opensslconf-${ARCH_NAME[$i]}.h
-        cp ${TMP_DIR}/lib/libcrypto.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
-        cp ${TMP_DIR}/lib/libssl.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
+	if make $1 -j${CPU_CORE}; then
+        cp ${TMP_DIR}/libhermes.a ${WORKING_DIR}/lib/android/${ARCH_NAME[$i]}/
 	fi
 
 	make clean
 done
 
-cp ${WORKING_DIR}/opensslconf_shared.h.in ${WORKING_DIR}/include/openssl/opensslconf.h
-cd ..
-
 # Cleanup
 rm -rf ${TMP_DIR}
-rm -rf ${WORKING_DIR}/${LIBRARY_NAME}
-rm -rf ${WORKING_DIR}/${LIBRARY_NAME}.tar.gz
 rm -rf ${TOOLCHAIN_DIR}
+

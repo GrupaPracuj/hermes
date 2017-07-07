@@ -16,9 +16,11 @@
 #include <queue>
 #include <utility>
 #include <atomic>
+#include <mutex>
 #include <unordered_map>
 #include <thread>
 #include <random>
+#include <cstdint>
 
 namespace hms
 {

@@ -10,7 +10,6 @@
 #include <sstream>
 #include <utility>
 #include <algorithm>
-#include <codecvt>
 #include <array>
 #include <chrono>
 #include <tuple>
@@ -474,12 +473,12 @@ namespace hms
     
         if (it == mCallback->end())
         {
-            mCallback->push_back({pCondition, pCallback, pName});
+            mCallback->push_back(std::make_tuple(pCondition, pCallback, pName));
             status = true;
         }
         else if (pOverwrite)
         {
-            *it = {pCondition, pCallback, pName};
+            *it = std::make_tuple(pCondition, pCallback, pName);
             status = true;
         }
         
@@ -1544,7 +1543,13 @@ namespace hms
             
             {
                 std::lock_guard<std::mutex> lock(mCacheMutex);
+#if defined(ANDROID) || defined(__ANDROID__)
+                std::stringstream ss;
+                ss << timestamp;
+                info.mFullFilePath = mCacheDirectoryPath + ss.str() + "_";
+#else
                 info.mFullFilePath = mCacheDirectoryPath + std::to_string(timestamp) + "_";
+#endif
             }
             
             const size_t hashCount = 5;
