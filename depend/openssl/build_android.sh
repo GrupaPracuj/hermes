@@ -46,7 +46,7 @@ ARCH_NAME=("arm" "armv7" "arm64" "mips" "mips64" "x86" "x86_64")
 # Prepare toolchains
 for ((i=0; i<${#TOOLCHAIN_ARCH[@]}; i++)); do
 	if [ ! -d ${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]} ]; then
-		${ANDROID_NDK_ROOT}/build/tools/make-standalone-toolchain.sh --arch=${TOOLCHAIN_ARCH[$i]} --platform=${ANDROID_API} --stl=libc++ --install-dir=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}
+		${ANDROID_NDK_ROOT}/build/tools/make-standalone-toolchain.sh --arch=${TOOLCHAIN_ARCH[$i]} --platform=${ANDROID_API} --install-dir=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}
 	fi
 done
 
