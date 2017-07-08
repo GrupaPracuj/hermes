@@ -13,6 +13,10 @@
 #include <unordered_map>
 #include <cassert>
 
+#if defined(ANDROID) || defined(__ANDROID__)
+struct ALooper;
+#endif
+
 namespace hms
 {
     class Spinlock
@@ -81,7 +85,7 @@ namespace hms
             
             if (pThreadPoolID < 0)
             {
-                platformRunOnMainThread(task);
+                enqueueMainThreadTask(std::move(task));
             }
             else
             {
@@ -103,9 +107,23 @@ namespace hms
         TaskManager& operator=(const TaskManager& pOther) = delete;
         TaskManager& operator=(TaskManager&& pOther) = delete;
 
-        void platformRunOnMainThread(std::function<void()> pMethod);
+        void enqueueMainThreadTask(std::function<void()> pMethod);
+        void dequeueMainThreadTask();
+
+#if defined(ANDROID) || defined(__ANDROID__)
+        static int messageHandlerAndroid(int pFd, int pEvent, void* pData);
+#endif
 
         std::unordered_map<int, ThreadPool*> mThreadPool;
+
+        std::queue<std::function<void()>> mMainThreadTask;
+        Spinlock mMainThreadSpinlock;
+
+#if defined(ANDROID) || defined(__ANDROID__)
+        int mMessagePipeAndroid[2] = {0, 0};
+        ALooper* mLooperAndroid = nullptr;
+#endif
+
         // TODO - Use atomic + compare_exchange_strong for init
         uint32_t mInitialized = {0};
     };

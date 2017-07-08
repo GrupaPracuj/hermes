@@ -4,8 +4,12 @@
 
 #include "task.hpp"
 
-#ifdef __APPLE__
+#if defined(__APPLE__)
 #import <Foundation/Foundation.h>
+#elif defined(ANDROID) || defined(__ANDROID__)
+#include <android/looper.h>
+#include <fcntl.h>
+#include <unistd.h>
 #endif
 
 namespace hms
@@ -172,6 +176,13 @@ namespace hms
             return false;
         
         mInitialized = 1;
+
+#if defined(ANDROID) || defined(__ANDROID__)
+        pipe2(mMessagePipeAndroid, O_NONBLOCK | O_CLOEXEC);
+        mLooperAndroid = ALooper_forThread();
+        ALooper_addFd(mLooperAndroid, mMessagePipeAndroid[0], 0, ALOOPER_EVENT_INPUT, TaskManager::messageHandlerAndroid, this);
+#endif
+
         mThreadPool.reserve(pThreadPool.size());
 
         for (auto& currentPool : pThreadPool)
@@ -201,6 +212,11 @@ namespace hms
             delete currentPool.second;
         
         mThreadPool.clear();
+
+#if defined(ANDROID) || defined(__ANDROID__)
+        mLooperAndroid = nullptr;
+#endif
+
         mInitialized = 0;
         
         return true;
@@ -265,25 +281,73 @@ namespace hms
         
         thread->second->clearTask();
     }
-    
-    void TaskManager::platformRunOnMainThread(std::function<void()> pMethod)
+
+    void TaskManager::enqueueMainThreadTask(std::function<void()> pMethod)
     {
-#ifdef __APPLE__
+#if defined(__APPLE__)
         if ([NSThread isMainThread])
         {
             pMethod();
         }
         else
         {
+            {
+                std::lock_guard<Spinlock> lock(mMainThreadSpinlock);
+                mMainThreadTask.push(std::move(pMethod));
+            }
+
             dispatch_async(dispatch_get_main_queue(), ^
             {
-                pMethod();
+                dequeueMainThreadTask();
             });
         }
-#elif __linux__
+#elif defined(ANDROID) || defined(__ANDROID__)
+        {
+            std::lock_guard<Spinlock> lock(mMainThreadSpinlock);
+            mMainThreadTask.push(std::move(pMethod));
+        }
+
+        int eventId = 0;
+        write(mMessagePipeAndroid[1], &eventId, sizeof(eventId));
+#elif defined(__linux__)
         // TO-DO
         pMethod();
 #endif
     }
+
+    void TaskManager::dequeueMainThreadTask()
+    {
+        bool hasMainThreadTask = false;
+
+        {
+            std::lock_guard<Spinlock> lock(mMainThreadSpinlock);
+            hasMainThreadTask = !mMainThreadTask.empty();
+        }
+
+        while (hasMainThreadTask)
+        {
+            std::function<void()> task = nullptr;
+
+            {
+                std::lock_guard<Spinlock> lock(mMainThreadSpinlock);
+                task = std::move(mMainThreadTask.front());
+                mMainThreadTask.pop();
+                hasMainThreadTask = !mMainThreadTask.empty();
+            }
+
+            task();
+        }
+    }
+
+#if defined(ANDROID) || defined(__ANDROID__)
+    int TaskManager::messageHandlerAndroid(int pFd, int pEvent, void* pData)
+    {
+        TaskManager* taskManager = static_cast<TaskManager*>(pData);
+        taskManager->dequeueMainThreadTask();
+
+        // TO-DO -> Optimize
+        return 1;
+    }
+#endif
 
 }
