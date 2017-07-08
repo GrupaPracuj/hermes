@@ -180,7 +180,6 @@ namespace hms
 #if defined(ANDROID) || defined(__ANDROID__)
         pipe2(mMessagePipeAndroid, O_NONBLOCK | O_CLOEXEC);
         mLooperAndroid = ALooper_forThread();
-        ALooper_addFd(mLooperAndroid, mMessagePipeAndroid[0], 0, ALOOPER_EVENT_INPUT, TaskManager::messageHandlerAndroid, this);
 #endif
 
         mThreadPool.reserve(pThreadPool.size());
@@ -307,6 +306,9 @@ namespace hms
             mMainThreadTask.push(std::move(pMethod));
         }
 
+        if (mLooperAndroid != nullptr)
+            ALooper_addFd(mLooperAndroid, mMessagePipeAndroid[0], 0, ALOOPER_EVENT_INPUT, TaskManager::messageHandlerAndroid, this);
+
         int eventId = 0;
         write(mMessagePipeAndroid[1], &eventId, sizeof(eventId));
 #elif defined(__linux__)
@@ -345,8 +347,7 @@ namespace hms
         TaskManager* taskManager = static_cast<TaskManager*>(pData);
         taskManager->dequeueMainThreadTask();
 
-        // TO-DO -> Optimize
-        return 1;
+        return 0;
     }
 #endif
 

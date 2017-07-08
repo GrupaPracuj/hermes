@@ -547,7 +547,7 @@ namespace hms
         delete pObject;
     }
     
-    bool NetworkManager::initialize(long pTimeout, int pThreadPoolID, std::pair<int, int> pHttpCodeSuccess)
+    bool NetworkManager::initialize(long pTimeout, int pThreadPoolID, std::pair<int, int> pHttpCodeSuccess, std::string pCACertificatePath)
     {
         uint32_t initialized = 0;
 
@@ -557,6 +557,8 @@ namespace hms
             {
                 mTimeout = pTimeout;
                 mThreadPoolID = pThreadPoolID;
+                mHttpCodeSuccess = pHttpCodeSuccess;
+                mCACertificatePath = std::move(pCACertificatePath);
                 
                 mInitialized.store(2);
             }
@@ -623,6 +625,8 @@ namespace hms
             mTimeout = 0;
             mThreadPoolID = mThreadPoolSimpleSocketID = -1;
             mHttpCodeSuccess = {200, 299};
+            mCACertificatePath = "";
+            mFlag = {false, false};
             mProgressTimePeriod = 0;
 
             mInitialized.store(0);
@@ -756,7 +760,10 @@ namespace hms
                 handle = curl_easy_init();
 
                 curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, CURL_HEADER_CALLBACK);
-                curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, true);
+                curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 1L);
+
+                if (mCACertificatePath.size() > 0)
+                    curl_easy_setopt(handle, CURLOPT_CAINFO, mCACertificatePath.c_str());
 
 				std::lock_guard<std::mutex> lock(mHandleMutex);
                 mHandle[std::this_thread::get_id()] = handle;
@@ -929,8 +936,11 @@ namespace hms
                 multiRequestData[i].mErrorBuffer[0] = 0;
 
                 curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_HEADERFUNCTION, CURL_HEADER_CALLBACK);
-                curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_SSL_VERIFYPEER, true);
+                curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_SSL_VERIFYPEER, 1L);
                 curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_PRIVATE, &multiRequestData[i]);
+
+                if (mCACertificatePath.size() > 0)
+                    curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_CAINFO, mCACertificatePath.c_str());
                 
                 auto uniqueHeader = createUniqueHeader(param[i].mHeader);
 
@@ -1726,6 +1736,9 @@ namespace hms
                 curl_easy_setopt(mSimpleSocketCURL, CURLOPT_URL, url.getHttpURL().c_str());
                 curl_easy_setopt(mSimpleSocketCURL, CURLOPT_CONNECT_ONLY, 1L);
                 curl_easy_setopt(mSimpleSocketCURL, CURLOPT_SSL_VERIFYPEER, 1L);
+
+                if (mCACertificatePath.size() > 0)
+                    curl_easy_setopt(mSimpleSocketCURL, CURLOPT_CAINFO, mCACertificatePath.c_str());
                 
                 CURLcode res = curl_easy_perform(mSimpleSocketCURL);
                 

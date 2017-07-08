@@ -21,7 +21,7 @@ VERSION:
 
 SUPPORTED PLATFORMS:
 
-  iOS, Android (NDK partially), Linux (partially)
+  iOS, Android (NDK), Linux (partially)
 
 LICENSE:
 

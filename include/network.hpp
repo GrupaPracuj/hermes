@@ -280,7 +280,7 @@ namespace hms
             std::function<void(const long long& lpDN, const long long& lpDT, const long long& lpUN, const long long& lpUT)> progressTask = nullptr;
         };
         
-		bool initialize(long pTimeout, int pThreadPoolID, std::pair<int, int> pHttpCodeSuccess = {200, 299});
+		bool initialize(long pTimeout, int pThreadPoolID, std::pair<int, int> pHttpCodeSuccess = {200, 299}, std::string pCACertificatePath = "");
 		bool terminate();
         
 		std::shared_ptr<NetworkAPI> add(const std::string& pName, const std::string& pURL, size_t pUniqueID);
@@ -396,10 +396,8 @@ namespace hms
         int mThreadPoolID = -1;
         int mThreadPoolSimpleSocketID = -1;
         std::pair<int, int> mHttpCodeSuccess = {200, 299};
-        std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> mFlag = {
-            false,
-            false
-        };
+        std::string mCACertificatePath;
+        std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> mFlag = {false, false};
         
         std::atomic<uint32_t> mInitialized {0};
         std::atomic<uint32_t> mCacheInitialized {0};
