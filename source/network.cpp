@@ -547,7 +547,7 @@ namespace hms
         delete pObject;
     }
     
-    bool NetworkManager::initialize(long pTimeout, int pThreadPoolID, std::pair<int, int> pHttpCodeSuccess, std::string pCACertificatePath)
+    bool NetworkManager::initialize(long pTimeout, int pThreadPoolID, std::pair<int, int> pHttpCodeSuccess)
     {
         uint32_t initialized = 0;
 
@@ -558,7 +558,6 @@ namespace hms
                 mTimeout = pTimeout;
                 mThreadPoolID = pThreadPoolID;
                 mHttpCodeSuccess = pHttpCodeSuccess;
-                mCACertificatePath = std::move(pCACertificatePath);
                 
                 mInitialized.store(2);
             }
@@ -625,9 +624,9 @@ namespace hms
             mTimeout = 0;
             mThreadPoolID = mThreadPoolSimpleSocketID = -1;
             mHttpCodeSuccess = {200, 299};
-            mCACertificatePath = "";
-            mFlag = {false, false};
+            mFlag = {false, false, false};
             mProgressTimePeriod = 0;
+            mCACertificatePath = "";
 
             mInitialized.store(0);
         }
@@ -704,11 +703,12 @@ namespace hms
         long timeoutCopy = mTimeout;
         long progressTimePeriodCopy = mProgressTimePeriod;
         auto flagCopy = mFlag;
+        auto caCertificatePathCopy = mCACertificatePath;
         
         bool allowCache = pParam.mAllowCache;
         u_int32_t cacheLifetime = pParam.mCacheLifetime;
 
-        auto request = [this, requestType, responseType, timeoutCopy, progressTimePeriodCopy, allowCache, cacheLifetime, flagCopy](std::string lpRequestUrl, std::string lpRequestBody,
+        auto request = [this, requestType, responseType, timeoutCopy, progressTimePeriodCopy, allowCache, cacheLifetime, flagCopy, caCertificatePathCopy](std::string lpRequestUrl, std::string lpRequestBody,
             std::vector<std::pair<std::string, std::string>> lpHeader, std::function<void(NetworkResponse pResponse)> lpCallback,
             std::function<void(const long long& lpDN, const long long& lpDT, const long long& lpUN, const long long& lpUT)> lpProgress, unsigned lpRepeatCount) -> void
         {
@@ -758,12 +758,7 @@ namespace hms
             if (handle == nullptr)
             {
                 handle = curl_easy_init();
-
                 curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, CURL_HEADER_CALLBACK);
-                curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 1L);
-
-                if (mCACertificatePath.size() > 0)
-                    curl_easy_setopt(handle, CURLOPT_CAINFO, mCACertificatePath.c_str());
 
 				std::lock_guard<std::mutex> lock(mHandleMutex);
                 mHandle[std::this_thread::get_id()] = handle;
@@ -796,7 +791,7 @@ namespace hms
             }
             
             configureHandle(handle, requestType, responseType, lpRequestUrl, lpRequestBody, &responseMessage, &responseRawData, &responseHeader, header,
-                timeoutCopy, flagCopy, (enableProgressInfo) ? &progressData : nullptr, errorBuffer);
+                timeoutCopy, flagCopy, (enableProgressInfo) ? &progressData : nullptr, errorBuffer, caCertificatePathCopy);
             
             CURLcode curlCode = CURLE_OK;
             unsigned step = 0;
@@ -871,8 +866,9 @@ namespace hms
         long timeoutCopy = mTimeout;
         long progressTimePeriodCopy = mProgressTimePeriod;
         auto flagCopy = mFlag;
+        auto caCertificatePathCopy = mCACertificatePath;
         
-        auto requestTask = [this, timeoutCopy, progressTimePeriodCopy, flagCopy](std::vector<NetworkRequestParam> lpParam) -> void
+        auto requestTask = [this, timeoutCopy, progressTimePeriodCopy, flagCopy, caCertificatePathCopy](std::vector<NetworkRequestParam> lpParam) -> void
         {
             std::vector<NetworkRequestParam> param;
             param.reserve(lpParam.size());
@@ -936,11 +932,7 @@ namespace hms
                 multiRequestData[i].mErrorBuffer[0] = 0;
 
                 curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_HEADERFUNCTION, CURL_HEADER_CALLBACK);
-                curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_SSL_VERIFYPEER, 1L);
                 curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_PRIVATE, &multiRequestData[i]);
-
-                if (mCACertificatePath.size() > 0)
-                    curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_CAINFO, mCACertificatePath.c_str());
                 
                 auto uniqueHeader = createUniqueHeader(param[i].mHeader);
 
@@ -979,7 +971,7 @@ namespace hms
                 }
                 
                 configureHandle(multiRequestData[i].mHandle, param[i].mRequestType, param[i].mResponseType, requestUrl, param[i].mRequestBody, &multiRequestData[i].mResponseMessage,
-                    &multiRequestData[i].mResponseRawData, &multiRequestData[i].mResponseHeader, header, timeoutCopy, flagCopy, (enableProgressInfo) ? &progressData : nullptr, multiRequestData[i].mErrorBuffer);
+                    &multiRequestData[i].mResponseRawData, &multiRequestData[i].mResponseHeader, header, timeoutCopy, flagCopy, (enableProgressInfo) ? &progressData : nullptr, multiRequestData[i].mErrorBuffer, caCertificatePathCopy);
                 
                 curl_multi_add_handle(handle, multiRequestData[i].mHandle);
             }
@@ -1159,6 +1151,15 @@ namespace hms
         mProgressTimePeriod = pTimePeriod;
     }
     
+    std::string NetworkManager::getCACertificatePath() const
+    {
+        return mCACertificatePath;
+    }
+    void NetworkManager::setCACertificatePath(std::string pPath)
+    {
+        mCACertificatePath = std::move(pPath);
+    }
+    
     void NetworkManager::appendParameter(std::string& pURL, const std::vector<std::pair<std::string, std::string>>& pParameter) const
     {
         bool first = true;
@@ -1252,7 +1253,7 @@ namespace hms
 
     void NetworkManager::configureHandle(CURL* pHandle, ENetworkRequestType pRequestType, ENetworkResponseType pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody,
         std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader,
-        long pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer) const
+        long pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer, const std::string pCACertificatePath) const
     {
         switch (pRequestType)
         {
@@ -1307,6 +1308,10 @@ namespace hms
         curl_easy_setopt(pHandle, CURLOPT_HTTPHEADER, pHeader);
         curl_easy_setopt(pHandle, CURLOPT_URL, pRequestUrl.c_str());
         curl_easy_setopt(pHandle, CURLOPT_ERRORBUFFER, pErrorBuffer);
+        curl_easy_setopt(pHandle, CURLOPT_SSL_VERIFYPEER, pFlag[static_cast<size_t>(ENetworkFlag::DisableSSLVerifyPeer)] ? 1L : 0L);
+
+        if (pCACertificatePath.size() > 0)
+            curl_easy_setopt(pHandle, CURLOPT_CAINFO, pCACertificatePath.c_str());
 
         if (pProgressData != nullptr)
         {
@@ -1712,8 +1717,11 @@ namespace hms
             return;
         
         closeSimpleSocket();
+        
+        auto flagCopy = mFlag;
+        auto caCertificatePathCopy = mCACertificatePath;
 
-        auto request = [this](SimpleSocketRequestParam lpRequest) -> void
+        auto request = [this, flagCopy, caCertificatePathCopy](SimpleSocketRequestParam lpRequest) -> void
         {
             mStopSimpleSocketLoop.store(0);
             
@@ -1735,10 +1743,10 @@ namespace hms
                 
                 curl_easy_setopt(mSimpleSocketCURL, CURLOPT_URL, url.getHttpURL().c_str());
                 curl_easy_setopt(mSimpleSocketCURL, CURLOPT_CONNECT_ONLY, 1L);
-                curl_easy_setopt(mSimpleSocketCURL, CURLOPT_SSL_VERIFYPEER, 1L);
+                curl_easy_setopt(mSimpleSocketCURL, CURLOPT_SSL_VERIFYPEER, flagCopy[static_cast<size_t>(ENetworkFlag::DisableSSLVerifyPeer)] ? 1L : 0L);
 
-                if (mCACertificatePath.size() > 0)
-                    curl_easy_setopt(mSimpleSocketCURL, CURLOPT_CAINFO, mCACertificatePath.c_str());
+                if (caCertificatePathCopy.size() > 0)
+                    curl_easy_setopt(mSimpleSocketCURL, CURLOPT_CAINFO, caCertificatePathCopy.c_str());
                 
                 CURLcode res = curl_easy_perform(mSimpleSocketCURL);
                 
