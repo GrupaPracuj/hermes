@@ -17,14 +17,19 @@ namespace hms
     
     /* Spinlock */
     
-    void Spinlock::lock()
+    void Spinlock::lock() noexcept
     {
         while (mFlag.test_and_set(std::memory_order_acquire)) {}
     }
     
-    void Spinlock::unlock()
+    void Spinlock::unlock() noexcept
     {
         mFlag.clear(std::memory_order_release);
+    }
+    
+    bool Spinlock::try_lock() noexcept
+    {
+        return !mFlag.test_and_set(std::memory_order_acquire);
     }
     
     /* ThreadPool */
@@ -291,7 +296,7 @@ namespace hms
         else
         {
             {
-                std::lock_guard<Spinlock> lock(mMainThreadSpinlock);
+                std::lock_guard<std::mutex> lock(mMainThreadMutex);
                 mMainThreadTask.push(std::move(pMethod));
             }
 
@@ -302,7 +307,7 @@ namespace hms
         }
 #elif defined(ANDROID) || defined(__ANDROID__)
         {
-            std::lock_guard<Spinlock> lock(mMainThreadSpinlock);
+            std::lock_guard<std::mutex> lock(mMainThreadMutex);
             mMainThreadTask.push(std::move(pMethod));
         }
 
@@ -319,10 +324,15 @@ namespace hms
 
     void TaskManager::dequeueMainThreadTask()
     {
+#if defined(ANDROID) || defined(__ANDROID__)
+        if (mLooperAndroid != nullptr)
+            ALooper_removeFd(mLooperAndroid, mMessagePipeAndroid[0]);
+#endif
+    
         bool hasMainThreadTask = false;
 
         {
-            std::lock_guard<Spinlock> lock(mMainThreadSpinlock);
+            std::lock_guard<std::mutex> lock(mMainThreadMutex);
             hasMainThreadTask = !mMainThreadTask.empty();
         }
 
@@ -331,7 +341,7 @@ namespace hms
             std::function<void()> task = nullptr;
 
             {
-                std::lock_guard<Spinlock> lock(mMainThreadSpinlock);
+                std::lock_guard<std::mutex> lock(mMainThreadMutex);
                 task = std::move(mMainThreadTask.front());
                 mMainThreadTask.pop();
                 hasMainThreadTask = !mMainThreadTask.empty();
@@ -347,7 +357,7 @@ namespace hms
         TaskManager* taskManager = static_cast<TaskManager*>(pData);
         taskManager->dequeueMainThreadTask();
 
-        return 0;
+        return 1;
     }
 #endif
 

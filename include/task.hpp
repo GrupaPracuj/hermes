@@ -22,8 +22,9 @@ namespace hms
     class Spinlock
     {
     public:
-        void lock();
-        void unlock();
+        void lock() noexcept;
+        void unlock() noexcept;
+        bool try_lock() noexcept;
         
     private:
         std::atomic_flag mFlag = ATOMIC_FLAG_INIT;
@@ -117,7 +118,7 @@ namespace hms
         std::unordered_map<int, ThreadPool*> mThreadPool;
 
         std::queue<std::function<void()>> mMainThreadTask;
-        Spinlock mMainThreadSpinlock;
+        std::mutex mMainThreadMutex;
 
 #if defined(ANDROID) || defined(__ANDROID__)
         int mMessagePipeAndroid[2] = {0, 0};
