@@ -1558,13 +1558,7 @@ namespace hms
             
             {
                 std::lock_guard<std::mutex> lock(mCacheMutex);
-#if defined(ANDROID) || defined(__ANDROID__)
-                std::stringstream ss;
-                ss << timestamp;
-                info.mFullFilePath = mCacheDirectoryPath + ss.str() + "_";
-#else
                 info.mFullFilePath = mCacheDirectoryPath + std::to_string(timestamp) + "_";
-#endif
             }
             
             const size_t hashCount = 5;

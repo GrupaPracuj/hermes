@@ -2,7 +2,6 @@
 
 # User configuration
 LIBRARY_NAME="curl-7.54.1"
-ANDROID_NDK_ROOT="${ANDROID_HOME}/ndk-bundle"
 ANDROID_API="android-21"
 
 # Check settings
@@ -46,7 +45,7 @@ ARCH_NAME=("arm" "armv7" "arm64" "mips" "mips64" "x86" "x86_64")
 # Prepare toolchains
 for ((i=0; i<${#TOOLCHAIN_ARCH[@]}; i++)); do
 	if [ ! -d ${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]} ]; then
-		${ANDROID_NDK_ROOT}/build/tools/make-standalone-toolchain.sh --arch=${TOOLCHAIN_ARCH[$i]} --platform=${ANDROID_API} --install-dir=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}
+		${ANDROID_NDK_ROOT}/build/tools/make-standalone-toolchain.sh --arch=${TOOLCHAIN_ARCH[$i]} --platform=${ANDROID_API} --stl=libc++ --install-dir=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}
 	fi
 done
 
@@ -73,8 +72,13 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	export CROSS_SYSROOT=${SYSROOT}
 	export CFLAGS="${ARCH_FLAGS} -O2 -fPIC -fno-strict-aliasing -fstack-protector -I${WORKING_DIR}/../openssl/include"
 	export LDFLAGS="${ARCH_LINK} -L${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}"
+	
+	if [ ! -d ${WORKING_DIR}/lib/android/${ARCH_NAME[$i]} ]; then
+		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
+	else
+		rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcurl.a
+	fi
 
-	rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcurl.a
 	rm -rf ${TMP_DIR}
 
 	./configure --prefix=${TMP_DIR} \

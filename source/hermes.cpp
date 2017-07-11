@@ -473,10 +473,6 @@ namespace tools
         {
             auto port = mURL.substr(portPos + 1, hostEndPos - (portPos + 1));
 
-#if defined(ANDROID) || defined(__ANDROID__)
-            std::istringstream ss(port);
-            ss >> mPort;
-#else
             try
             {
                 mPort = static_cast<uint16_t>(std::stoul(port));
@@ -486,7 +482,6 @@ namespace tools
             {
                 Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Url parsing port conversion fail: '%'", mURL);
             }
-#endif
         }
         else
         {
