@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">01_HelloWorld_Android</string>
+    <string name="label_call_jni">Call sample method (JNI)</string>
+    <string name="label_result">Result:</string>
+    <string name="label_clear">Clear results</string>
+    <string name="label_cert_initialized">Certificates initialized</string>
+</resources>

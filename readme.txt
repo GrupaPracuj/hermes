@@ -64,4 +64,6 @@ QUICK START (Android):
 
 MISCELLANEOUS:
   * This product includes software developed by the OpenSSL Project for use
-    in the OpenSSL Toolkit (http://www.openssl.org/)"  
+    in the OpenSSL Toolkit (http://www.openssl.org/)"
+  * 'certificate.pem' in '01.HelloWorld_Android' came from 'https://curl.haxx.se/docs/caextract.html'
+    and is licensed under MPL 2.0 terms.
