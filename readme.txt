@@ -60,7 +60,7 @@ QUICK START (Android):
   * Execute build_android.sh from $(HERMES_HOME), $(HERMES_HOME)/depend/curl, $(HERMES_HOME)/depend/jsoncpp
     $(HERMES_HOME)/depend/openssl directories (add 'NDEBUG=1' parameter to build_android.sh to build
     libraries in the release mode for Hermes and JsonCpp libraries)
-  * From Android Studio import $(HERMES_HOME)/examples/01.HelloWorld_Android project.
+  * From Android Studio import $(HERMES_HOME)/example/01.HelloWorld_Android project.
 
 MISCELLANEOUS:
   * This product includes software developed by the OpenSSL Project for use
