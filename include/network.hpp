@@ -5,8 +5,6 @@
 #ifndef _NETWORK_HPP_
 #define _NETWORK_HPP_
 
-#include "curl/curl.h"
-
 #include "data.hpp"
 
 #include <string>
@@ -21,6 +19,8 @@
 #include <thread>
 #include <random>
 #include <cstdint>
+
+struct curl_slist;
 
 namespace hms
 {
@@ -327,7 +327,7 @@ namespace hms
             std::vector<std::pair<std::string, std::string>> mResponseHeader;
             std::string mResponseMessage;
             DataBuffer mResponseRawData;
-            CURL* mHandle = nullptr;
+            void* mHandle = nullptr;
             char* mErrorBuffer = nullptr;
             NetworkRequestParam* mParam = nullptr;
         };
@@ -370,31 +370,31 @@ namespace hms
         
         std::vector<std::pair<std::string, std::string>> createUniqueHeader(const std::vector<std::pair<std::string, std::string>>& pHeader) const;
 
-        void configureHandle(CURL* pHandle, ENetworkRequestType pRequestType, ENetworkResponseType pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody,
+        void configureHandle(void* pHandle, ENetworkRequestType pRequestType, ENetworkResponseType pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody,
             std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader,
             long pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer, const std::string pCACertificatePath) const;
         
-        void resetHandle(CURL* pHandle) const;
+        void resetHandle(void* pHandle) const;
         
         CacheFileData decodeCacheHeader(const std::string& pFilePath) const;
         NetworkResponse getResponseFromCache(const std::string& pUrl);
         bool cacheResponse(const NetworkResponse& pResponse, const std::string& pUrl, u_int32_t pLifetime);
         
-        CURLcode sendUpgradeHeader(CURL* const pCurl, const tools::URLTool& pURL, const std::vector<std::pair<std::string, std::string>>& pHeader, std::string& pSecAccept) const;
+        int sendUpgradeHeader(void* const pCurl, const tools::URLTool& pURL, const std::vector<std::pair<std::string, std::string>>& pHeader, std::string& pSecAccept) const;
         std::string packSimpleSocketMessage(const std::string& pMessage, ESocketOpCode pOpCode = ESocketOpCode::Text) const;
         std::vector<SocketFrame> unpackSimpleSocketMessage(const std::string& pMessage) const;
-        bool handleSimpleSocketFrame(CURL* const pCurl, std::vector<SocketFrame>& pNewFrame, std::vector<SocketFrame>& pOldFrame, std::function<void(std::string lpMessage, bool lpTextData)> pMessageCallback) const;
+        bool handleSimpleSocketFrame(void* const pCurl, std::vector<SocketFrame>& pNewFrame, std::vector<SocketFrame>& pOldFrame, std::function<void(std::string lpMessage, bool lpTextData)> pMessageCallback) const;
         
         std::vector<std::shared_ptr<NetworkAPI>> mAPI;
         std::vector<std::shared_ptr<NetworkRecovery>> mRecovery;
         std::vector<CacheFileData> mCacheFileInfo;
         std::unordered_map<std::string, size_t> mCacheFileIndex;
 
-        std::unordered_map<std::thread::id, CURL*> mHandle;
-        std::unordered_map<std::thread::id, CURLM*> mMultiHandle;
+        std::unordered_map<std::thread::id, void*> mHandle;
+        std::unordered_map<std::thread::id, void*> mMultiHandle;
 		std::mutex mHandleMutex;
         std::mutex mMultiHandleMutex;
-        CURL* mSimpleSocketCURL = nullptr;
+        void* mSimpleSocketCURL = nullptr;
 
         long mTimeout = 0;
         int mThreadPoolID = -1;

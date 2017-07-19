@@ -63,6 +63,7 @@ cd ${LIBRARY_NAME}
 
 for ((i=0; i<${#ARCH[@]}; i++)); do
 	TOOLCHAIN_BIN_PATH=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/bin/${TOOLCHAIN_NAME[$i]}
+	CONFIGURE_FLAG_SSL=""
 	export CC=${TOOLCHAIN_BIN_PATH}-clang
 	export LD=${TOOLCHAIN_BIN_PATH}-ld
 	export AR=${TOOLCHAIN_BIN_PATH}-ar
@@ -72,6 +73,11 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	export CROSS_SYSROOT=${SYSROOT}
 	export CFLAGS="${ARCH_FLAGS} -O2 -fPIC -fno-strict-aliasing -fstack-protector -I${WORKING_DIR}/../openssl/include"
 	export LDFLAGS="${ARCH_LINK} -L${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}"
+	
+	if [ -d "${WORKING_DIR}/../openssl/include/android" ]; then
+		export CFLAGS="${CFLAGS} -I${WORKING_DIR}/../openssl/include"
+		CONFIGURE_FLAG_SSL="--with-ssl"
+	fi
 	
 	if [ ! -d ${WORKING_DIR}/lib/android/${ARCH_NAME[$i]} ]; then
 		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
@@ -83,7 +89,7 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 
 	./configure --prefix=${TMP_DIR} \
 		--host=${TOOLCHAIN_NAME[$i]} \
-        --with-ssl \
+        ${CONFIGURE_FLAG_SSL} \
         --enable-ipv6 \
         --enable-static \
         --enable-threaded-resolver \

@@ -1,0 +1,8 @@
+*
+!.gitignore
+!build_android.sh
+!build_ios.sh
+!build_linux.sh
+!curlbuild_shared.h.in
+!readme.txt
+!include

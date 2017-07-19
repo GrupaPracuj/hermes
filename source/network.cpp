@@ -5,6 +5,7 @@
 #include "network.hpp"
 
 #include "hermes.hpp"
+#include "curl/curl.h"
 
 #include <cassert>
 #include <sstream>
@@ -748,7 +749,7 @@ namespace hms
                 header = curl_slist_append(header, singleHeader.c_str());
             }
 
-			CURL* handle = nullptr;
+			void* handle = nullptr;
 			
 			{
 				std::lock_guard<std::mutex> lock(mHandleMutex);
@@ -902,7 +903,7 @@ namespace hms
             if (param.size() == 0)
                 return;
             
-            CURLM* handle = nullptr;
+            void* handle = nullptr;
 			
 			{
 				std::lock_guard<std::mutex> lock(mMultiHandleMutex);
@@ -1251,7 +1252,7 @@ namespace hms
         return header;
     }
 
-    void NetworkManager::configureHandle(CURL* pHandle, ENetworkRequestType pRequestType, ENetworkResponseType pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody,
+    void NetworkManager::configureHandle(void* pHandle, ENetworkRequestType pRequestType, ENetworkResponseType pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody,
         std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader,
         long pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer, const std::string pCACertificatePath) const
     {
@@ -1321,7 +1322,7 @@ namespace hms
         }
     }
     
-    void NetworkManager::resetHandle(CURL* pHandle) const
+    void NetworkManager::resetHandle(void* pHandle) const
     {
         curl_easy_setopt(pHandle, CURLOPT_CUSTOMREQUEST, 0);
         curl_easy_setopt(pHandle, CURLOPT_XFERINFOFUNCTION, nullptr);
@@ -1765,7 +1766,7 @@ namespace hms
                         mSimpleSocketActive.store(1);
                         
                         std::string secSocketAccept;
-                        res = sendUpgradeHeader(mSimpleSocketCURL, url, lpRequest.mHeader, secSocketAccept);
+                        res = static_cast<CURLcode>(sendUpgradeHeader(mSimpleSocketCURL, url, lpRequest.mHeader, secSocketAccept));
                         
                         if (res != CURLE_OK)
                         {
@@ -1901,7 +1902,7 @@ namespace hms
         Hermes::getInstance()->getTaskManager()->execute(mThreadPoolSimpleSocketID, request, std::move(pRequest));
     }
     
-    CURLcode NetworkManager::sendUpgradeHeader(CURL* const pCurl, const tools::URLTool& pURL, const std::vector<std::pair<std::string, std::string>>& pHeader, std::string& pSecAccept) const
+    int NetworkManager::sendUpgradeHeader(void* const pCurl, const tools::URLTool& pURL, const std::vector<std::pair<std::string, std::string>>& pHeader, std::string& pSecAccept) const
     {
         CURLcode code = CURLE_OK;
         
@@ -2110,7 +2111,7 @@ namespace hms
         return frames;
     }
     
-    bool NetworkManager::handleSimpleSocketFrame(CURL* const pCurl, std::vector<SocketFrame>& pNewFrame, std::vector<SocketFrame>& pOldFrame, std::function<void(std::string lpMessage, bool lpTextData)> pMessageCallback) const
+    bool NetworkManager::handleSimpleSocketFrame(void* const pCurl, std::vector<SocketFrame>& pNewFrame, std::vector<SocketFrame>& pOldFrame, std::function<void(std::string lpMessage, bool lpTextData)> pMessageCallback) const
     {
         bool endSent = false;
         

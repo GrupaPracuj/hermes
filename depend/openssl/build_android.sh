@@ -58,8 +58,17 @@ tar xfz ${LIBRARY_NAME}.tar.gz
 sed -i -e 's/-mandroid//g' ${LIBRARY_NAME}/Configurations/10-main.conf
 
 # Clean include directory
-rm ${WORKING_DIR}/include/openssl/*
-rm ${WORKING_DIR}/include/openssl/android/*
+if [ -d "${WORKING_DIR}/include/openssl" ]; then
+	rm ${WORKING_DIR}/include/openssl/*
+else
+	mkdir -p ${WORKING_DIR}/include/openssl
+fi
+
+if [ -d "${WORKING_DIR}/include/openssl/android" ]; then
+	rm ${WORKING_DIR}/include/openssl/android/*
+else
+	mkdir -p ${WORKING_DIR}/include/openssl/android
+fi
 
 # Build for all architectures and copy data
 cd ${LIBRARY_NAME}
