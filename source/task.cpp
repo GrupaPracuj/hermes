@@ -4,8 +4,12 @@
 
 #include "task.hpp"
 
-#ifdef __APPLE__
+#if defined(__APPLE__)
 #import <Foundation/Foundation.h>
+#elif defined(ANDROID) || defined(__ANDROID__)
+#include <android/looper.h>
+#include <fcntl.h>
+#include <unistd.h>
 #endif
 
 namespace hms
@@ -13,14 +17,19 @@ namespace hms
     
     /* Spinlock */
     
-    void Spinlock::lock()
+    void Spinlock::lock() noexcept
     {
         while (mFlag.test_and_set(std::memory_order_acquire)) {}
     }
     
-    void Spinlock::unlock()
+    void Spinlock::unlock() noexcept
     {
         mFlag.clear(std::memory_order_release);
+    }
+    
+    bool Spinlock::try_lock() noexcept
+    {
+        return !mFlag.test_and_set(std::memory_order_acquire);
     }
     
     /* ThreadPool */
@@ -172,6 +181,12 @@ namespace hms
             return false;
         
         mInitialized = 1;
+
+#if defined(ANDROID) || defined(__ANDROID__)
+        pipe2(mMessagePipeAndroid, O_NONBLOCK | O_CLOEXEC);
+        mLooperAndroid = ALooper_forThread();
+#endif
+
         mThreadPool.reserve(pThreadPool.size());
 
         for (auto& currentPool : pThreadPool)
@@ -201,6 +216,11 @@ namespace hms
             delete currentPool.second;
         
         mThreadPool.clear();
+
+#if defined(ANDROID) || defined(__ANDROID__)
+        mLooperAndroid = nullptr;
+#endif
+
         mInitialized = 0;
         
         return true;
@@ -265,25 +285,80 @@ namespace hms
         
         thread->second->clearTask();
     }
-    
-    void TaskManager::platformRunOnMainThread(std::function<void()> pMethod)
+
+    void TaskManager::enqueueMainThreadTask(std::function<void()> pMethod)
     {
-#ifdef __APPLE__
+#if defined(__APPLE__)
         if ([NSThread isMainThread])
         {
             pMethod();
         }
         else
         {
+            {
+                std::lock_guard<std::mutex> lock(mMainThreadMutex);
+                mMainThreadTask.push(std::move(pMethod));
+            }
+
             dispatch_async(dispatch_get_main_queue(), ^
             {
-                pMethod();
+                dequeueMainThreadTask();
             });
         }
-#elif __linux__
+#elif defined(ANDROID) || defined(__ANDROID__)
+        {
+            std::lock_guard<std::mutex> lock(mMainThreadMutex);
+            mMainThreadTask.push(std::move(pMethod));
+        }
+
+        if (mLooperAndroid != nullptr)
+            ALooper_addFd(mLooperAndroid, mMessagePipeAndroid[0], 0, ALOOPER_EVENT_INPUT, TaskManager::messageHandlerAndroid, this);
+
+        int eventId = 0;
+        write(mMessagePipeAndroid[1], &eventId, sizeof(eventId));
+#elif defined(__linux__)
         // TO-DO
         pMethod();
 #endif
     }
+
+    void TaskManager::dequeueMainThreadTask()
+    {
+#if defined(ANDROID) || defined(__ANDROID__)
+        if (mLooperAndroid != nullptr)
+            ALooper_removeFd(mLooperAndroid, mMessagePipeAndroid[0]);
+#endif
+    
+        bool hasMainThreadTask = false;
+
+        {
+            std::lock_guard<std::mutex> lock(mMainThreadMutex);
+            hasMainThreadTask = !mMainThreadTask.empty();
+        }
+
+        while (hasMainThreadTask)
+        {
+            std::function<void()> task = nullptr;
+
+            {
+                std::lock_guard<std::mutex> lock(mMainThreadMutex);
+                task = std::move(mMainThreadTask.front());
+                mMainThreadTask.pop();
+                hasMainThreadTask = !mMainThreadTask.empty();
+            }
+
+            task();
+        }
+    }
+
+#if defined(ANDROID) || defined(__ANDROID__)
+    int TaskManager::messageHandlerAndroid(int pFd, int pEvent, void* pData)
+    {
+        TaskManager* taskManager = static_cast<TaskManager*>(pData);
+        taskManager->dequeueMainThreadTask();
+
+        return 1;
+    }
+#endif
 
 }

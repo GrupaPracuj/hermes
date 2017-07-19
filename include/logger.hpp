@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <functional>
 
 namespace hms
 {
@@ -33,9 +34,8 @@ namespace hms
             {
                 std::string buffer;
                 createBuffer(buffer, pText.c_str(), pArgument...);
-                
-                std::string output = createPrefix(pType) + buffer;
-                printNative(output);
+
+                printNative(pType, std::move(buffer));
 
                 if (mPostCallback != nullptr)
                     mPostCallback(pType, buffer);
@@ -53,7 +53,7 @@ namespace hms
         Logger& operator=(const Logger& pOther) = delete;
         Logger& operator=(Logger&& pOther) = delete;
         
-        void printNative(const std::string& pText) const;
+        void printNative(ELogLevel pType, std::string pText) const;
         std::string createPrefix(ELogLevel pType) const;
         void createBuffer(std::string& pDestination, const char* pSource) const;
                 

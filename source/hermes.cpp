@@ -6,6 +6,8 @@
 
 #include <random>
 #include <iomanip>
+#include <string>
+#include <algorithm>
 
 #if defined(_WIN32)
     #include <stdlib.h>
@@ -17,7 +19,7 @@
     #define bswap_16(X) OSReadSwapInt16(&X,0)
     #define bswap_32(X) OSReadSwapInt32(&X,0)
     #define bswap_64(X) OSReadSwapInt64(&X,0)
-#elif __linux__
+#elif __linux__ && !(defined(ANDROID) || defined(__ANDROID__))
     #include <sys/endian.h>
     #define bswap_16(X) bswap16(X)
     #define bswap_32(X) bswap32(X)
@@ -470,7 +472,7 @@ namespace tools
         if (portPos != std::string::npos)
         {
             auto port = mURL.substr(portPos + 1, hostEndPos - (portPos + 1));
-            
+
             try
             {
                 mPort = static_cast<uint16_t>(std::stoul(port));

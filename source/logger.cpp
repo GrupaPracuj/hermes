@@ -5,6 +5,9 @@
 #include "logger.hpp"
 
 #include <iostream>
+#if defined(ANDROID) || defined(__ANDROID__)
+#include <android/log.h>
+#endif
 
 namespace hms
 {
@@ -47,9 +50,22 @@ namespace hms
         return true;
     }
     
-    void Logger::printNative(const std::string& pText) const
+    void Logger::printNative(ELogLevel pType, std::string pText) const
     {
-        std::cout << pText << "\n";
+#if defined(ANDROID) || defined(__ANDROID__)
+        static android_LogPriority const translationTable[] = {
+                ANDROID_LOG_INFO,
+                ANDROID_LOG_WARN,
+                ANDROID_LOG_ERROR,
+                ANDROID_LOG_FATAL
+        };
+
+        __android_log_print(translationTable[static_cast<size_t>(pType)], "Hermes", "%s", pText.c_str());
+#else
+        std::string output = createPrefix(pType);
+        output += pText;
+        std::cout << output << "\n";
+#endif
     }
     
     std::string Logger::createPrefix(ELogLevel pType) const

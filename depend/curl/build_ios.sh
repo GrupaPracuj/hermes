@@ -1,36 +1,114 @@
-#!/bin/sh
+#!/bin/bash
 
-rm ../../lib/ios/libcurl.a
-cd tmp
+# User configuration
+LIBRARY_NAME="curl-7.54.1"
+IOS_DEPLOYMENT_TARGET="8.0"
 
-XCODE_PATH="/Applications/Xcode.app/Contents/Developer"
+# Check settings
+if [ -z "${XCODE_ROOT}" ] || [ ! -d "${XCODE_ROOT}" ]; then
+    XCODE_ROOT="/Applications/Xcode.app/Contents/Developer"
 
-export IPHONEOS_DEPLOYMENT_TARGET="8.0"
-export CC="${XCODE_PATH}/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang"
+    if [ ! -d "${XCODE_ROOT}" ]; then
+        echo "Error: ${XCODE_ROOT} is not a valid path."
+        exit 1
+    fi
+fi
 
-ARCH=(armv7 armv7s arm64 i386 x86_64)
-HOST=(armv7 armv7s arm i386 x86_64)
-TARGET=(iPhoneOS iPhoneOS iPhoneOS iPhoneSimulator iPhoneSimulator)
+# Check software and detect CPU cores
+CPU_CORE=1
+PLATFORM_NAME=`uname`
+if [[ "${PLATFORM_NAME}" == "Darwin" ]]; then
+   CPU_CORE=`sysctl -n hw.logicalcpu_max`
+else
+  echo "Error: ${PLATFORM_NAME} is not supported." >&2
+  exit 1
+fi
+
+if [ -z `which wget` ]; then
+  echo "Error: wget is not installed." >&2
+  exit 1
+fi
+
+# Internal variables
+WORKING_DIR=`pwd`
+TMP_DIR=${WORKING_DIR}/tmp
+TMP_LIB_DIR=${WORKING_DIR}/tmp_lib
+TOOLCHAIN_DIR=${XCODE_ROOT}/Toolchains/XcodeDefault.xctoolchain
+TOOLCHAIN_NAME=("armv7-apple-darwin" "armv7s-apple-darwin" "arm-apple-darwin" "i386-apple-darwin" "x86_64-apple-darwin")
+ARCH=("armv7" "armv7s" "arm64" "i386" "x86_64")
+ARCH_NAME=("armv7" "armv7s" "arm64" "x86" "x86_64")
+TARGET=("iPhoneOS" "iPhoneOS" "iPhoneOS" "iPhoneSimulator" "iPhoneSimulator")
+
+# Download and extract library
+rm -rf ${LIBRARY_NAME}
+[ -f ${LIBRARY_NAME}.tar.gz ] || wget --no-check-certificate https://curl.haxx.se/download/${LIBRARY_NAME}.tar.gz;
+tar xfz ${LIBRARY_NAME}.tar.gz
+
+# Clean include and lib directory
+rm ${WORKING_DIR}/include/curl/*
+rm ${WORKING_DIR}/include/curl/ios/*
+rm -f ${WORKING_DIR}/../../lib/ios/libcurl.a
+
+# Build for all architectures and copy data
+mkdir ${TMP_LIB_DIR}
+cd ${LIBRARY_NAME}
+export CC=${TOOLCHAIN_DIR}/usr/bin/clang
+export LD=${TOOLCHAIN_DIR}/usr/bin/ld
+export AR=${TOOLCHAIN_DIR}/usr/bin/ar
+export RANLIB=${TOOLCHAIN_DIR}/usr/bin/ranlib
+export STRIP=${TOOLCHAIN_DIR}/usr/bin/strip
 
 for ((i=0; i<${#ARCH[@]}; i++)); do
-	export CFLAGS="-arch ${ARCH[$i]} -pipe -Os -gdwarf-2 -isysroot ${XCODE_PATH}/Platforms/${TARGET[$i]}.platform/Developer/SDKs/${TARGET[$i]}.sdk -miphoneos-version-min=${IPHONEOS_DEPLOYMENT_TARGET} -fembed-bitcode"
-	export LDFLAGS="-arch ${ARCH[$i]} -isysroot ${XCODE_PATH}/Platforms/${TARGET[$i]}.platform/Developer/SDKs/${TARGET[$i]}.sdk"
+	export SYSROOT=${XCODE_ROOT}/Platforms/${TARGET[$i]}.platform/Developer/SDKs/${TARGET[$i]}.sdk
+	export CROSS_SYSROOT=${SYSROOT}
+	export CFLAGS="-arch ${ARCH[$i]} -isysroot ${SYSROOT} -O2 -fPIC -fno-strict-aliasing -fstack-protector -pipe -gdwarf-2 -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET} -fembed-bitcode"
+	export LDFLAGS="-arch ${ARCH[$i]} -isysroot ${SYSROOT}"
+	
 	if [ "${TARGET[$i]}" = "iPhoneSimulator" ]; then
-		export CPPFLAGS="-D__IPHONE_OS_VERSION_MIN_REQUIRED=${IPHONEOS_DEPLOYMENT_TARGET%%.*}0000"
+		export CFLAGS="${CFLAGS} -D__IPHONE_OS_VERSION_MIN_REQUIRED=${IOS_DEPLOYMENT_TARGET%%.*}0000"
 	fi
+	
+	rm -rf ${TMP_DIR}
+
+	./configure --prefix=${TMP_DIR} \
+		--host=${TOOLCHAIN_NAME[$i]} \
+        --with-darwinssl \
+        --enable-ipv6 \
+        --enable-static \
+        --enable-threaded-resolver \
+        --disable-shared \
+        --disable-dict \
+        --disable-gopher \
+        --disable-ldap \
+        --disable-ldaps \
+        --disable-manual \
+        --disable-pop3 \
+        --disable-smtp \
+        --disable-imap \
+        --disable-rtsp \
+        --disable-smb \
+        --disable-telnet \
+        --disable-verbose
+
+	if make -j${CPU_CORE}; then
+		make install
+
+		cp ${TMP_DIR}/include/curl/* ${WORKING_DIR}/include/curl/
+		cp ${WORKING_DIR}/include/curl/curlbuild.h ${WORKING_DIR}/include/curl/ios/curlbuild-${ARCH_NAME[$i]}.h
+        cp ${TMP_DIR}/lib/libcurl.a ${TMP_LIB_DIR}/libcurl-${ARCH_NAME[$i]}.a
+	fi
+
 	make distclean
-	./configure  -host="${HOST[$i]}-apple-darwin" --disable-shared --enable-static --with-darwinssl --enable-ipv6 --enable-threaded-resolver --disable-verbose
-	make -j $(sysctl -n hw.logicalcpu_max)
-	cp lib/.libs/libcurl.a "../../../lib/ios/libcurl-${ARCH[$i]}.a"
-	cp include/curl/curlbuild.h "../include/curl/ios/curlbuild-${ARCH[$i]}.h"
 done
 
+cd ${TMP_LIB_DIR}
+lipo -create -output "libcurl.a" "libcurl-armv7.a" "libcurl-armv7s.a" "libcurl-arm64.a" "libcurl-x86.a" "libcurl-x86_64.a"
+cp ${TMP_LIB_DIR}/libcurl.a ${WORKING_DIR}/../../lib/ios/
+cp ${WORKING_DIR}/curlbuild_shared.h.in ${WORKING_DIR}/include/curl/curlbuild.h
 cd ..
 
-rm include/curl/*
-cp tmp/include/curl/*.h include/curl/
-cp curlbuild_shared.h.in include/curl/curlbuild.h
-
-cd ../../lib/ios
-lipo -create -output "libcurl.a" "libcurl-armv7.a" "libcurl-armv7s.a" "libcurl-arm64.a" "libcurl-i386.a" "libcurl-x86_64.a"
-rm libcurl-armv7.a libcurl-armv7s.a libcurl-arm64.a libcurl-i386.a libcurl-x86_64.a
+# Cleanup
+rm -rf ${TMP_LIB_DIR}
+rm -rf ${TMP_DIR}
+rm -rf ${WORKING_DIR}/${LIBRARY_NAME}
+rm -rf ${WORKING_DIR}/${LIBRARY_NAME}.tar.gz
