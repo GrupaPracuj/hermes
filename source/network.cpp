@@ -2115,13 +2115,13 @@ namespace hms
     {
         bool endSent = false;
         
-        for (auto it = pNewFrame.rbegin(); it != pNewFrame.rend(); it++)
+        for (size_t i = pNewFrame.size(); i > 0; i--)
         {
-            uint8_t opCode = it->mCode & 0x0F;
+            uint8_t opCode = pNewFrame[i-1].mCode & 0x0F;
             
             if (static_cast<ESocketOpCode>(opCode) == ESocketOpCode::Ping)
             {
-                it = std::vector<SocketFrame>::reverse_iterator(pNewFrame.erase(std::next(it).base()));
+                pNewFrame.erase(pNewFrame.begin() + static_cast<long>(i - 1));
                 
                 if (!endSent)
                 {
@@ -2139,7 +2139,7 @@ namespace hms
             }
             else if (static_cast<ESocketOpCode>(opCode) == ESocketOpCode::Close)
             {
-                it = std::vector<SocketFrame>::reverse_iterator(pNewFrame.erase(std::next(it).base()));
+                pNewFrame.erase(pNewFrame.begin() + static_cast<long>(i - 1));
                 
                 std::string message = packSimpleSocketMessage("", ESocketOpCode::Close);
                 
@@ -2155,7 +2155,7 @@ namespace hms
             }
             else if (opCode > static_cast<uint8_t>(ESocketOpCode::Binary))
             {
-                it = std::vector<SocketFrame>::reverse_iterator(pNewFrame.erase(std::next(it).base()));
+                pNewFrame.erase(pNewFrame.begin() + static_cast<long>(i - 1));
             }
         }
         
