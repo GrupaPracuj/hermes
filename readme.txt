@@ -34,9 +34,10 @@ CREDITS:
 
 DEPENDENCIES:
 
-  libcurl library - https://curl.haxx.se/libcurl/
+  libcurl library - https://curl.haxx.se/libcurl
   JsonCpp library - https://github.com/open-source-parsers/jsoncpp
-  OpenSSL library - https://www.openssl.org/
+  OpenSSL library - https://www.openssl.org
+  aes library - https://github.com/BrianGladman/aes
   base64 code - https://github.com/ReneNyffenegger/cpp-base64
   sha1 code - https://github.com/etodd/sha1
 
