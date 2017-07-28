@@ -2,9 +2,14 @@
 
 # User configuration
 LIBRARY_NAME="curl-7.54.1"
-ANDROID_API="android-21"
 
 # Check settings
+if [ -z "${HERMES_ANDROID_API}" ]; then
+    ANDROID_API="android-21"
+else
+    ANDROID_API=${HERMES_ANDROID_API}
+fi
+
 if [ -z "${ANDROID_NDK_ROOT}" ] || [ ! -d "${ANDROID_NDK_ROOT}" ]; then
     ANDROID_NDK_ROOT="${ANDROID_HOME}/ndk-bundle"
 
@@ -13,6 +18,9 @@ if [ -z "${ANDROID_NDK_ROOT}" ] || [ ! -d "${ANDROID_NDK_ROOT}" ]; then
         exit 1
     fi
 fi
+
+printf "Android API: \"${ANDROID_API}\"\n"
+printf "Android NDK path: \"${ANDROID_NDK_ROOT}\"\n\n"
 
 # Check software and detect CPU cores
 CPU_CORE=1

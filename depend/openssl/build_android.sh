@@ -2,9 +2,14 @@
 
 # User configuration
 LIBRARY_NAME="openssl-1.1.0f"
-ANDROID_API="android-21"
 
 # Check settings
+if [ -z "${HERMES_ANDROID_API}" ]; then
+    ANDROID_API="android-21"
+else
+    ANDROID_API=${HERMES_ANDROID_API}
+fi
+
 if [ -z "${ANDROID_NDK_ROOT}" ] || [ ! -d "${ANDROID_NDK_ROOT}" ]; then
     ANDROID_NDK_ROOT="${ANDROID_HOME}/ndk-bundle"
 
@@ -13,6 +18,9 @@ if [ -z "${ANDROID_NDK_ROOT}" ] || [ ! -d "${ANDROID_NDK_ROOT}" ]; then
         exit 1
     fi
 fi
+
+printf "Android API: \"${ANDROID_API}\"\n"
+printf "Android NDK path: \"${ANDROID_NDK_ROOT}\"\n\n"
 
 # Check software and detect CPU cores
 CPU_CORE=1
@@ -104,7 +112,7 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
         no-unit-test
 
 	if make -j${CPU_CORE}; then
-		make install
+		make install_sw
 
 		cp ${TMP_DIR}/include/openssl/* ${WORKING_DIR}/include/openssl/
 		cp ${WORKING_DIR}/include/openssl/opensslconf.h ${WORKING_DIR}/include/openssl/android/opensslconf-${ARCH_NAME[$i]}.h
