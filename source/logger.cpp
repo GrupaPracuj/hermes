@@ -23,7 +23,7 @@ namespace hms
         terminate();
     }
     
-    bool Logger::initialize(ELogLevel pLevel, std::function<void(ELogLevel pType, const std::string& pText)> pPostCallback)
+    bool Logger::initialize(ELogLevel pLevel, std::function<void(ELogLevel pType, std::string pText)> pPostCallback)
     {
         if (mInitialized)
             return false;
@@ -50,7 +50,7 @@ namespace hms
         return true;
     }
     
-    void Logger::printNative(ELogLevel pType, std::string pText) const
+    void Logger::printNative(ELogLevel pType, const std::string& pText) const
     {
 #if defined(ANDROID) || defined(__ANDROID__)
         static android_LogPriority const translationTable[] = {

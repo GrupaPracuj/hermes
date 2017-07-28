@@ -24,7 +24,7 @@ namespace hms
     class Logger
     {
     public:
-        bool initialize(ELogLevel pLevel, std::function<void(ELogLevel pType, const std::string& pText)> pPostCallback);
+        bool initialize(ELogLevel pLevel, std::function<void(ELogLevel pType, std::string pText)> pPostCallback);
         bool terminate();
         
         template<typename... Argument>
@@ -35,10 +35,10 @@ namespace hms
                 std::string buffer;
                 createBuffer(buffer, pText.c_str(), pArgument...);
 
-                printNative(pType, std::move(buffer));
+                printNative(pType, buffer);
 
                 if (mPostCallback != nullptr)
-                    mPostCallback(pType, buffer);
+                    mPostCallback(pType, std::move(buffer));
             }
         }
 
@@ -53,7 +53,7 @@ namespace hms
         Logger& operator=(const Logger& pOther) = delete;
         Logger& operator=(Logger&& pOther) = delete;
         
-        void printNative(ELogLevel pType, std::string pText) const;
+        void printNative(ELogLevel pType, const std::string& pText) const;
         std::string createPrefix(ELogLevel pType) const;
         void createBuffer(std::string& pDestination, const char* pSource) const;
                 
@@ -85,7 +85,7 @@ namespace hms
         }
         
         ELogLevel mLevel = ELogLevel::Info;
-        std::function<void(ELogLevel pType, const std::string& pText)> mPostCallback = nullptr;
+        std::function<void(ELogLevel pType, std::string pText)> mPostCallback = nullptr;
         bool mInitialized = false;
     };
 
