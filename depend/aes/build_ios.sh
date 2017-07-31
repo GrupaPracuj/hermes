@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# User configuration
-LIBRARY_NAME="curl-7.54.1"
-
 # Check settings
 if [ -z "${HERMES_IOS_DEPLOYMENT_TARGET}" ]; then
     IOS_DEPLOYMENT_TARGET="8.0"
@@ -32,11 +29,6 @@ else
   exit 1
 fi
 
-if [ -z `which wget` ]; then
-  echo "Error: wget is not installed." >&2
-  exit 1
-fi
-
 # Internal variables
 WORKING_DIR=`pwd`
 TMP_DIR=${WORKING_DIR}/tmp
@@ -47,19 +39,11 @@ ARCH=("armv7" "armv7s" "arm64" "i386" "x86_64")
 ARCH_NAME=("armv7" "armv7s" "arm64" "x86" "x86_64")
 TARGET=("iPhoneOS" "iPhoneOS" "iPhoneOS" "iPhoneSimulator" "iPhoneSimulator")
 
-# Download and extract library
-rm -rf ${LIBRARY_NAME}
-[ -f ${LIBRARY_NAME}.tar.gz ] || wget --no-check-certificate https://curl.haxx.se/download/${LIBRARY_NAME}.tar.gz;
-tar xfz ${LIBRARY_NAME}.tar.gz
-
 # Clean include and lib directory
-rm ${WORKING_DIR}/include/curl/*
-rm ${WORKING_DIR}/include/curl/ios/*
-rm -f ${WORKING_DIR}/../../lib/ios/libcurl.a
+rm -f ${WORKING_DIR}/../../lib/ios/libaes.a
 
 # Build for all architectures and copy data
 mkdir ${TMP_LIB_DIR}
-cd ${LIBRARY_NAME}
 export CC=${TOOLCHAIN_DIR}/usr/bin/clang
 export LD=${TOOLCHAIN_DIR}/usr/bin/ld
 export AR=${TOOLCHAIN_DIR}/usr/bin/ar
@@ -77,46 +61,19 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	fi
 	
 	rm -rf ${TMP_DIR}
+	mkdir ${TMP_DIR}
 
-	./configure --prefix=${TMP_DIR} \
-		--host=${TOOLCHAIN_NAME[$i]} \
-        --with-darwinssl \
-        --enable-ipv6 \
-        --enable-static \
-        --enable-threaded-resolver \
-        --disable-shared \
-        --disable-dict \
-        --disable-gopher \
-        --disable-ldap \
-        --disable-ldaps \
-        --disable-manual \
-        --disable-pop3 \
-        --disable-smtp \
-        --disable-imap \
-        --disable-rtsp \
-        --disable-smb \
-        --disable-telnet \
-        --disable-verbose
-
-	if make -j${CPU_CORE}; then
-		make install
-
-		cp ${TMP_DIR}/include/curl/* ${WORKING_DIR}/include/curl/
-		cp ${WORKING_DIR}/include/curl/curlbuild.h ${WORKING_DIR}/include/curl/ios/curlbuild-${ARCH_NAME[$i]}.h
-        cp ${TMP_DIR}/lib/libcurl.a ${TMP_LIB_DIR}/libcurl-${ARCH_NAME[$i]}.a
+	if make $1 -j${CPU_CORE}; then
+        cp ${TMP_DIR}/libaes.a ${TMP_LIB_DIR}/libaes-${ARCH_NAME[$i]}.a
 	fi
 
-	make distclean
+    make clean
 done
 
 cd ${TMP_LIB_DIR}
-lipo -create -output "libcurl.a" "libcurl-armv7.a" "libcurl-armv7s.a" "libcurl-arm64.a" "libcurl-x86.a" "libcurl-x86_64.a"
-cp ${TMP_LIB_DIR}/libcurl.a ${WORKING_DIR}/../../lib/ios/
-cp ${WORKING_DIR}/curlbuild_shared.h.in ${WORKING_DIR}/include/curl/curlbuild.h
-cd ..
+lipo -create -output "libaes.a" "libaes-armv7.a" "libaes-armv7s.a" "libaes-arm64.a" "libaes-x86.a" "libaes-x86_64.a"
+cp ${TMP_LIB_DIR}/libaes.a ${WORKING_DIR}/../../lib/ios/
 
 # Cleanup
 rm -rf ${TMP_LIB_DIR}
 rm -rf ${TMP_DIR}
-rm -rf ${WORKING_DIR}/${LIBRARY_NAME}
-rm -rf ${WORKING_DIR}/${LIBRARY_NAME}.tar.gz
