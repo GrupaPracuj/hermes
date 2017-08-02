@@ -4,7 +4,7 @@
 if [ -z "${HERMES_ANDROID_API}" ]; then
     ANDROID_API="android-21"
 else
-    ANDROID_API="android-21"
+    ANDROID_API=${HERMES_ANDROID_API}
 fi
 
 if [ -z "${ANDROID_NDK_ROOT}" ] || [ ! -d "${ANDROID_NDK_ROOT}" ]; then
