@@ -34,31 +34,31 @@ CREDITS:
 
 DEPENDENCIES:
 
-  libcurl library - https://curl.haxx.se/libcurl/
+  libcurl library - https://curl.haxx.se/libcurl
   JsonCpp library - https://github.com/open-source-parsers/jsoncpp
-  OpenSSL library - https://www.openssl.org/
+  OpenSSL library - https://www.openssl.org
+  aes library - https://github.com/BrianGladman/aes
   base64 code - https://github.com/ReneNyffenegger/cpp-base64
   sha1 code - https://github.com/etodd/sha1
 
 QUICK START (iOS):
   * Open Xcode, go to XCode -> Preferences -> Locations -> Custom Paths and add new entry [Name:
     'HERMES_HOME' Display Name: 'Hermes' Path: 'path to Hermes project root eg. /Users/name/hermes'].
-    Next open hermes.xworkspace and build both hermes and jsoncpp projects. If you want to use
-    a custom libcurl library check readme.txt at depend/curl path.
-  * In your project settings add '$(HERMES_HOME)/include $(HERMES_HOME)/depend/curl/include
-    $(HERMES_HOME)/depend/jsoncpp/include' entry to 'Header Search Paths' and '$(HERMES_HOME)/lib/ios'
-    entry to 'Library Search Paths'. Next add libhermes.a, libcurl.a, libjsoncpp.a from Hermes
-    library path and libz.tbd, Security.framework from Xcode library set. Make sure that these
-    libraries were added to 'Link Binary With Libraries' section in 'Build Phases' project settings).
-    Finally you need to switch 'C++ Language Dialect' to 'C++11 [-std=c++11]' or higher
-    and 'C++ Standard Library' to 'libc++'.
+    Next open hermes.xcodeproj and build project.
+  * In your project settings add '$(HERMES_HOME)/include $(HERMES_HOME)/depend/jsoncpp/include'
+    entry to 'Header Search Paths' and '$(HERMES_HOME)/lib/ios' entry to 'Library Search Paths'.
+    Next add libhermes.a, libcurl.a, libjsoncpp.a, libaes.a from Hermes library path and libz.tbd,
+    Security.framework from Xcode library set. Make sure that these libraries were added
+    to 'Link Binary With Libraries' section in 'Build Phases' project settings). Finally you need
+    to switch 'C++ Language Dialect' to 'C++11 [-std=c++11]' or higher and 'C++ Standard Library'
+    to 'libc++'.
   * Check 'sample.cpp' for use.
   
 QUICK START (Android):
   * Add 'ANDROID_NDK_ROOT' and 'HERMES_HOME' environment variables with destination paths set to AndroidNDK
     and Hermes library directories.
-  * Execute build_android.sh from $(HERMES_HOME)/depend/jsoncpp and $(HERMES_HOME) directories
-    (add 'NDEBUG=1' parameter to build_android.sh to build libraries in the release mode).
+  * Execute build_android.sh from $(HERMES_HOME) directory (add 'NDEBUG=1' parameter to build_android.sh
+    to build libraries in the release mode).
   * From Android Studio import $(HERMES_HOME)/example/01.HelloWorld_Android project.
 
 MISCELLANEOUS:
