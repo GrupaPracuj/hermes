@@ -66,7 +66,7 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	fi
 	
 	if [ ! -d ${WORKING_DIR}/lib/android/${ARCH_NAME[$i]} ]; then
-		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
+		mkdir -p ${WORKING_DIR}/lib/android/${ARCH_NAME[$i]}
 	else
 		rm -f ${WORKING_DIR}/lib/android/${ARCH_NAME[$i]}/libhermes.a
 	fi

@@ -87,7 +87,7 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 		CONFIGURE_FLAG_SSL="--with-ssl"
 	fi
 	
-	if [ ! -d ${WORKING_DIR}/lib/android/${ARCH_NAME[$i]} ]; then
+	if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then
 		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
 	else
 		rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcurl.a
