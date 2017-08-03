@@ -93,7 +93,7 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	export CFLAGS="${ARCH_FLAGS} -O2 -fPIC -fno-strict-aliasing -fstack-protector"
 	export LDFLAGS="${ARCH_LINK}"
 
-	if [ ! -d ${WORKING_DIR}/lib/android/${ARCH_NAME[$i]} ]; then
+	if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then
 		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
 	else
 		rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcrypto.a

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# User configuration
+LIBRARY_VERSION="1.8.1"
+
 # Check settings
 if [ -z "${HERMES_ANDROID_API}" ]; then
     ANDROID_API="android-21"
@@ -49,7 +52,21 @@ for ((i=0; i<${#TOOLCHAIN_ARCH[@]}; i++)); do
 	fi
 done
 
+# Download and extract library
+LIBRARY_NAME=jsoncpp-${LIBRARY_VERSION}
+TMP_DIR=${WORKING_DIR}/${LIBRARY_NAME}/tmp
+
+rm -rf ${LIBRARY_NAME}
+[ -f ${LIBRARY_VERSION}.tar.gz ] || wget --no-check-certificate https://github.com/open-source-parsers/jsoncpp/archive/${LIBRARY_VERSION}.tar.gz;
+tar xfz ${LIBRARY_VERSION}.tar.gz
+
+# Clean include directory
+rm ${WORKING_DIR}/include/json/*
+
 # Build for all architectures and copy data
+cp ${WORKING_DIR}/Makefile.in ${WORKING_DIR}/${LIBRARY_NAME}/Makefile
+cd ${LIBRARY_NAME}
+
 for ((i=0; i<${#ARCH[@]}; i++)); do
 	TOOLCHAIN_BIN_PATH=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/bin/${TOOLCHAIN_NAME[$i]}
 	export CXX=${TOOLCHAIN_BIN_PATH}-clang++
@@ -65,7 +82,7 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 		export CXXFLAGS="${CXXFLAGS} -fintegrated-as"
 	fi
 	
-	if [ ! -d ${WORKING_DIR}/lib/android/${ARCH_NAME[$i]} ]; then
+	if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then
 		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
 	else
 		rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libjsoncpp.a
@@ -81,7 +98,11 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
     make clean
 done
 
+cp ${WORKING_DIR}/${LIBRARY_NAME}/include/json/* ${WORKING_DIR}/include/json/
+cd ${WORKING_DIR}
+
 # Cleanup
 rm -rf ${TMP_DIR}
 rm -rf ${TOOLCHAIN_DIR}
-
+rm -rf ${WORKING_DIR}/${LIBRARY_NAME}
+rm -rf ${WORKING_DIR}/${LIBRARY_VERSION}.tar.gz
