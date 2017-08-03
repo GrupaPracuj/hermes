@@ -30,9 +30,12 @@ set_target_properties(libcurl PROPERTIES IMPORTED_LOCATION ${HERMES_LIBRARY_PATH
 add_library(libjsoncpp STATIC IMPORTED )
 set_target_properties(libjsoncpp PROPERTIES IMPORTED_LOCATION ${HERMES_LIBRARY_PATH}/libjsoncpp.a)
 
+add_library(libaes STATIC IMPORTED )
+set_target_properties(libaes PROPERTIES IMPORTED_LOCATION ${HERMES_LIBRARY_PATH}/libaes.a)
+
 add_library(libhermes STATIC IMPORTED )
 set_target_properties(libhermes PROPERTIES IMPORTED_LOCATION ${HERMES_LIBRARY_PATH}/libhermes.a)
 
 add_library(main SHARED src/main/cpp/main.cpp)
 
-target_link_libraries(main libhermes libjsoncpp libcurl libssl libcrypto android z log)
+target_link_libraries(main libhermes libaes libjsoncpp libcurl libssl libcrypto android z log)
