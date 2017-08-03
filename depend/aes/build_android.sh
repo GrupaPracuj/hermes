@@ -65,7 +65,7 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 		export CFLAGS="${CFLAGS} -fintegrated-as"
 	fi
 	
-	if [ ! -d ${WORKING_DIR}/lib/android/${ARCH_NAME[$i]} ]; then
+	if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then
 		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
 	else
 		rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libaes.a
@@ -84,4 +84,3 @@ done
 # Cleanup
 rm -rf ${TMP_DIR}
 rm -rf ${TOOLCHAIN_DIR}
-
