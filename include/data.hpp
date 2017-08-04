@@ -179,6 +179,7 @@ namespace hms
         bool convertJSON(const Json::Value& pSource, std::string& pDestination) const;
         bool convertJSON(const std::string& pSource, Json::Value& pDestination) const;
 
+        // IV block must be included in pData.
         std::string decrypt(const std::string& pData, std::string pKey, EDataEncryption pMode) const;
         
     private:

@@ -485,48 +485,30 @@ namespace hms
     std::string DataManager::decrypt(const std::string& pData, std::string pKey, EDataEncryption pMode) const
     {
         std::string result;
+        const size_t blockLength = 16;
         const size_t dataSize = pData.size() + 1;
         
-        if (dataSize > 1)
+        if (dataSize - 1 > blockLength)
         {
-            const size_t blockLength = 16;
-            
             switch (pMode)
             {
             case EDataEncryption::AES_256_CBC:
                 {
-                    aes_decrypt_ctx context[1];
-                    aes_decrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
-
-                    if (dataSize - 1 < blockLength * 2)
+                    if (dataSize > 2 * blockLength && (dataSize - 1) % blockLength == 0)
                     {
-                        unsigned char outBuffer[blockLength * 2 + 1] = {0};
-                        memcpy(outBuffer, pData.c_str(), dataSize);
-                    
-                        const size_t offset = dataSize - blockLength;
-                        aes_decrypt(outBuffer + offset, outBuffer + offset, context);
+                        aes_decrypt_ctx context[1];
+                        aes_decrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
 
-                        for (size_t i = 0; i < offset; ++i)
-                            outBuffer[i] ^= outBuffer[i + blockLength];
-
-                        result = std::string(reinterpret_cast<char*>(outBuffer), dataSize);
-                    }
-                    else
-                    {
                         auto inBuffer = reinterpret_cast<const unsigned char*>(pData.c_str());
                         unsigned char outBuffer[blockLength] = {0};
                         
                         size_t offset = blockLength;
                         size_t length = blockLength;
-                        size_t wlength = length;
                         
                         while (true)
                         {
                             if (offset + blockLength >= dataSize)
-                            {
                                 length = dataSize - 1 - offset;
-                                wlength = length;
-                            }
 
                             aes_decrypt(inBuffer + offset, outBuffer, context);
 
@@ -535,29 +517,9 @@ namespace hms
                                 for (size_t i = 0; i < blockLength; ++i)
                                     outBuffer[i] ^= (inBuffer + offset - blockLength)[i];
                             }
-                            else
-                            {
-                                wlength = length;
-                                
-                                for (size_t i = 0; i < length; ++i)
-                                    outBuffer[i] ^= (inBuffer + offset + blockLength)[i];
-                                
-                                unsigned char tmpBuffer[blockLength] = {0};
-                                memcpy(tmpBuffer, (inBuffer + offset + blockLength), blockLength);
-                                
-                                for (size_t i = length; i < blockLength; ++i)
-                                    tmpBuffer[i] = outBuffer[i];
-
-                                aes_decrypt(tmpBuffer, tmpBuffer, context);
-
-                                for (size_t i = 0; i < blockLength; ++i)
-                                    tmpBuffer[i] ^= (inBuffer + offset - blockLength)[i];
-                                
-                                result += std::string(reinterpret_cast<char*>(tmpBuffer), blockLength);
-                            }
 
                             offset += length;
-                            result += std::string(reinterpret_cast<char*>(outBuffer), wlength);
+                            result += std::string(reinterpret_cast<char*>(outBuffer), length);
                             
                             if (length != blockLength)
                                 break;
@@ -567,31 +529,28 @@ namespace hms
                 break;
             case EDataEncryption::AES_256_OFB:
                 {
-                    if (dataSize - 1 > blockLength)
+                    aes_encrypt_ctx context[1];
+                    aes_encrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
+
+                    auto inBuffer = reinterpret_cast<const unsigned char*>(pData.c_str());
+                    unsigned char iv[blockLength];
+                    memcpy(iv, inBuffer, blockLength);
+                    unsigned char outBuffer[blockLength] = {0};
+
+                    size_t offset = blockLength;
+                    size_t length = blockLength;
+
+                    while (true)
                     {
-                        aes_encrypt_ctx context[1];
-                        aes_encrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
-
-                        auto inBuffer = reinterpret_cast<const unsigned char*>(pData.c_str());
-                        unsigned char iv[blockLength];
-                        memcpy(iv, inBuffer, blockLength);
-                        unsigned char outBuffer[blockLength] = {0};
-
-                        size_t offset = blockLength;
-                        size_t length = blockLength;
-
-                        while (true)
-                        {
-                            if (offset + blockLength >= dataSize)
-                                length = dataSize - 1 - offset;
-                            
-                            aes_ofb_crypt(inBuffer + offset, outBuffer, static_cast<int>(length), iv, context);
-                            offset += length;
-                            result += std::string(reinterpret_cast<char*>(outBuffer), length);
-                            
-                            if (length != blockLength)
-                                break;
-                        }
+                        if (offset + blockLength >= dataSize)
+                            length = dataSize - 1 - offset;
+                        
+                        aes_ofb_crypt(inBuffer + offset, outBuffer, static_cast<int>(length), iv, context);
+                        offset += length;
+                        result += std::string(reinterpret_cast<char*>(outBuffer), length);
+                        
+                        if (length != blockLength)
+                            break;
                     }
                 }
                 break;
