@@ -16,7 +16,11 @@
 			#include "ios/curlbuild-armv7.h"
 		#endif
 	#else
-		#error "Not supported Apple platform"
+		#if defined(__LP64__) && __LP64__
+			#include "macos/curlbuild-x86_64.h"
+		#else
+			#include "macos/curlbuild-x86.h"
+		#endif
 	#endif
 #elif defined(ANDROID) || defined(__ANDROID__)
 	#if defined(__arm__)

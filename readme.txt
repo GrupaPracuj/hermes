@@ -21,7 +21,7 @@ VERSION:
 
 SUPPORTED PLATFORMS:
 
-  iOS, Android (NDK), Linux (partially)
+  iOS, Android (NDK), macOS (experimental), Linux (partially)
 
 LICENSE:
 
@@ -44,7 +44,7 @@ DEPENDENCIES:
 QUICK START (iOS):
   * Open Xcode, go to XCode -> Preferences -> Locations -> Custom Paths and add new entry [Name:
     'HERMES_HOME' Display Name: 'Hermes' Path: 'path to Hermes project root eg. /Users/name/hermes'].
-    Next open hermes.xcodeproj and build project.
+    Next open hermes.xcodeproj and build 'hermes_ios' target.
   * In your project settings add '$(HERMES_HOME)/include $(HERMES_HOME)/depend/jsoncpp/include'
     entry to 'Header Search Paths' and '$(HERMES_HOME)/lib/ios' entry to 'Library Search Paths'.
     Next add libhermes.a, libcurl.a, libjsoncpp.a, libaes.a from Hermes library path and libz.tbd,

@@ -3,6 +3,7 @@
 !build_android.sh
 !build_ios.sh
 !build_linux.sh
+!build_macos.sh
 !curlbuild_shared.h.in
 !readme.txt
 !include

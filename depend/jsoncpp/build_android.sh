@@ -42,7 +42,6 @@ TOOLCHAIN_ARCH=("arm" "arm" "arm64" "mips" "mips64" "x86" "x86_64")
 TOOLCHAIN_NAME=("arm-linux-androideabi" "arm-linux-androideabi" "aarch64-linux-android" "mipsel-linux-android" "mips64el-linux-android" "i686-linux-android" "x86_64-linux-android")
 ARCH=("android" "android-armeabi" "android64-aarch64" "android-mips" "linux64-mips64" "android-x86" "android64")
 ARCH_FLAG=("-mthumb" "-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon" "" "" "" "-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse" "-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt")
-ARCH_LINK=("" "-march=armv7-a -Wl,--fix-cortex-a8" "" "" "" "" "")
 ARCH_NAME=("arm" "armv7" "arm64" "mips" "mips64" "x86" "x86_64")
 
 # Prepare toolchains
@@ -75,8 +74,7 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	export RANLIB=${TOOLCHAIN_BIN_PATH}-ranlib
 	export STRIP=${TOOLCHAIN_BIN_PATH}-strip
 	export SYSROOT=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/sysroot
-	export CXXFLAGS="${ARCH_FLAGS} --sysroot=${SYSROOT}"
-	export LDFLAGS="${ARCH_LINK} --sysroot=${SYSROOT}"
+	export CXXFLAGS="${ARCH_FLAG[$i]} --sysroot=${SYSROOT}"
 
     if [ "${ARCH[$i]}" = "linux64-mips64" ]; then
 		export CXXFLAGS="${CXXFLAGS} -fintegrated-as"

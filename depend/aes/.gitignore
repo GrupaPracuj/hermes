@@ -1,0 +1,10 @@
+*
+!.gitignore
+!build_android.sh
+!build_ios.sh
+!build_linux.sh
+!build_macos.sh
+!Makefile
+!readme.txt
+!include
+!source

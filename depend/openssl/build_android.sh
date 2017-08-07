@@ -47,7 +47,6 @@ TOOLCHAIN_ARCH=("arm" "arm" "arm64" "mips" "mips64" "x86" "x86_64")
 TOOLCHAIN_NAME=("arm-linux-androideabi" "arm-linux-androideabi" "aarch64-linux-android" "mipsel-linux-android" "mips64el-linux-android" "i686-linux-android" "x86_64-linux-android")
 ARCH=("android" "android-armeabi" "android64-aarch64" "android-mips" "linux64-mips64" "android-x86" "android64")
 ARCH_FLAG=("-mthumb" "-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon" "" "" "" "-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse" "-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt")
-ARCH_LINK=("" "-march=armv7-a -Wl,--fix-cortex-a8" "" "" "" "" "")
 ARCH_NAME=("arm" "armv7" "arm64" "mips" "mips64" "x86" "x86_64")
 
 # Prepare toolchains
@@ -90,8 +89,7 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	export STRIP=${TOOLCHAIN_BIN_PATH}-strip
 	export SYSROOT=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/sysroot
 	export CROSS_SYSROOT=${SYSROOT}
-	export CFLAGS="${ARCH_FLAGS} -O2 -fPIC -fno-strict-aliasing -fstack-protector"
-	export LDFLAGS="${ARCH_LINK}"
+	export CFLAGS="${ARCH_FLAG[$i]} -O2 -fPIC -fno-strict-aliasing -fstack-protector"
 
 	if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then
 		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
