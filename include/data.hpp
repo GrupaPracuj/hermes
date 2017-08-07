@@ -20,6 +20,12 @@ namespace hms
         Text = 0,
         Binary
     };
+    
+    enum class EDataEncryption : int
+    {
+        AES_256_OFB = 0,
+        AES_256_CBC
+    };
 
     class DataBuffer
     {
@@ -172,6 +178,9 @@ namespace hms
 
         bool convertJSON(const Json::Value& pSource, std::string& pDestination) const;
         bool convertJSON(const std::string& pSource, Json::Value& pDestination) const;
+
+        // IV block must be included in pData.
+        std::string decrypt(const std::string& pData, std::string pKey, EDataEncryption pMode) const;
         
     private:
         friend class Hermes;

@@ -5,5 +5,7 @@ hermes.xcodeproj/xcuserdata/*
 hermes.xcworkspace/xcuserdata/*
 source/*.o
 source/*.d
+depend/aes/source/*.o
+depend/aes/source/*.d
 depend/jsoncpp/source/*.o
 depend/jsoncpp/source/*.d

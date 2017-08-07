@@ -203,6 +203,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
 					include,
+					depend/aes/include,
 					depend/curl/include,
 					depend/jsoncpp/include,
 				);
@@ -254,6 +255,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
 					include,
+					depend/aes/include,
 					depend/curl/include,
 					depend/jsoncpp/include,
 				);

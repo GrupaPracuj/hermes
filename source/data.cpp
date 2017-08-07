@@ -5,6 +5,7 @@
 #include "data.hpp"
 
 #include "hermes.hpp"
+#include "aes.h"
 
 #include <fstream>
 
@@ -479,6 +480,87 @@ namespace hms
         }
         
         return status;
+    }
+
+    std::string DataManager::decrypt(const std::string& pData, std::string pKey, EDataEncryption pMode) const
+    {
+        std::string result;
+        const size_t blockLength = 16;
+        const size_t dataSize = pData.size() + 1;
+        
+        if (dataSize - 1 > blockLength)
+        {
+            switch (pMode)
+            {
+            case EDataEncryption::AES_256_CBC:
+                {
+                    if (dataSize > 2 * blockLength && (dataSize - 1) % blockLength == 0)
+                    {
+                        aes_decrypt_ctx context[1];
+                        aes_decrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
+
+                        auto inBuffer = reinterpret_cast<const unsigned char*>(pData.c_str());
+                        unsigned char outBuffer[blockLength] = {0};
+                        
+                        size_t offset = blockLength;
+                        size_t length = blockLength;
+                        
+                        while (true)
+                        {
+                            if (offset + blockLength >= dataSize)
+                                length = dataSize - 1 - offset;
+
+                            aes_decrypt(inBuffer + offset, outBuffer, context);
+
+                            if (length == 0 || length == blockLength)
+                            {
+                                for (size_t i = 0; i < blockLength; ++i)
+                                    outBuffer[i] ^= (inBuffer + offset - blockLength)[i];
+                            }
+
+                            offset += length;
+                            result += std::string(reinterpret_cast<char*>(outBuffer), length);
+                            
+                            if (length != blockLength)
+                                break;
+                        }
+                    }
+                }
+                break;
+            case EDataEncryption::AES_256_OFB:
+                {
+                    aes_encrypt_ctx context[1];
+                    aes_encrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
+
+                    auto inBuffer = reinterpret_cast<const unsigned char*>(pData.c_str());
+                    unsigned char iv[blockLength];
+                    memcpy(iv, inBuffer, blockLength);
+                    unsigned char outBuffer[blockLength] = {0};
+
+                    size_t offset = blockLength;
+                    size_t length = blockLength;
+
+                    while (true)
+                    {
+                        if (offset + blockLength >= dataSize)
+                            length = dataSize - 1 - offset;
+                        
+                        aes_ofb_crypt(inBuffer + offset, outBuffer, static_cast<int>(length), iv, context);
+                        offset += length;
+                        result += std::string(reinterpret_cast<char*>(outBuffer), length);
+                        
+                        if (length != blockLength)
+                            break;
+                    }
+                }
+                break;
+            default:
+                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Encryption mode not supported.");
+                break;
+            }
+        }
+        
+        return result;
     }
     
 }

@@ -3,7 +3,7 @@ LIBRARY_NAME = libhermes.a
 SRCFILES = $(wildcard source/*.cpp)
 OBJFILES = $(SRCFILES:%.cpp=%.o)
 
-CXXFLAGS += -std=c++11 -fPIC -fno-strict-aliasing -fstack-protector -Iinclude -Idepend/curl/include -Idepend/jsoncpp/include
+CXXFLAGS += -std=c++11 -fPIC -fno-strict-aliasing -fstack-protector -Iinclude -Idepend/aes/include -Idepend/curl/include -Idepend/jsoncpp/include
 
 ifndef NDEBUG
 CXXFLAGS += -g -D_DEBUG=1 -DDEBUG=1
