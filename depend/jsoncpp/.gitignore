@@ -4,9 +4,8 @@
 !build_ios.sh
 !build_linux.sh
 !build_macos.sh
-!Makefile
+!Makefile.in
 !readme.txt
 !include
-!include/*.h
-!source
-!source/*.c
+!include/json
+!include/json/*.h
