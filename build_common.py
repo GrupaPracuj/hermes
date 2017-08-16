@@ -51,7 +51,7 @@ def configure(pBuildTarget, pSettings):
             pSettings.mToolchainArch = ['arm', 'arm', 'arm64', 'mips', 'mips64', 'x86', 'x86_64']
             pSettings.mToolchainName = ['arm-linux-androideabi', 'arm-linux-androideabi', 'aarch64-linux-android', 'mipsel-linux-android', 'mips64el-linux-android', 'i686-linux-android', 'x86_64-linux-android']
             pSettings.mArch = ['android', 'android-armeabi', 'android64-aarch64', 'android-mips', 'linux64-mips64', 'android-x86', 'android64']
-            pSettings.mArchFlag = ['-mthumb', '-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse", "-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
+            pSettings.mArchFlag = ['-mthumb', '-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
             pSettings.mArchName = ['arm', 'armv7', 'arm64', 'mips', 'mips64', 'x86', 'x86_64']
 
             print('Android API: "' + pSettings.mAndroidApi + '"')
