@@ -10,7 +10,7 @@ class Settings:
         self.mHostName = ''
         self.mAndroidApi = ''
         self.mAndroidNdkDir = ''
-        self.mCPU = ''
+        self.mCoreCount = ''
         self.mWorkingDir = ''
         self.mTmpDir = ''
         self.mToolchainRemovable = False
@@ -63,9 +63,9 @@ def configure(pBuildTarget, pSettings):
         print('Error: Not supported build target and/or host platform.')
         return False
         
-    pSettings.mCPU = str(multiprocessing.cpu_count())
+    pSettings.mCoreCount = str(multiprocessing.cpu_count())
         
-    print('Available CPU cores: ' + pSettings.mCPU)
+    print('Available CPU cores: ' + pSettings.mCoreCount)
     
     return True
          
@@ -74,11 +74,20 @@ def prepareToolchainAndroid(pSettings):
         destinationPath = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i])
         
         if not os.path.isdir(destinationPath):
-            os.system(os.path.join(pSettings.mAndroidNdkDir, 'build/tools/make_standalone_toolchain.py') + ' --arch ' + pSettings.mToolchainArch[i] + ' --api ' + str(21) + ' --stl libc++ --install-dir ' + destinationPath)
+            os.system(os.path.join(pSettings.mAndroidNdkDir, 'build/tools/make_standalone_toolchain.py') + ' --arch ' + pSettings.mToolchainArch[i] + ' --api ' + pSettings.mAndroidApi + ' --stl libc++ --install-dir ' + destinationPath)
             
     pSettings.mToolchainRemovable = True
             
     return
+    
+def executeShellCommand(pCommandLine):
+    process = subprocess.Popen(pCommandLine, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)        
+    output, error = process.communicate()
+    returnCode = process.wait()
+    
+    print(output)
+    
+    return returnCode
     
 def cleanup(pSettings):
     if pSettings.mTmpDir is not None and os.path.isdir(pSettings.mTmpDir):
@@ -88,4 +97,51 @@ def cleanup(pSettings):
         shutil.rmtree(pSettings.mToolchainDir)
         
     return
+    
+def buildMakeAndroid(pLibraryName, pSettings):
+    for i in range(0, len(pSettings.mToolchainArch)):
+        toolchainBinDir = os.path.join(os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i]), 'bin')
+        
+        if os.path.isdir(toolchainBinDir):
+            executablePrefix = os.path.join(toolchainBinDir, pSettings.mToolchainName[i])
+        
+            os.environ['CXX'] = executablePrefix + '-clang++'
+            os.environ['LD'] = executablePrefix + '-ld'
+            os.environ['AR'] = executablePrefix + '-ar'
+            os.environ['RANLIB'] = executablePrefix + '-ranlib'
+            os.environ['STRIP'] = executablePrefix + '-strip'
+            
+            envSYSROOT = os.path.join(os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i]), 'sysroot')        
+            envCXXFLAGS = pSettings.mArchFlag[i] + ' --sysroot=' + envSYSROOT
+            
+            if pSettings.mArch[i] == 'linux64-mips64':
+                envCXXFLAGS += ' -fintegrated-as'
 
+            os.environ['SYSROOT'] = envSYSROOT
+            os.environ['CXXFLAGS'] = envCXXFLAGS
+            
+            libraryDir = os.path.join(os.path.join(os.path.join(pSettings.mWorkingDir, 'lib'), 'android'), pSettings.mArchName[i])
+            libraryFilepath = os.path.join(libraryDir, 'lib' + pLibraryName + '.a')
+            
+            if not os.path.isdir(libraryDir):
+                os.makedirs(libraryDir)
+            elif os.path.isfile(libraryFilepath):
+                os.remove(libraryFilepath)
+                
+            if os.path.isdir(pSettings.mTmpDir):
+                shutil.rmtree(pSettings.mTmpDir)
+                
+            os.makedirs(pSettings.mTmpDir)
+            
+            makeCommand = 'make -j' + pSettings.mCoreCount
+            
+            if len(sys.argv) > 1:
+                makeCommand += ' ' + sys.argv[1]
+                
+            if executeShellCommand(makeCommand) == 0:
+                shutil.copyfile(os.path.join(pSettings.mTmpDir, 'lib' + pLibraryName + '.a'), libraryFilepath)
+
+            executeShellCommand('make clean')
+        
+    return
+    

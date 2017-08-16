@@ -57,8 +57,8 @@ QUICK START (iOS):
 QUICK START (Android):
   * Add 'ANDROID_NDK_ROOT' and 'HERMES_HOME' environment variables with destination paths set to AndroidNDK
     and Hermes library directories.
-  * Execute build_android.sh from $(HERMES_HOME) directory (add 'NDEBUG=1' parameter to build_android.sh
-    to build libraries in the release mode).
+  * Execute build_android.py from $(HERMES_HOME) directory in Python environment (add 'NDEBUG=1' parameter
+    to build_android.py to build library in the release mode).
   * From Android Studio import $(HERMES_HOME)/example/01.HelloWorld_Android project.
 
 MISCELLANEOUS:
