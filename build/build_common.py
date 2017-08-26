@@ -4,8 +4,6 @@ import platform
 import subprocess
 import shutil
 import sys
-import urllib.request
-import zipfile
 
 class Settings:
     def __init__(self):
@@ -26,6 +24,9 @@ class Settings:
         self.mArchName = []
         
 def downloadAndExtract(pURL, pDestinationDir, pFileName, pFileExtension):
+    import urllib.request
+    import zipfile
+
     status = False
 
     outputDir = os.path.join(pDestinationDir, pFileName)
