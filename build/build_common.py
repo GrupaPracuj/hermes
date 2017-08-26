@@ -5,7 +5,6 @@ import subprocess
 import shutil
 import sys
 import urllib.request
-import tempfile
 import zipfile
 
 class Settings:
