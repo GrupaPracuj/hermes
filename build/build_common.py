@@ -4,6 +4,9 @@ import platform
 import subprocess
 import shutil
 import sys
+import urllib.request
+import tempfile
+import zipfile
 
 class Settings:
     def __init__(self):
@@ -13,6 +16,7 @@ class Settings:
         self.mCoreCount = ''
         self.mMake = ''
         self.mWorkingDir = ''
+        self.mBuildDir = ''
         self.mTmpDir = ''
         self.mToolchainRemovable = False
         self.mToolchainDir = ''
@@ -22,9 +26,55 @@ class Settings:
         self.mArchFlag = []
         self.mArchName = []
         
+def downloadAndExtract(pURL, pDestinationDir, pFileName, pFileExtension):
+    status = False
+
+    outputDir = os.path.join(pDestinationDir, pFileName)
+    downloadFile = outputDir + '.' + pFileExtension
+    urllib.request.urlretrieve(pURL, downloadFile)
+    
+    if os.path.isfile(downloadFile):
+        archiveFile = zipfile.ZipFile(downloadFile)
+        archiveFile.extractall(outputDir)
+        archiveFile.close()
+        status = True
+        
+    return status
+    
+def prepareMake(pDestinationDir):
+    status = False
+
+    destinationMakePath = os.path.join(pDestinationDir, 'make.exe')
+    destinationIconvPath = os.path.join(pDestinationDir, 'libiconv2.dll')
+    destinationIntlPath = os.path.join(pDestinationDir, 'libintl3.dll')
+    
+    if not os.path.isfile(destinationMakePath):
+        if downloadAndExtract('https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-bin.zip/download', pDestinationDir, 'make-3.81-bin', 'zip'):
+            extractDir = os.path.join(pDestinationDir, 'make-3.81-bin')
+            binDir = os.path.join(extractDir, 'bin')
+            shutil.copy2(os.path.join(binDir, 'make.exe'), destinationMakePath)
+            shutil.rmtree(extractDir)
+            os.remove(extractDir + '.zip')
+     
+    if not os.path.isfile(destinationIconvPath) or not os.path.isfile(destinationIntlPath):
+        if downloadAndExtract('https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-dep.zip/download', pDestinationDir, 'make-3.81-dep', 'zip'):
+            extractDir = os.path.join(pDestinationDir, 'make-3.81-dep')
+            binDir = os.path.join(extractDir, 'bin')
+            shutil.copy2(os.path.join(binDir, 'libiconv2.dll'), destinationIconvPath)
+            shutil.copy2(os.path.join(binDir, 'libintl3.dll'), destinationIntlPath)
+            shutil.rmtree(extractDir)
+            os.remove(extractDir + '.zip')
+
+    return os.path.isfile(destinationMakePath) and os.path.isfile(destinationIconvPath) and os.path.isfile(destinationIntlPath)
+        
 def configure(pBuildTarget, pSettings):
+    if sys.version_info < (3, 0):
+        print('Error: This script require Python 3.0 or higher.')
+        return False
+
     pSettings.mHostName = platform.system()
     pSettings.mWorkingDir = os.getcwd()
+    pSettings.mBuildDir = os.path.join(pSettings.mWorkingDir, 'build')
     pSettings.mTmpDir = os.path.join(pSettings.mWorkingDir, 'tmp')
     
     if pBuildTarget is not None and pBuildTarget == 'android':
@@ -35,15 +85,11 @@ def configure(pBuildTarget, pSettings):
             pSettings.mMake = 'make'
         elif pSettings.mHostName == 'Windows':
             hostDetected = True
-            pSettings.mMake = os.getenv('HERMES_MAKE_HOME')
-            makeDetected = False
             
-            if pSettings.mMake is not None:
-                pSettings.mMake = os.path.join(pSettings.mMake, 'make.exe')
-                makeDetected = os.path.isfile(pSettings.mMake)
-            
-            if not makeDetected:        
-                print('Error: make.exe not found. Please set HERMES_MAKE_HOME environment variable.')
+            if prepareMake(pSettings.mBuildDir):
+                pSettings.mMake = os.path.join(pSettings.mBuildDir, 'make.exe')
+            else:    
+                print('Error: make.exe not found.')
                 return False
     
         if hostDetected:
@@ -98,7 +144,7 @@ def prepareToolchainAndroid(pSettings):
     pSettings.mToolchainRemovable = True
             
     return
-    
+
 def executeShellCommand(pCommandLine):
     process = subprocess.Popen(pCommandLine, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)        
     output, error = process.communicate()
@@ -183,4 +229,4 @@ def buildMakeAndroid(pLibraryName, pSettings):
                 executeCmdCommand(pSettings.mMake + ' clean', pSettings.mWorkingDir)
         
     return
-    
+
