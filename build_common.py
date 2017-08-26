@@ -11,6 +11,7 @@ class Settings:
         self.mAndroidApi = ''
         self.mAndroidNdkDir = ''
         self.mCoreCount = ''
+        self.mMake = ''
         self.mWorkingDir = ''
         self.mTmpDir = ''
         self.mToolchainRemovable = False
@@ -27,7 +28,25 @@ def configure(pBuildTarget, pSettings):
     pSettings.mTmpDir = os.path.join(pSettings.mWorkingDir, 'tmp')
     
     if pBuildTarget is not None and pBuildTarget == 'android':
+        hostDetected = False
+        
         if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
+            hostDetected = True
+            pSettings.mMake = 'make'
+        elif pSettings.mHostName == 'Windows':
+            hostDetected = True
+            pSettings.mMake = os.getenv('HERMES_MAKE_HOME')
+            makeDetected = False
+            
+            if pSettings.mMake is not None:
+                pSettings.mMake = os.path.join(pSettings.mMake, 'make.exe')
+                makeDetected = os.path.isfile(pSettings.mMake)
+            
+            if not makeDetected:        
+                print('Error: make.exe not found. Please set HERMES_MAKE_HOME environment variable.')
+                return False
+    
+        if hostDetected:
             pSettings.mAndroidApi = os.getenv('HERMES_ANDROID_API')
             pSettings.mAndroidNdkDir = os.getenv('ANDROID_NDK_ROOT')
 
@@ -85,7 +104,22 @@ def executeShellCommand(pCommandLine):
     output, error = process.communicate()
     returnCode = process.wait()
     
-    print(output)
+    print(output.decode())
+    
+    return returnCode
+    
+def executeCmdCommand(pCommandLine, pWorkingDir):
+    commandLine = pCommandLine.encode()    
+    commandLine += b"""
+    exit
+    """
+
+    process = subprocess.Popen(["cmd", "/q", "/k", "echo off"], stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = pWorkingDir, shell = True)
+    process.stdin.write(commandLine)
+    output, error = process.communicate()
+    returnCode = process.wait()
+    
+    print(output.decode())
     
     return returnCode
     
@@ -127,21 +161,26 @@ def buildMakeAndroid(pLibraryName, pSettings):
                 os.makedirs(libraryDir)
             elif os.path.isfile(libraryFilepath):
                 os.remove(libraryFilepath)
-                
-            if os.path.isdir(pSettings.mTmpDir):
-                shutil.rmtree(pSettings.mTmpDir)
-                
-            os.makedirs(pSettings.mTmpDir)
-            
-            makeCommand = 'make -j' + pSettings.mCoreCount
+
+            makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
             
             if len(sys.argv) > 1:
                 makeCommand += ' ' + sys.argv[1]
                 
-            if executeShellCommand(makeCommand) == 0:
-                shutil.copyfile(os.path.join(pSettings.mTmpDir, 'lib' + pLibraryName + '.a'), libraryFilepath)
+            buildSuccess = False
+            
+            if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
+                buildSuccess = executeShellCommand(makeCommand) == 0
+            elif pSettings.mHostName == 'Windows':
+                buildSuccess = executeCmdCommand(makeCommand, pSettings.mWorkingDir) == 0
+                
+            if buildSuccess:
+                shutil.copy2(os.path.join(pSettings.mWorkingDir, 'lib' + pLibraryName + '.a'), libraryFilepath)
 
-            executeShellCommand('make clean')
+            if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
+                executeShellCommand(pSettings.mMake + ' clean')
+            elif pSettings.mHostName == 'Windows':
+                executeCmdCommand(pSettings.mMake + ' clean', pSettings.mWorkingDir)
         
     return
     
