@@ -78,11 +78,16 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	export STRIP=${TOOLCHAIN_BIN_PATH}-strip
 	export SYSROOT=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/sysroot
 	export CROSS_SYSROOT=${SYSROOT}
-	export CFLAGS="${ARCH_FLAG[$i]} -O2 -fPIC -fno-strict-aliasing -fstack-protector -I${WORKING_DIR}/../openssl/include"
+	export CFLAGS="${ARCH_FLAG[$i]} -O2 -fPIC -fno-strict-aliasing -fstack-protector"
 	
-	if [ -d "${WORKING_DIR}/../openssl/include/android" ]; then
-		export CFLAGS="${CFLAGS} -I${WORKING_DIR}/../openssl/include"
-		CONFIGURE_FLAG_SSL="--with-ssl"
+	if [ -d ${WORKING_DIR}/../openssl/include/openssl/android ] && [ -e ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcrypto.a ]  && [ -e ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libssl.a ]; then
+		rm -rf ${WORKING_DIR}/${LIBRARY_NAME}/openssl
+		mkdir -p ${WORKING_DIR}/${LIBRARY_NAME}/openssl/lib
+		cp -R ${WORKING_DIR}/../openssl/include ${WORKING_DIR}/${LIBRARY_NAME}/openssl/
+		cp ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libssl.a ${WORKING_DIR}/${LIBRARY_NAME}/openssl/lib/
+		cp ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcrypto.a ${WORKING_DIR}/${LIBRARY_NAME}/openssl/lib/
+
+		CONFIGURE_FLAG_SSL="--with-ssl=${WORKING_DIR}/${LIBRARY_NAME}/openssl"
 	fi
 	
 	if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then

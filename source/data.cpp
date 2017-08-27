@@ -440,7 +440,7 @@ namespace hms
             // check if Id is in use
             assert(mData[id].get() == nullptr);
             
-            mData[id] = std::move(pData);
+            mData[id] = pData;
             
             status = true;
         }
