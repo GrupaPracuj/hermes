@@ -278,9 +278,10 @@ namespace hms
     public:
         struct ProgressData
         {
-            std::function<void(const long long& lpDN, const long long& lpDT, const long long& lpUN, const long long& lpUT)> progressTask = nullptr;
+            std::function<void(const long long& lpDN, const long long& lpDT, const long long& lpUN, const long long& lpUT)> mProgressTask = nullptr;
+            std::atomic<uint32_t>* mTerminateAbort = nullptr;
         };
-        
+    
 		bool initialize(long pTimeout, int pThreadPoolID, std::pair<int, int> pHttpCodeSuccess = {200, 299});
 		bool terminate();
         
@@ -316,7 +317,7 @@ namespace hms
         
         bool initSimpleSocket(int pThreadPoolID);
         void requestSimpleSocket(SimpleSocketRequestParam pRequest);
-        void sendSimpleSocketMessage(const std::string& pMessage, std::function<void(ENetworkCode)> pCallback) const;
+        void sendSimpleSocketMessage(const std::string& pMessage, std::function<void(ENetworkCode)> pCallback);
         void closeSimpleSocket();
         
     private:
@@ -327,6 +328,7 @@ namespace hms
             std::vector<std::pair<std::string, std::string>> mResponseHeader;
             std::string mResponseMessage;
             DataBuffer mResponseRawData;
+            ProgressData mProgressData;
             void* mHandle = nullptr;
             char* mErrorBuffer = nullptr;
             NetworkRequestParam* mParam = nullptr;
@@ -408,16 +410,19 @@ namespace hms
         std::atomic<uint32_t> mSimpleSocketInitialized {0};
         std::atomic<uint32_t> mStopSimpleSocketLoop {0};
         std::atomic<uint32_t> mSimpleSocketActive {0};
+        std::atomic<uint32_t> mTerminateAbort {0};
+        std::atomic<uint32_t> mActivityCount {0};
         
         unsigned mCacheFileCountLimit = 0;
         unsigned mCacheFileSizeLimit = 0;
-        
-        long mProgressTimePeriod = 0;
-
         std::mutex mCacheMutex;
         std::string mCacheDirectoryPath;
+        const char mCacheMagicWord[5] = { 'Y', 'G', 'G', '_', 'H'};
+        
+        long mProgressTimePeriod = 0;
         
         std::mt19937 mRandomGenerator;
+        const long long mSocketWaitTimeout = 1000;
     };
 
 }
