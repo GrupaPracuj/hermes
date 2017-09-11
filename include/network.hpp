@@ -422,7 +422,7 @@ namespace hms
         long mProgressTimePeriod = 0;
         
         std::mt19937 mRandomGenerator;
-        const long long mSocketWaitTimeout = 1000;
+        const long mSocketWaitTimeout = 1000;
     };
 
 }

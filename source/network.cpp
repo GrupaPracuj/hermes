@@ -125,7 +125,7 @@ namespace hms
     
         if (pUserData != nullptr)
         {
-            result = pUserData->mTerminateAbort->load();
+            result = static_cast<int>(pUserData->mTerminateAbort->load());
 
             if (pUserData->mProgressTask != nullptr)
                 pUserData->mProgressTask(pDownloadNow, pDownloadTotal, pUploadNow, pUploadTotal);
@@ -809,7 +809,7 @@ namespace hms
             
             CURLcode curlCode = CURLE_OK;
             unsigned step = 0;
-            int terminateAbort = 0;
+            unsigned terminateAbort = 0;
 
             do
             {
@@ -1002,7 +1002,7 @@ namespace hms
             }
 
             int activeHandle = 0;
-            int terminateAbort = 0;
+            unsigned terminateAbort = 0;
             
             do
             {
@@ -1714,7 +1714,7 @@ namespace hms
                     return;
                 }
                 
-                int terminateAbort = 0;
+                unsigned terminateAbort = 0;
                 
                 do
                 {
