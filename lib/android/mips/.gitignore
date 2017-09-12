@@ -1,7 +1,2 @@
 *
-!libaes.a
-!libcrypto.a
-!libcurl.a
-!libjsoncpp.a
-!libssl.a
 !.gitignore
