@@ -42,6 +42,9 @@ DEPENDENCIES:
   sha1 code - https://github.com/etodd/sha1
 
 QUICK START (iOS):
+  * Execute build_ios.sh scripts in $(HERMES_HOME)/depend/jsoncpp, $(HERMES_HOME)/depend/aes 
+  	and $(HERMES_HOME)/depend/curl (add 'NDEBUG=1' parameter to build_android.sh
+    to build libraries in the release mode).
   * Open Xcode, go to XCode -> Preferences -> Locations -> Custom Paths and add new entry [Name:
     'HERMES_HOME' Display Name: 'Hermes' Path: 'path to Hermes project root eg. /Users/name/hermes'].
     Next open hermes.xcodeproj and build 'hermes_ios' target.
@@ -57,6 +60,10 @@ QUICK START (iOS):
 QUICK START (Android):
   * Add 'ANDROID_NDK_ROOT' and 'HERMES_HOME' environment variables with destination paths set to AndroidNDK
     and Hermes library directories.
+  * If you want to use SSL with curl, execute build_android.sh script in $(HERMES_HOME)/depend/openssl
+  * Execute build_android.sh scripts in $(HERMES_HOME)/depend/jsoncpp, $(HERMES_HOME)/depend/aes 
+  	and $(HERMES_HOME)/depend/curl (add 'NDEBUG=1' parameter to build_android.sh
+    to build libraries in the release mode).
   * Execute build_android.sh from $(HERMES_HOME) directory (add 'NDEBUG=1' parameter to build_android.sh
     to build libraries in the release mode).
   * From Android Studio import $(HERMES_HOME)/example/01.HelloWorld_Android project.
