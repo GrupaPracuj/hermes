@@ -34,8 +34,8 @@ rm -rf ${LIBRARY_NAME}
 [ -f ${LIBRARY_VERSION}.tar.gz ] || wget --no-check-certificate https://github.com/open-source-parsers/jsoncpp/archive/${LIBRARY_VERSION}.tar.gz;
 tar xfz ${LIBRARY_VERSION}.tar.gz
 
-# Clean include and lib directory
-rm ${WORKING_DIR}/include/json/*
+# Remove include and lib directory
+rm -rf ${WORKING_DIR}/include
 rm -f ${WORKING_DIR}/../../lib/macos/lib${TARGET_NAME}.a
 
 # Build for all architectures and copy data
@@ -59,6 +59,7 @@ done
 cd ${TMP_LIB_DIR}
 lipo -create -output "lib${TARGET_NAME}.a" "lib${TARGET_NAME}-${ARCH_NAME[0]}.a" "lib${TARGET_NAME}-${ARCH_NAME[1]}.a"
 cp ${TMP_LIB_DIR}/lib${TARGET_NAME}.a ${WORKING_DIR}/../../lib/macos/
+mkdir -p ${WORKING_DIR}/include/json
 cp ${WORKING_DIR}/${LIBRARY_NAME}/include/json/* ${WORKING_DIR}/include/json/
 cd ${WORKING_DIR}
 

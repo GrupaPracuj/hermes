@@ -4,15 +4,5 @@
 !build_ios.sh
 !build_linux.sh
 !build_macos.sh
-!curlbuild_shared.h.in
+!Makefile.in
 !readme.txt
-!include
-!include/curl
-!include/curl/android
-!include/curl/android/*.h
-!include/curl/ios
-!include/curl/ios/*.h
-!include/curl/linux
-!include/curl/linux/*.h
-!include/curl/macos
-!include/curl/macos/*.h

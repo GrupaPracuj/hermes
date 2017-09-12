@@ -6,6 +6,3 @@
 !build_macos.sh
 !Makefile.in
 !readme.txt
-!include
-!include/json
-!include/json/*.h

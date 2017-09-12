@@ -67,6 +67,10 @@ for ((i=0; i<${#ARCH_NAME[@]}; i++)); do
 
 	if make -j${CPU_CORE}; then
 		make install
+		
+		if [ ! -d ${WORKING_DIR}/include/curl/macos ]; then
+			mkdir -p ${WORKING_DIR}/include/curl/macos
+		fi
 
 		cp ${TMP_DIR}/include/${TARGET_NAME}/* ${WORKING_DIR}/include/${TARGET_NAME}/
 		cp ${WORKING_DIR}/include/${TARGET_NAME}/curlbuild.h ${WORKING_DIR}/include/${TARGET_NAME}/macos/curlbuild-${ARCH_NAME[$i]}.h

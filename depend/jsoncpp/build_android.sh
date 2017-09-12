@@ -59,8 +59,8 @@ rm -rf ${LIBRARY_NAME}
 [ -f ${LIBRARY_VERSION}.tar.gz ] || wget --no-check-certificate https://github.com/open-source-parsers/jsoncpp/archive/${LIBRARY_VERSION}.tar.gz;
 tar xfz ${LIBRARY_VERSION}.tar.gz
 
-# Clean include directory
-rm ${WORKING_DIR}/include/json/*
+# Remove include directory
+rm -rf ${WORKING_DIR}/include
 
 # Build for all architectures and copy data
 cp ${WORKING_DIR}/Makefile.in ${WORKING_DIR}/${LIBRARY_NAME}/Makefile
@@ -96,6 +96,7 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
     make clean
 done
 
+mkdir -p ${WORKING_DIR}/include/json
 cp ${WORKING_DIR}/${LIBRARY_NAME}/include/json/* ${WORKING_DIR}/include/json/
 cd ${WORKING_DIR}
 

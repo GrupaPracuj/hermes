@@ -120,6 +120,10 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 
 	if make -j${CPU_CORE}; then
 		make install
+		
+		if [ ! -d ${WORKING_DIR}/include/curl/android ]; then
+			mkdir -p ${WORKING_DIR}/include/curl/android
+		fi
 
 		cp ${TMP_DIR}/include/curl/* ${WORKING_DIR}/include/curl/
 		cp ${WORKING_DIR}/include/curl/curlbuild.h ${WORKING_DIR}/include/curl/android/curlbuild-${ARCH_NAME[$i]}.h
