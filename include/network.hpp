@@ -112,7 +112,8 @@ namespace hms
         
     struct SimpleSocketRequestParam
     {
-        std::string mURL;
+        std::string mBaseURL;
+        std::vector<std::pair<std::string, std::string>> mParameter = {};
         std::vector<std::pair<std::string, std::string>> mHeader = {};
         std::chrono::milliseconds mTimeout = std::chrono::milliseconds(60000);
         std::function<void()> mConnectCallback;

@@ -1772,7 +1772,8 @@ namespace hms
             }
             else
             {
-                tools::URLTool url(lpRequest.mURL);
+                appendParameter(lpRequest.mBaseURL, lpRequest.mParameter);
+                tools::URLTool url(lpRequest.mBaseURL);
                 
                 curl_easy_setopt(mSimpleSocketCURL, CURLOPT_URL, url.getHttpURL().c_str());
                 curl_easy_setopt(mSimpleSocketCURL, CURLOPT_CONNECT_ONLY, 1L);
@@ -1785,7 +1786,7 @@ namespace hms
                 
                 if (res != CURLE_OK)
                 {
-                    Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket connection failure for url '%'. CURL CODE %, message: '%'", lpRequest.mURL, res, curl_easy_strerror(res));
+                    Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket connection failure for url '%'. CURL CODE %, message: '%'", lpRequest.mBaseURL, res, curl_easy_strerror(res));
                     disconnectCause = ESocketDisconnectCause::InitialConnection;
                 }
                 else
@@ -1796,7 +1797,7 @@ namespace hms
                     
                     if (res != CURLE_OK)
                     {
-                        Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket get info failure for url '%'. CURL CODE %, message: '%'", lpRequest.mURL, res, curl_easy_strerror(res));
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket get info failure for url '%'. CURL CODE %, message: '%'", lpRequest.mBaseURL, res, curl_easy_strerror(res));
                         disconnectCause = ESocketDisconnectCause::InitialConnection;
                     }
                     else
@@ -1937,7 +1938,6 @@ namespace hms
         
             mActivityCount--;
         };
-        
         Hermes::getInstance()->getTaskManager()->execute(mThreadPoolSimpleSocketID, request, std::move(pRequest));
     }
     
@@ -1955,7 +1955,7 @@ namespace hms
         header.reserve(1024);
         
         size_t pathLength = 0;
-        const char* path = pURL.getPath(pathLength);
+        const char* path = pURL.getPath(pathLength, true);
         header.append(path, pathLength);
         
         header += " HTTP/1.1\r\nHost: ";

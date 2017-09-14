@@ -38,16 +38,17 @@ namespace hms
         public:
             URLTool(const std::string& pURL);
             URLTool(const URLTool& pTool) : URLTool(pTool.getURL()) {}
-            ~URLTool() { mProtocol = mHost = mPath = nullptr; }
+            ~URLTool() { mProtocol = mHost = mPath = mParameter = nullptr; }
             
             const std::string& getURL() const;
             const char* getProtocol(size_t& pLength) const;
             const char* getHost(size_t& pLength, bool pIncludePort = false) const;
-            const char* getPath(size_t& pLength) const;
+            const char* getPath(size_t& pLength, bool pIncludeParameter = false) const;
+            const char* getParameter(size_t& pLength) const;
             uint16_t getPort() const;
             bool isSecure() const;
             
-            std::string getHttpURL(bool pIncludePath = true) const;
+            std::string getHttpURL(bool pBase = false) const;
             
         private:
             URLTool() = delete;
@@ -57,11 +58,13 @@ namespace hms
             const char* mProtocol = nullptr;
             const char* mHost = nullptr;
             const char* mPath = nullptr;
+            const char* mParameter = nullptr;
             uint16_t mPort = 0;
             size_t mProtocolLength = 0;
             size_t mHostLength = 0;
             size_t mPathLength = 0;
             size_t mPortLength = 0;
+            size_t mParameterLength = 0;
             bool mSecure = false;
         };
     }

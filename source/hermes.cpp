@@ -445,14 +445,6 @@ namespace tools
         
         if (mURL.length() == 0) return;
         
-        size_t hostEndPos = mURL.find("/", 8);
-        
-        if (hostEndPos == std::string::npos)
-        {
-            mURL += "/";
-            hostEndPos = mURL.length() - 1;
-        }
-        
         size_t protocolPos = mURL.find("://");
         
         if (protocolPos != std::string::npos)
@@ -460,14 +452,22 @@ namespace tools
             mProtocol = mURL.data();
             mProtocolLength = protocolPos;
             
-            mSecure = (mProtocolLength == 3 && mURL.compare(0, mProtocolLength, "wss")) || (mProtocolLength == 5 && mURL.compare(0, mProtocolLength, "https") == 0);
+            mSecure = (mProtocolLength == 3 && mURL.compare(0, mProtocolLength, "wss")) == 0 || (mProtocolLength == 5 && mURL.compare(0, mProtocolLength, "https") == 0);
         }
         else
         {
             protocolPos = 0;
         }
         
-        size_t portPos = mURL.find(":", mProtocolLength + protocolOffset);
+        size_t hostEndPos = mURL.find('/', mProtocolLength + protocolOffset);
+        
+        if (hostEndPos == std::string::npos)
+        {
+            mURL += '/';
+            hostEndPos = mURL.length() - 1;
+        }
+        
+        size_t portPos = mURL.find(':', mProtocolLength + protocolOffset);
         
         if (portPos != std::string::npos)
         {
@@ -488,11 +488,19 @@ namespace tools
             portPos = hostEndPos;
         }
         
-        mHost = mProtocol + mProtocolLength + protocolOffset;
-        mHostLength = portPos - (mProtocolLength + protocolOffset);
+        size_t parameterPos = mURL.find('?', hostEndPos);
+        
+        if (parameterPos != std::string::npos)
+        {
+            mParameter = mURL.data() + parameterPos;
+            mParameterLength = mURL.length() - parameterPos;
+        }
+        
+        mHost = mURL.data() + (mProtocolLength != 0 ? mProtocolLength + protocolOffset : 0);
+        mHostLength = portPos - (mProtocolLength != 0 ? mProtocolLength + protocolOffset : 0);
         
         mPath = mURL.data() + hostEndPos;
-        mPathLength = mURL.length() - hostEndPos;
+        mPathLength = mURL.length() - mParameterLength - hostEndPos;
     }
     
     const std::string& URLTool::getURL() const
@@ -512,10 +520,16 @@ namespace tools
         return mHost;
     }
     
-    const char* URLTool::getPath(size_t& pLength) const
+    const char* URLTool::getPath(size_t& pLength, bool pIncludeParameter) const
     {
-        pLength = mPathLength;
+        pLength = mPathLength + (pIncludeParameter ? mParameterLength : 0);
         return mPath;
+    }
+    
+    const char* URLTool::getParameter(size_t& pLength) const
+    {
+        pLength = mParameterLength;
+        return mParameter;
     }
     
     uint16_t URLTool::getPort() const
@@ -528,10 +542,14 @@ namespace tools
         return mSecure;
     }
     
-    std::string URLTool::getHttpURL(bool pIncludePath) const
+    std::string URLTool::getHttpURL(bool pBase) const
     {
         const size_t protocolLength = mProtocolLength == 0 ? 0 : mProtocolLength + 3;
-        return (mSecure ? "https://" : "http://") + (!pIncludePath ? mURL.substr(protocolLength, mURL.length() - (mPathLength + protocolLength)) : mURL.substr(protocolLength));
+        
+        if (mURL.length() == 0)
+            return "";
+        else
+            return (mSecure ? "https://" : "http://") + (pBase ? mURL.substr(protocolLength, mURL.length() - (mPathLength + mParameterLength + protocolLength)) : mURL.substr(protocolLength));
     }
 
 }
