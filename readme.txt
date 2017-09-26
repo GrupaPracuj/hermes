@@ -43,7 +43,7 @@ DEPENDENCIES:
 
 QUICK START (iOS):
   * Execute build_ios.sh scripts in $(HERMES_HOME)/depend/jsoncpp, $(HERMES_HOME)/depend/aes 
-  	and $(HERMES_HOME)/depend/curl (add 'NDEBUG=1' parameter to build_android.sh
+  	and $(HERMES_HOME)/depend/curl (add 'NDEBUG=1' parameter to build_ios.sh
     to build libraries in the release mode).
   * Open Xcode, go to XCode -> Preferences -> Locations -> Custom Paths and add new entry [Name:
     'HERMES_HOME' Display Name: 'Hermes' Path: 'path to Hermes project root eg. /Users/name/hermes'].
