@@ -1756,179 +1756,188 @@ namespace hms
         auto request = [this, flagCopy, caCertificatePathCopy](SimpleSocketRequestParam lpRequest) -> void
         {
             mActivityCount++;
-            mStopSimpleSocketLoop.store(0);
             
             std::chrono::time_point<std::chrono::system_clock> time = std::chrono::system_clock::now();
             std::chrono::time_point<std::chrono::system_clock> lastMessageTime = std::chrono::system_clock::now();
             
             ESocketDisconnectCause disconnectCause = ESocketDisconnectCause::User;
             
-            mSimpleSocketCURL = curl_easy_init();
-            
-            if (mSimpleSocketCURL == NULL)
+            if (mSimpleSocketCURL != nullptr)
             {
-                Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Curl easy init fail for socket.");
+                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Tried to open new socket before closing old one.");
                 disconnectCause = ESocketDisconnectCause::InitialConnection;
             }
             else
             {
-                appendParameter(lpRequest.mBaseURL, lpRequest.mParameter);
-                tools::URLTool url(lpRequest.mBaseURL);
+                mSimpleSocketCURL = curl_easy_init();
                 
-                curl_easy_setopt(mSimpleSocketCURL, CURLOPT_URL, url.getHttpURL().c_str());
-                curl_easy_setopt(mSimpleSocketCURL, CURLOPT_CONNECT_ONLY, 1L);
-                curl_easy_setopt(mSimpleSocketCURL, CURLOPT_SSL_VERIFYPEER, flagCopy[static_cast<size_t>(ENetworkFlag::DisableSSLVerifyPeer)] ? 1L : 0L);
-
-                if (caCertificatePathCopy.size() > 0)
-                    curl_easy_setopt(mSimpleSocketCURL, CURLOPT_CAINFO, caCertificatePathCopy.c_str());
-                
-                CURLcode res = curl_easy_perform(mSimpleSocketCURL);
-                
-                if (res != CURLE_OK)
+                if (mSimpleSocketCURL == NULL)
                 {
-                    Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket connection failure for url '%'. CURL CODE %, message: '%'", lpRequest.mBaseURL, res, curl_easy_strerror(res));
+                    Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Curl easy init fail for socket.");
                     disconnectCause = ESocketDisconnectCause::InitialConnection;
                 }
                 else
                 {
-                    curl_socket_t socketfd;
+                    mStopSimpleSocketLoop.store(0);
                     
-                    res = curl_easy_getinfo(mSimpleSocketCURL, CURLINFO_LASTSOCKET, &socketfd);
+                    appendParameter(lpRequest.mBaseURL, lpRequest.mParameter);
+                    tools::URLTool url(lpRequest.mBaseURL);
+                    
+                    curl_easy_setopt(mSimpleSocketCURL, CURLOPT_URL, url.getHttpURL().c_str());
+                    curl_easy_setopt(mSimpleSocketCURL, CURLOPT_CONNECT_ONLY, 1L);
+                    curl_easy_setopt(mSimpleSocketCURL, CURLOPT_SSL_VERIFYPEER, flagCopy[static_cast<size_t>(ENetworkFlag::DisableSSLVerifyPeer)] ? 1L : 0L);
+
+                    if (caCertificatePathCopy.size() > 0)
+                        curl_easy_setopt(mSimpleSocketCURL, CURLOPT_CAINFO, caCertificatePathCopy.c_str());
+                    
+                    CURLcode res = curl_easy_perform(mSimpleSocketCURL);
                     
                     if (res != CURLE_OK)
                     {
-                        Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket get info failure for url '%'. CURL CODE %, message: '%'", lpRequest.mBaseURL, res, curl_easy_strerror(res));
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket connection failure for url '%'. CURL CODE %, message: '%'", lpRequest.mBaseURL, res, curl_easy_strerror(res));
                         disconnectCause = ESocketDisconnectCause::InitialConnection;
                     }
                     else
                     {
-                        mSimpleSocketActive.store(1);
+                        curl_socket_t socketfd;
                         
-                        std::string secSocketAccept;
-                        res = static_cast<CURLcode>(sendUpgradeHeader(mSimpleSocketCURL, url, lpRequest.mHeader, secSocketAccept));
+                        res = curl_easy_getinfo(mSimpleSocketCURL, CURLINFO_LASTSOCKET, &socketfd);
                         
                         if (res != CURLE_OK)
                         {
-                            Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket header message fail for url '%'. CURL CODE %, message: '%'", url.getURL(), res, curl_easy_strerror(res));
-                            disconnectCause = ESocketDisconnectCause::Header;
+                            Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket get info failure for url '%'. CURL CODE %, message: '%'", lpRequest.mBaseURL, res, curl_easy_strerror(res));
+                            disconnectCause = ESocketDisconnectCause::InitialConnection;
                         }
                         else
                         {
-                            const size_t bufferLength = 2048;
-                            char buffer[bufferLength];
-                            std::string data;
-                            bool error = false;
-                            bool headerCheck = true;
-                            std::vector<SocketFrame> frame;
+                            mSimpleSocketActive.store(1);
                             
-                            data.reserve(bufferLength);
+                            std::string secSocketAccept;
+                            res = static_cast<CURLcode>(sendUpgradeHeader(mSimpleSocketCURL, url, lpRequest.mHeader, secSocketAccept));
                             
-                            while (mTerminateAbort.load() == 0 && !error && Hermes::getInstance()->getTaskManager()->canContinueTask(mThreadPoolSimpleSocketID))
+                            if (res != CURLE_OK)
                             {
-                                size_t readCount = 0;
+                                Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket header message fail for url '%'. CURL CODE %, message: '%'", url.getURL(), res, curl_easy_strerror(res));
+                                disconnectCause = ESocketDisconnectCause::Header;
+                            }
+                            else
+                            {
+                                const size_t bufferLength = 2048;
+                                char buffer[bufferLength];
+                                std::string data;
+                                bool error = false;
+                                bool headerCheck = true;
+                                std::vector<SocketFrame> frame;
                                 
-                                if (mStopSimpleSocketLoop.load() == 1)
+                                data.reserve(bufferLength);
+                                
+                                while (mTerminateAbort.load() == 0 && !error && Hermes::getInstance()->getTaskManager()->canContinueTask(mThreadPoolSimpleSocketID))
                                 {
-                                    std::string message = packSimpleSocketMessage("", ESocketOpCode::Close);
+                                    size_t readCount = 0;
                                     
-                                    res = curl_easy_send(mSimpleSocketCURL, message.c_str(), message.length(), &readCount);
-                                    
-                                    if (res != CURLE_OK)
-                                        Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Close send failed. CURLcode %", static_cast<int>(res));
-                                    
-                                    error = true;
-                                    disconnectCause = ESocketDisconnectCause::Close;
-                                    
-                                    break;
-                                }
-                                
-                                data.clear();
-                                
-                                do
-                                {
-                                    readCount = 0;
-                                    
-                                    res = curl_easy_recv(mSimpleSocketCURL, buffer, bufferLength * sizeof(char), &readCount);
-                                    
-                                    if (res != CURLE_OK && res != CURLE_AGAIN)
+                                    if (mStopSimpleSocketLoop.load() == 1)
                                     {
-                                        Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket read fail for url '%'. CURL CODE %, message: '%'", url.getURL(), res, curl_easy_strerror(res));
+                                        std::string message = packSimpleSocketMessage("", ESocketOpCode::Close);
                                         
-                                        disconnectCause = ESocketDisconnectCause::Other;
+                                        res = curl_easy_send(mSimpleSocketCURL, message.c_str(), message.length(), &readCount);
+                                        
+                                        if (res != CURLE_OK)
+                                            Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Close send failed. CURLcode %", static_cast<int>(res));
+                                        
                                         error = true;
+                                        disconnectCause = ESocketDisconnectCause::Close;
                                         
                                         break;
                                     }
-                                    else if (readCount > 0)
+                                    
+                                    data.clear();
+                                    
+                                    do
                                     {
-                                        data.append(buffer, readCount);
-                                    }
-                                    else
-                                    {
-                                        if (!data.empty())
-                                            lastMessageTime = std::chrono::system_clock::now();
-                                            
-                                        break;
-                                    }
-                                }
-                                while (mTerminateAbort.load() == 0);
-                                
-                                if (!error)
-                                {
-                                    if (!data.empty())
-                                    {
-                                        if (headerCheck)
+                                        readCount = 0;
+                                        
+                                        res = curl_easy_recv(mSimpleSocketCURL, buffer, bufferLength * sizeof(char), &readCount);
+                                        
+                                        if (res != CURLE_OK && res != CURLE_AGAIN)
                                         {
-                                            headerCheck = false;
+                                            Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket read fail for url '%'. CURL CODE %, message: '%'", url.getURL(), res, curl_easy_strerror(res));
                                             
-                                            const std::string acceptKey = "Sec-WebSocket-Accept: ";
-                                            size_t keyPos = data.find(acceptKey);
-                                            size_t codePos = data.find("HTTP/1.1 101 Switching Protocols");
+                                            disconnectCause = ESocketDisconnectCause::Other;
+                                            error = true;
                                             
-                                            if (codePos != std::string::npos && keyPos != std::string::npos && data.length() >= keyPos + acceptKey.length() + secSocketAccept.length() && data.substr(keyPos + acceptKey.length(), secSocketAccept.length()).compare(secSocketAccept) == 0)
-                                            {
-                                                if (lpRequest.mConnectCallback != nullptr)
-                                                    Hermes::getInstance()->getTaskManager()->execute(-1, lpRequest.mConnectCallback);
-                                            }
-                                            else
-                                            {
-                                                Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket invalid handshake.");
-                                                error = true;
-                                                disconnectCause = ESocketDisconnectCause::Handshake;
-                                            }
+                                            break;
+                                        }
+                                        else if (readCount > 0)
+                                        {
+                                            data.append(buffer, readCount);
                                         }
                                         else
                                         {
-                                            auto newFrame = unpackSimpleSocketMessage(data);
+                                            if (!data.empty())
+                                                lastMessageTime = std::chrono::system_clock::now();
                                             
-                                            if (!handleSimpleSocketFrame(mSimpleSocketCURL, newFrame, frame, lpRequest.mMessageCallback))
-                                            {
-                                                error = true;
-                                                disconnectCause = ESocketDisconnectCause::Close;
-                                            }
+                                            break;
                                         }
                                     }
-                                    
-                                    if (lpRequest.mTimeout == std::chrono::milliseconds::zero() || (lpRequest.mTimeout > std::chrono::milliseconds::zero() && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - lastMessageTime) < lpRequest.mTimeout))
-                                    {
-                                        CURL_WAIT_ON_SOCKET(socketfd, 1, mSocketWaitTimeout);
-                                    }
-                                    else
-                                    {
-                                        error = true;
-                                        disconnectCause = ESocketDisconnectCause::Timeout;
-                                    }
+                                    while (mTerminateAbort.load() == 0);
                                     
                                     if (!error)
-                                        Hermes::getInstance()->getTaskManager()->performTaskIfExists(mThreadPoolSimpleSocketID);
+                                    {
+                                        if (!data.empty())
+                                        {
+                                            if (headerCheck)
+                                            {
+                                                headerCheck = false;
+                                                
+                                                const std::string acceptKey = "Sec-WebSocket-Accept: ";
+                                                size_t keyPos = data.find(acceptKey);
+                                                size_t codePos = data.find("HTTP/1.1 101 Switching Protocols");
+                                                
+                                                if (codePos != std::string::npos && keyPos != std::string::npos && data.length() >= keyPos + acceptKey.length() + secSocketAccept.length() && data.substr(keyPos + acceptKey.length(), secSocketAccept.length()).compare(secSocketAccept) == 0)
+                                                {
+                                                    if (lpRequest.mConnectCallback != nullptr)
+                                                        Hermes::getInstance()->getTaskManager()->execute(-1, lpRequest.mConnectCallback);
+                                                }
+                                                else
+                                                {
+                                                    Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket invalid handshake.");
+                                                    error = true;
+                                                    disconnectCause = ESocketDisconnectCause::Handshake;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                auto newFrame = unpackSimpleSocketMessage(data);
+                                                
+                                                if (!handleSimpleSocketFrame(mSimpleSocketCURL, newFrame, frame, lpRequest.mMessageCallback))
+                                                {
+                                                    error = true;
+                                                    disconnectCause = ESocketDisconnectCause::Close;
+                                                }
+                                            }
+                                        }
+                                        
+                                        if (lpRequest.mTimeout == std::chrono::milliseconds::zero() || (lpRequest.mTimeout > std::chrono::milliseconds::zero() && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - lastMessageTime) < lpRequest.mTimeout))
+                                        {
+                                            CURL_WAIT_ON_SOCKET(socketfd, 1, mSocketWaitTimeout);
+                                        }
+                                        else
+                                        {
+                                            error = true;
+                                            disconnectCause = ESocketDisconnectCause::Timeout;
+                                        }
+                                        
+                                        if (!error)
+                                            Hermes::getInstance()->getTaskManager()->performTaskIfExists(mThreadPoolSimpleSocketID);
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                curl_easy_cleanup(mSimpleSocketCURL);
-                mSimpleSocketCURL = nullptr;
+                    curl_easy_cleanup(mSimpleSocketCURL);
+                    mSimpleSocketCURL = nullptr;
+                }
             }
             
             mSimpleSocketActive.store(0);
