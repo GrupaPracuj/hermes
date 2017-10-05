@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # User configuration
-LIBRARY_NAME="curl-7.54.1"
+LIBRARY_NAME="curl-7.56.0"
 
 # Check settings
 if [ -z "${HERMES_ANDROID_API}" ]; then
@@ -61,9 +61,8 @@ rm -rf ${LIBRARY_NAME}
 [ -f ${LIBRARY_NAME}.tar.gz ] || wget --no-check-certificate https://curl.haxx.se/download/${LIBRARY_NAME}.tar.gz;
 tar xfz ${LIBRARY_NAME}.tar.gz
 
-# Clean include directory
-rm ${WORKING_DIR}/include/curl/*
-rm ${WORKING_DIR}/include/curl/android/*
+# Remove include directory
+rm -rf ${WORKING_DIR}/include
 
 # Build for all architectures and copy data
 cd ${LIBRARY_NAME}
@@ -121,19 +120,17 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	if make -j${CPU_CORE}; then
 		make install
 		
-		if [ ! -d ${WORKING_DIR}/include/curl/android ]; then
-			mkdir -p ${WORKING_DIR}/include/curl/android
+		if [ ! -d ${WORKING_DIR}/include/curl ]; then
+			mkdir -p ${WORKING_DIR}/include/curl
 		fi
 
 		cp ${TMP_DIR}/include/curl/* ${WORKING_DIR}/include/curl/
-		cp ${WORKING_DIR}/include/curl/curlbuild.h ${WORKING_DIR}/include/curl/android/curlbuild-${ARCH_NAME[$i]}.h
         cp ${TMP_DIR}/lib/libcurl.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
 	fi
 
-    make distclean
+    make clean
 done
 
-cp ${WORKING_DIR}/curlbuild_shared.h.in ${WORKING_DIR}/include/curl/curlbuild.h
 cd ..
 
 # Cleanup

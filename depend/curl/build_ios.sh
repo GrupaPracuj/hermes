@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # User configuration
-LIBRARY_NAME="curl-7.54.1"
+LIBRARY_NAME="curl-7.56.0"
 
 # Check settings
 if [ -z "${HERMES_IOS_DEPLOYMENT_TARGET}" ]; then
@@ -52,9 +52,8 @@ rm -rf ${LIBRARY_NAME}
 [ -f ${LIBRARY_NAME}.tar.gz ] || wget --no-check-certificate https://curl.haxx.se/download/${LIBRARY_NAME}.tar.gz;
 tar xfz ${LIBRARY_NAME}.tar.gz
 
-# Clean include and lib directory
-rm ${WORKING_DIR}/include/curl/*
-rm ${WORKING_DIR}/include/curl/ios/*
+# Remove include and clean lib directory
+rm -rf ${WORKING_DIR}/include
 rm -f ${WORKING_DIR}/../../lib/ios/libcurl.a
 
 # Build for all architectures and copy data
@@ -101,22 +100,20 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	if make -j${CPU_CORE}; then
 		make install
 		
-		if [ ! -d ${WORKING_DIR}/include/curl/ios ]; then
-			mkdir -p ${WORKING_DIR}/include/curl/ios
+		if [ ! -d ${WORKING_DIR}/include/curl ]; then
+			mkdir -p ${WORKING_DIR}/include/curl
 		fi
 
 		cp ${TMP_DIR}/include/curl/* ${WORKING_DIR}/include/curl/
-		cp ${WORKING_DIR}/include/curl/curlbuild.h ${WORKING_DIR}/include/curl/ios/curlbuild-${ARCH_NAME[$i]}.h
         cp ${TMP_DIR}/lib/libcurl.a ${TMP_LIB_DIR}/libcurl-${ARCH_NAME[$i]}.a
 	fi
 
-	make distclean
+	make clean
 done
 
 cd ${TMP_LIB_DIR}
 lipo -create -output "libcurl.a" "libcurl-armv7.a" "libcurl-armv7s.a" "libcurl-arm64.a" "libcurl-x86.a" "libcurl-x86_64.a"
 cp ${TMP_LIB_DIR}/libcurl.a ${WORKING_DIR}/../../lib/ios/
-cp ${WORKING_DIR}/curlbuild_shared.h.in ${WORKING_DIR}/include/curl/curlbuild.h
 cd ..
 
 # Cleanup

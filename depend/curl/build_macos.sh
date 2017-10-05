@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # User configuration
-LIBRARY_NAME="curl-7.54.1"
+LIBRARY_NAME="curl-7.56.0"
 
 # Check software and detect CPU cores
 CPU_CORE=1
@@ -31,9 +31,8 @@ rm -rf ${LIBRARY_NAME}
 [ -f ${LIBRARY_NAME}.tar.gz ] || wget --no-check-certificate https://curl.haxx.se/download/${LIBRARY_NAME}.tar.gz;
 tar xfz ${LIBRARY_NAME}.tar.gz
 
-# Clean include and lib directory
-rm ${WORKING_DIR}/include/${TARGET_NAME}/*
-rm ${WORKING_DIR}/include/${TARGET_NAME}/macos/*
+# Remove include and clean lib directory
+rm -rf ${WORKING_DIR}/include
 rm -f ${WORKING_DIR}/../../lib/macos/lib${TARGET_NAME}.a
 
 # Build for all architectures and copy data
@@ -68,22 +67,21 @@ for ((i=0; i<${#ARCH_NAME[@]}; i++)); do
 	if make -j${CPU_CORE}; then
 		make install
 		
-		if [ ! -d ${WORKING_DIR}/include/curl/macos ]; then
-			mkdir -p ${WORKING_DIR}/include/curl/macos
+		if [ ! -d ${WORKING_DIR}/include/curl ]; then
+			mkdir -p ${WORKING_DIR}/include/curl
 		fi
 
 		cp ${TMP_DIR}/include/${TARGET_NAME}/* ${WORKING_DIR}/include/${TARGET_NAME}/
-		cp ${WORKING_DIR}/include/${TARGET_NAME}/curlbuild.h ${WORKING_DIR}/include/${TARGET_NAME}/macos/curlbuild-${ARCH_NAME[$i]}.h
         cp ${TMP_DIR}/lib/lib${TARGET_NAME}.a ${TMP_LIB_DIR}/lib${TARGET_NAME}-${ARCH_NAME[$i]}.a
 	fi
 
-	make distclean
+	make clean
 done
 
 cd ${TMP_LIB_DIR}
 lipo -create -output "lib${TARGET_NAME}.a" "lib${TARGET_NAME}-${ARCH_NAME[0]}.a" "lib${TARGET_NAME}-${ARCH_NAME[1]}.a"
 cp ${TMP_LIB_DIR}/lib${TARGET_NAME}.a ${WORKING_DIR}/../../lib/macos/
-cp ${WORKING_DIR}/curlbuild_shared.h.in ${WORKING_DIR}/include/curl/curlbuild.h
+cd ..
 
 # Cleanup
 rm -rf ${TMP_LIB_DIR}
