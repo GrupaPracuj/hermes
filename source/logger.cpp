@@ -44,7 +44,6 @@ namespace hms
         mLevel = ELogLevel::Info;
         mPostCallback = nullptr;
 
-
         mInitialized = false;
         
         return true;

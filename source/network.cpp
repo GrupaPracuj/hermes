@@ -641,11 +641,6 @@ namespace hms
 
             mInitialized.store(0);
         }
-        else
-        {
-            // Already terminated.
-            assert(false);
-        }
         
         return terminated == 2;
     }
