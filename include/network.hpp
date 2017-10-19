@@ -124,16 +124,16 @@ namespace hms
     class NetworkRecovery
     {
     public:
-        bool init(std::function<bool(const NetworkResponse& pResponse, std::string& pRequestBody)> pPreCallback, std::function<void(NetworkResponse pResponse)> pPostCallback,
+        bool init(std::function<bool(const NetworkResponse& lpResponse, std::string& lpRequestBody, std::vector<std::pair<std::string, std::string>>& lpParameter, std::vector<std::pair<std::string, std::string>>& lpHeader)> pPreCallback, std::function<void(NetworkResponse pResponse)> pPostCallback,
             ENetworkRequestType pType, std::string pUrl, std::vector<std::pair<std::string, std::string>> pParameter, std::vector<std::pair<std::string, std::string>> pHeader,
             unsigned pRepeatCount = 0);
             
         bool isInitialized() const;
         bool isQueueEmpty() const;
             
-        bool checkCondition(const NetworkResponse& pResponse, std::string& pRequestBody) const;
+        bool checkCondition(const NetworkResponse& pResponse, std::string& pRequestBody, std::vector<std::pair<std::string, std::string>>& pParameter, std::vector<std::pair<std::string, std::string>>& pHeader) const;
         void pushReceiver(std::tuple<size_t, NetworkRequestParam> pReceiver);
-        void runRequest(std::string pRequestBody);
+        void runRequest(std::string pRequestBody, std::vector<std::pair<std::string, std::string>> pParameter, std::vector<std::pair<std::string, std::string>> pHeader);
         
         bool isLocked() const;
         bool lock();
@@ -159,7 +159,7 @@ namespace hms
         NetworkRecovery& operator=(const NetworkRecovery& pOther) = delete;
         NetworkRecovery& operator=(NetworkRecovery&& pOther) = delete;
         
-        std::function<bool(const NetworkResponse& pResponse, std::string& pRequestBody)> mPreCallback = nullptr;
+        std::function<bool(const NetworkResponse& lpResponse, std::string& lpRequestBody, std::vector<std::pair<std::string, std::string>>& lpParameter, std::vector<std::pair<std::string, std::string>>& lpHeader)> mPreCallback = nullptr;
         NetworkRequestParam mRequestParam;
         std::queue<std::tuple<size_t, NetworkRequestParam>> mReceiver;
             

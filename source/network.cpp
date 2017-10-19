@@ -169,7 +169,7 @@ namespace hms
     {
     }
     
-    bool NetworkRecovery::init(std::function<bool(const NetworkResponse& pResponse, std::string& pRequestBody)> pPreCallback, std::function<void(NetworkResponse pResponse)> pPostCallback,
+    bool NetworkRecovery::init(std::function<bool(const NetworkResponse& lpResponse, std::string& lpRequestBody, std::vector<std::pair<std::string, std::string>>& lpParameter, std::vector<std::pair<std::string, std::string>>& lpHeader)> pPreCallback, std::function<void(NetworkResponse pResponse)> pPostCallback,
         ENetworkRequestType pType, std::string pUrl, std::vector<std::pair<std::string, std::string>> pParameter, std::vector<std::pair<std::string, std::string>> pHeader, unsigned pRepeatCount)
     {
         assert(pPreCallback != nullptr && pPostCallback != nullptr);
@@ -257,11 +257,11 @@ namespace hms
         return mReceiver.empty();
     }
     
-    bool NetworkRecovery::checkCondition(const NetworkResponse& pResponse, std::string& pRequestBody) const
+    bool NetworkRecovery::checkCondition(const NetworkResponse& pResponse, std::string& pRequestBody, std::vector<std::pair<std::string, std::string>>& pParameter, std::vector<std::pair<std::string, std::string>>& pHeader) const
     {
         assert(mInitialized.load() == 2);
     
-        return mPreCallback != nullptr && mPreCallback(pResponse, pRequestBody);
+        return mPreCallback != nullptr && mPreCallback(pResponse, pRequestBody, pParameter, pHeader);
     }
     
     void NetworkRecovery::pushReceiver(std::tuple<size_t, NetworkRequestParam> pReceiver)
@@ -271,12 +271,34 @@ namespace hms
         mReceiver.push(std::move(pReceiver));
     }
     
-    void NetworkRecovery::runRequest(std::string pRequestBody)
+    void NetworkRecovery::runRequest(std::string pRequestBody, std::vector<std::pair<std::string, std::string>> pParameter, std::vector<std::pair<std::string, std::string>> pHeader)
     {
         assert(mInitialized.load() == 2);
+        
+        int defaultParameterEnd = -1;
+        int defaultHeaderEnd = -1;
 
         mRequestParam.mRequestBody = std::move(pRequestBody);
+        
+        if (pParameter.size() != 0)
+        {
+            defaultParameterEnd = static_cast<int>(mRequestParam.mParameter.size());
+            mRequestParam.mParameter.insert(mRequestParam.mParameter.cend(), pParameter.cbegin(), pParameter.cend());
+        }
+        
+        if (pHeader.size() != 0)
+        {
+            defaultHeaderEnd = static_cast<int>(mRequestParam.mHeader.size());
+            mRequestParam.mHeader.insert(mRequestParam.mHeader.cend(), pHeader.cbegin(), pHeader.cend());
+        }
+        
         Hermes::getInstance()->getNetworkManager()->request(mRequestParam);
+        
+        if (defaultParameterEnd >= 0)
+            mRequestParam.mParameter.erase(mRequestParam.mParameter.cbegin() + defaultParameterEnd, mRequestParam.mParameter.cend());
+        
+        if (defaultHeaderEnd >= 0)
+            mRequestParam.mHeader.erase(mRequestParam.mHeader.cbegin() + defaultHeaderEnd, mRequestParam.mHeader.cend());
     }
     
     bool NetworkRecovery::isLocked() const
@@ -400,13 +422,15 @@ namespace hms
             auto callbackForRecovery = [recovery, identifier, url, pParam, callback](NetworkResponse lpResponse) -> void
             {
                 std::string requestBody = "";
+                std::vector<std::pair<std::string, std::string>> parameter;
+                std::vector<std::pair<std::string, std::string>> header;
                 
-                if (recovery->isLocked() || recovery->checkCondition(lpResponse, requestBody))
+                if (recovery->isLocked() || recovery->checkCondition(lpResponse, requestBody, parameter, header))
                 {
                     recovery->pushReceiver(std::make_tuple(identifier, pParam));
 
                     if (recovery->lock())
-                        recovery->runRequest(std::move(requestBody));
+                        recovery->runRequest(std::move(requestBody), std::move(parameter), std::move(header));
 
                     Hermes::getInstance()->getLogger()->print(ELogLevel::Info, "Queued method for recovery: %.", url);
                 }
