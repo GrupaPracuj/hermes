@@ -4,6 +4,7 @@
 
 #include "hermes.hpp"
 
+#include <climits>
 #include <random>
 #include <iomanip>
 #include <string>
@@ -19,11 +20,6 @@
     #define bswap_16(X) OSReadSwapInt16(&X,0)
     #define bswap_32(X) OSReadSwapInt32(&X,0)
     #define bswap_64(X) OSReadSwapInt64(&X,0)
-#elif __linux__ && !(defined(ANDROID) || defined(__ANDROID__))
-    #include <sys/endian.h>
-    #define bswap_16(X) bswap16(X)
-    #define bswap_32(X) bswap32(X)
-    #define bswap_64(X) bswap64(X)
 #else
     #define bswap_16(X) ((((X)&0xFF) << 8) | (((X)&0xFF00) >> 8))
     #define bswap_32(X) ((((X)&0x000000FF) << 24) | (((X)&0xFF000000) >> 24) | (((X)&0x0000FF00) << 8) | (((X) &0x00FF0000) >> 8))

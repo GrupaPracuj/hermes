@@ -25,7 +25,7 @@ rm -f ${WORKING_DIR}/../../lib/macos/lib${TARGET_NAME}.a
 mkdir ${TMP_LIB_DIR}
 
 for ((i=0; i<${#ARCH_NAME[@]}; i++)); do
-	export CFLAGS="${ARCH_FLAG[$i]} -fPIC -fno-strict-aliasing -fstack-protector -pipe -gdwarf-2 -fembed-bitcode"
+	export CFLAGS="${ARCH_FLAG[$i]} -gdwarf-2 -fembed-bitcode"
 
 	rm -rf ${TMP_DIR}
 	mkdir ${TMP_DIR}

@@ -3,7 +3,7 @@ LIBRARY_NAME = libaes.a
 SRCFILES = $(wildcard source/*.c)
 OBJFILES = $(SRCFILES:%.c=%.o)
 
-CFLAGS += -fPIC -fno-strict-aliasing -fstack-protector -Iinclude
+CFLAGS += -pipe -fPIC -fno-strict-aliasing -fstack-protector -Iinclude
 
 ifndef NDEBUG
 CFLAGS += -g -D_DEBUG=1 -DDEBUG=1
