@@ -37,15 +37,9 @@ namespace hms
     ThreadPool::ThreadPool(int pID, size_t pThreadCount) : mThreadCount(pThreadCount), mId(pID)
     {
         mThread = new std::thread*[mThreadCount];
-        mHasTask = new std::atomic<uint32_t>[mThreadCount];
-        
+
         for (size_t i = 0; i < mThreadCount; ++i)
-        {
-            mHasTask[i] = 0;
             mThread[i] = new std::thread(&ThreadPool::update, this, i);
-        }
-        
-        mIsActive.store(1);
     }
     
     ThreadPool::~ThreadPool()
@@ -61,31 +55,29 @@ namespace hms
         }
         
         delete[] mThread;
-        delete[] mHasTask;
     }
 
-    bool ThreadPool::push(const std::function<void()>& pTask)
+    bool ThreadPool::push(std::function<void()> pTask)
     {
-		bool status = mIsActive.load() != 0;
+        bool status = mIsActive.load() != 0;
 
-		if (status)
-		{
-			std::lock_guard<std::mutex> lock(mTaskMutex);
-			mTask.push(pTask);
-			mTaskCondition.notify_one();
-		}
+        if (status)
+        {
+            {
+                std::lock_guard<std::mutex> lock(mTaskMutex);
+                mTask.push(std::move(pTask));
+            }
 
-		return status;
+            mTaskCount++;
+            mTaskCondition.notify_one();
+        }
+
+        return status;
     }
     
     bool ThreadPool::hasTask()
     {
-        bool status = false;
-        
-        for (size_t i = 0; i < mThreadCount; ++i)
-            status |= (mHasTask[i].load() > 0);
-
-		return status;
+        return mTaskCount.load() > 0;
     }
     
     void ThreadPool::start()
@@ -117,7 +109,10 @@ namespace hms
         }
         
         if (task != nullptr)
+        {
             task();
+            mTaskCount--;
+        }
     }
     
     void ThreadPool::clearTask()
@@ -130,7 +125,7 @@ namespace hms
     {
         std::function<void()> task = nullptr;
         
-        while (true)
+        while (mForceFinish.load() == 0)
         {
             std::unique_lock<std::mutex> lock(mTaskMutex);
             mTaskCondition.wait(lock, [this]
@@ -140,27 +135,19 @@ namespace hms
             
             task = nullptr;
 
-			bool lastTask = true;
-            
             if (!mTask.empty())
             {
-                mHasTask[pID].store(1);
-                task = mTask.front();
+                task = std::move(mTask.front());
                 mTask.pop();
-
-				lastTask = mTask.empty();
             }
             
             lock.unlock();
             
             if (task != nullptr)
+            {
                 task();
-
-			if (lastTask)
-				mHasTask[pID].store(0);
-
-            if (mForceFinish.load() > 0)
-                break;
+                mTaskCount--;
+            }
         }
     }
 
@@ -175,7 +162,7 @@ namespace hms
         terminate();
     }
 
-	bool TaskManager::initialize(const std::vector<std::pair<int, size_t>> pThreadPool)
+    bool TaskManager::initialize(const std::vector<std::pair<int, size_t>> pThreadPool)
     {
         if (mInitialized != 0)
             return false;

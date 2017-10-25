@@ -30,14 +30,14 @@ namespace hms
         std::atomic_flag mFlag = ATOMIC_FLAG_INIT;
     };
 
-	class ThreadPool
+    class ThreadPool
     {
         friend class TaskManager;
         
     public:
         ThreadPool(const ThreadPool& pSource) = delete;
     
-        bool push(const std::function<void()>& pTask);
+        bool push(std::function<void()> pTask);
         bool hasTask();
         void start();
         void stop();
@@ -53,22 +53,22 @@ namespace hms
                    
         size_t mThreadCount = 0;
         std::thread** mThread = nullptr;
-        std::atomic<uint32_t>* mHasTask {nullptr};
                    
         std::condition_variable mTaskCondition;
         std::mutex mTaskMutex;
         std::queue<std::function<void()>> mTask;
+        std::atomic<uint32_t> mTaskCount {0};
 
         std::atomic<uint32_t> mForceFinish {0};
-        std::atomic<uint32_t> mIsActive {0};
+        std::atomic<uint32_t> mIsActive {1};
         int mId;
     };
     
-	class TaskManager
+    class TaskManager
     {
     public:
-		bool initialize(const std::vector<std::pair<int, size_t>> pThreadPool);
-		bool terminate();
+        bool initialize(const std::vector<std::pair<int, size_t>> pThreadPool);
+        bool terminate();
 
         void flush(int pThreadPoolID);
         size_t threadCountForPool(int pThreadPoolID);
@@ -77,7 +77,7 @@ namespace hms
         void clearTask(int pThreadPoolID);
         
         template<typename M, typename... P>
-		void execute(int pThreadPoolID, M&& pMethod, P&&... pParameter)
+        void execute(int pThreadPoolID, M&& pMethod, P&&... pParameter)
         {
             if (!mInitialized)
                 return;
