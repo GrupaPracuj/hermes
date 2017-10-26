@@ -11,6 +11,7 @@
 #include "logger.hpp"
 
 #include <array>
+#include <memory>
 
 namespace hms
 {
@@ -90,10 +91,16 @@ namespace hms
         Hermes& operator=(const Hermes& pOther) = delete;
         Hermes& operator=(Hermes&& pOther) = delete;
         
+        template <typename T>
+        static void invokeDelete(T* pObject)
+        {
+            delete pObject;
+        }
+        
         std::array<unsigned, 3> mVersion;
         
         DataManager* mDataManager = nullptr;
-        NetworkManager* mNetworkManager = nullptr;
+        std::shared_ptr<NetworkManager> mNetworkManager = nullptr;
         TaskManager* mTaskManager = nullptr;
         Logger* mLogger = nullptr;
     };

@@ -557,7 +557,8 @@ Hermes::Hermes()
     mVersion[2] = 0;
     
     mDataManager = new DataManager();
-    mNetworkManager = new NetworkManager();
+    mNetworkManager = std::shared_ptr<NetworkManager>(new NetworkManager(), std::bind(&Hermes::invokeDelete<NetworkManager>, std::placeholders::_1));
+    mNetworkManager->mWeakThis = mNetworkManager;
     mTaskManager = new TaskManager();
     mLogger = new Logger();
 }
@@ -565,10 +566,7 @@ Hermes::Hermes()
 Hermes::~Hermes()
 {
     if (mNetworkManager != nullptr)
-    {
         mNetworkManager->terminate();
-        delete mNetworkManager;
-    }
     
     if (mTaskManager != nullptr)
     {
@@ -596,7 +594,7 @@ DataManager* Hermes::getDataManager() const
 
 NetworkManager* Hermes::getNetworkManager() const
 {
-    return mNetworkManager;
+    return mNetworkManager.get();
 }
 
 TaskManager* Hermes::getTaskManager() const
