@@ -93,7 +93,14 @@ def configure(pBuildTarget, pSettings):
                 return False
     
         if hostDetected:
-            pSettings.mAndroidApi = os.getenv('HERMES_ANDROID_API')
+            androidApi = os.getenv('HERMES_ANDROID_API')
+            name, separator, version = androidApi.partition('-')
+            
+            if version is not None and len(version) > 0:
+                pSettings.mAndroidApi = version
+            else:
+                pSettings.mAndroidApi = name;
+            
             pSettings.mAndroidNdkDir = os.getenv('ANDROID_NDK_ROOT')
 
             if pSettings.mAndroidApi is None:
