@@ -67,6 +67,14 @@ cp ${WORKING_DIR}/Makefile.in ${WORKING_DIR}/${LIBRARY_NAME}/Makefile
 cd ${LIBRARY_NAME}
 
 for ((i=0; i<${#ARCH[@]}; i++)); do
+	if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then
+		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
+	else
+		rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libjsoncpp.a
+	fi
+
+	rm -rf ${TMP_DIR}
+
 	TOOLCHAIN_BIN_PATH=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/bin/${TOOLCHAIN_NAME[$i]}
 	export CXX=${TOOLCHAIN_BIN_PATH}-clang++
 	export LD=${TOOLCHAIN_BIN_PATH}-ld
@@ -79,21 +87,16 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
     if [ "${ARCH[$i]}" = "linux64-mips64" ]; then
 		export CXXFLAGS="${CXXFLAGS} -fintegrated-as"
 	fi
-	
-	if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then
-		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
-	else
-		rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libjsoncpp.a
-	fi
 
-	rm -rf ${TMP_DIR}
-    mkdir ${TMP_DIR}
+	if [ -e ${CXX} ]; then
+        mkdir ${TMP_DIR}
 
-	if make $1 -j${CPU_CORE}; then
-        cp ${TMP_DIR}/libjsoncpp.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
-	fi
+        if make $1 -j${CPU_CORE}; then
+            cp ${TMP_DIR}/libjsoncpp.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
+        fi
 
-    make clean
+        make clean
+    fi
 done
 
 mkdir -p ${WORKING_DIR}/include/json

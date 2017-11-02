@@ -50,6 +50,14 @@ done
 
 # Build for all architectures and copy data
 for ((i=0; i<${#ARCH[@]}; i++)); do
+	if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then
+		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
+	else
+		rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libaes.a
+	fi
+	
+	rm -rf ${TMP_DIR}
+
 	TOOLCHAIN_BIN_PATH=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/bin/${TOOLCHAIN_NAME[$i]}
 	export CC=${TOOLCHAIN_BIN_PATH}-clang
 	export LD=${TOOLCHAIN_BIN_PATH}-ld
@@ -62,21 +70,16 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
     if [ "${ARCH[$i]}" = "linux64-mips64" ]; then
 		export CFLAGS="${CFLAGS} -fintegrated-as"
 	fi
-	
-	if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then
-		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
-	else
-		rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libaes.a
-	fi
 
-	rm -rf ${TMP_DIR}
-    mkdir ${TMP_DIR}
+	if [ -e ${CC} ]; then
+        mkdir ${TMP_DIR}
 
-	if make $1 -j${CPU_CORE}; then
-        cp ${TMP_DIR}/libaes.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
-	fi
+        if make $1 -j${CPU_CORE}; then
+            cp ${TMP_DIR}/libaes.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
+        fi
 
-    make clean
+        make clean
+    fi
 done
 
 # Cleanup

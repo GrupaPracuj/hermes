@@ -8,7 +8,7 @@ else
 fi
 
 if [ -z "${XCODE_ROOT}" ] || [ ! -d "${XCODE_ROOT}" ]; then
-    XCODE_ROOT="/Applications/Xcode.app/Contents/Developer"
+    XCODE_ROOT=`xcode-select --print-path`
 
     if [ ! -d "${XCODE_ROOT}" ]; then
         echo "Error: ${XCODE_ROOT} is not a valid path."

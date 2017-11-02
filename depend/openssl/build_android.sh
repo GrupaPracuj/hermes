@@ -81,16 +81,6 @@ fi
 cd ${LIBRARY_NAME}
 
 for ((i=0; i<${#ARCH[@]}; i++)); do
-	TOOLCHAIN_BIN_PATH=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/bin/${TOOLCHAIN_NAME[$i]}
-	export CC=${TOOLCHAIN_BIN_PATH}-clang
-	export LD=${TOOLCHAIN_BIN_PATH}-ld
-	export AR=${TOOLCHAIN_BIN_PATH}-ar
-	export RANLIB=${TOOLCHAIN_BIN_PATH}-ranlib
-	export STRIP=${TOOLCHAIN_BIN_PATH}-strip
-	export SYSROOT=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/sysroot
-	export CROSS_SYSROOT=${SYSROOT}
-	export CFLAGS="${ARCH_FLAG[$i]} -O2 -fPIC -fno-strict-aliasing -fstack-protector"
-
 	if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then
 		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
 	else
@@ -100,25 +90,37 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	
 	rm -rf ${TMP_DIR}
 
-	./Configure ${ARCH[$i]} --prefix=${TMP_DIR} \
-		--openssldir=${TMP_DIR} \
-        --with-zlib-include=${SYSROOT}/usr/include \
-        --with-zlib-lib=${SYSROOT}/usr/lib \
-        zlib \
-        no-asm \
-        no-shared \
-        no-unit-test
+	TOOLCHAIN_BIN_PATH=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/bin/${TOOLCHAIN_NAME[$i]}
+	export CC=${TOOLCHAIN_BIN_PATH}-clang
+	export LD=${TOOLCHAIN_BIN_PATH}-ld
+	export AR=${TOOLCHAIN_BIN_PATH}-ar
+	export RANLIB=${TOOLCHAIN_BIN_PATH}-ranlib
+	export STRIP=${TOOLCHAIN_BIN_PATH}-strip
+	export SYSROOT=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/sysroot
+	export CROSS_SYSROOT=${SYSROOT}
+	export CFLAGS="${ARCH_FLAG[$i]} -O2 -pipe -fPIC -fno-strict-aliasing -fstack-protector"
+	
+	if [ -e ${CC} ]; then
+        ./Configure ${ARCH[$i]} --prefix=${TMP_DIR} \
+            --openssldir=${TMP_DIR} \
+            --with-zlib-include=${SYSROOT}/usr/include \
+            --with-zlib-lib=${SYSROOT}/usr/lib \
+            zlib \
+            no-asm \
+            no-shared \
+            no-unit-test
 
-	if make -j${CPU_CORE}; then
-		make install_sw
+        if make -j${CPU_CORE}; then
+            make install_sw
 
-		cp ${TMP_DIR}/include/openssl/* ${WORKING_DIR}/include/openssl/
-		cp ${WORKING_DIR}/include/openssl/opensslconf.h ${WORKING_DIR}/include/openssl/android/opensslconf-${ARCH_NAME[$i]}.h
-        cp ${TMP_DIR}/lib/libcrypto.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
-        cp ${TMP_DIR}/lib/libssl.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
-	fi
+            cp ${TMP_DIR}/include/openssl/* ${WORKING_DIR}/include/openssl/
+            cp ${WORKING_DIR}/include/openssl/opensslconf.h ${WORKING_DIR}/include/openssl/android/opensslconf-${ARCH_NAME[$i]}.h
+            cp ${TMP_DIR}/lib/libcrypto.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
+            cp ${TMP_DIR}/lib/libssl.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
+        fi
 
-	make clean
+        make clean
+    fi
 done
 
 cp ${WORKING_DIR}/opensslconf_shared.h.in ${WORKING_DIR}/include/openssl/opensslconf.h

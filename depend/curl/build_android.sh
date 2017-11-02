@@ -68,6 +68,14 @@ rm -rf ${WORKING_DIR}/include
 cd ${LIBRARY_NAME}
 
 for ((i=0; i<${#ARCH[@]}; i++)); do
+    if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then
+        mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
+    else
+        rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcurl.a
+    fi
+
+    rm -rf ${TMP_DIR}
+
 	TOOLCHAIN_BIN_PATH=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/bin/${TOOLCHAIN_NAME[$i]}
 	CONFIGURE_FLAG_SSL=""
 	export CC=${TOOLCHAIN_BIN_PATH}-clang
@@ -77,58 +85,52 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	export STRIP=${TOOLCHAIN_BIN_PATH}-strip
 	export SYSROOT=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/sysroot
 	export CROSS_SYSROOT=${SYSROOT}
-	export CFLAGS="${ARCH_FLAG[$i]} -O2 -fPIC -fno-strict-aliasing -fstack-protector"
+	export CFLAGS="${ARCH_FLAG[$i]} -O2 -pipe -fPIC -fno-strict-aliasing -fstack-protector"
 	
-	if [ -d ${WORKING_DIR}/../openssl/include/openssl/android ] && [ -e ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcrypto.a ]  && [ -e ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libssl.a ]; then
-		rm -rf ${WORKING_DIR}/${LIBRARY_NAME}/openssl
-		mkdir -p ${WORKING_DIR}/${LIBRARY_NAME}/openssl/lib
-		cp -R ${WORKING_DIR}/../openssl/include ${WORKING_DIR}/${LIBRARY_NAME}/openssl/
-		cp ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libssl.a ${WORKING_DIR}/${LIBRARY_NAME}/openssl/lib/
-		cp ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcrypto.a ${WORKING_DIR}/${LIBRARY_NAME}/openssl/lib/
+	if [ -e ${CC} ]; then
+        if [ -d ${WORKING_DIR}/../openssl/include/openssl/android ] && [ -e ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcrypto.a ]  && [ -e ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libssl.a ]; then
+            rm -rf ${WORKING_DIR}/${LIBRARY_NAME}/openssl
+            mkdir -p ${WORKING_DIR}/${LIBRARY_NAME}/openssl/lib
+            cp -R ${WORKING_DIR}/../openssl/include ${WORKING_DIR}/${LIBRARY_NAME}/openssl/
+            cp ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libssl.a ${WORKING_DIR}/${LIBRARY_NAME}/openssl/lib/
+            cp ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcrypto.a ${WORKING_DIR}/${LIBRARY_NAME}/openssl/lib/
 
-		CONFIGURE_FLAG_SSL="--with-ssl=${WORKING_DIR}/${LIBRARY_NAME}/openssl"
-	fi
-	
-	if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then
-		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
-	else
-		rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcurl.a
-	fi
+            CONFIGURE_FLAG_SSL="--with-ssl=${WORKING_DIR}/${LIBRARY_NAME}/openssl"
+        fi
 
-	rm -rf ${TMP_DIR}
+        ./configure --prefix=${TMP_DIR} \
+            --host=${TOOLCHAIN_NAME[$i]} \
+            ${CONFIGURE_FLAG_SSL} \
+            --enable-ipv6 \
+            --enable-static \
+            --enable-threaded-resolver \
+            --disable-shared \
+            --disable-dict \
+            --disable-gopher \
+            --disable-ldap \
+            --disable-ldaps \
+            --disable-manual \
+            --disable-pop3 \
+            --disable-smtp \
+            --disable-imap \
+            --disable-rtsp \
+            --disable-smb \
+            --disable-telnet \
+            --disable-verbose
 
-	./configure --prefix=${TMP_DIR} \
-		--host=${TOOLCHAIN_NAME[$i]} \
-        ${CONFIGURE_FLAG_SSL} \
-        --enable-ipv6 \
-        --enable-static \
-        --enable-threaded-resolver \
-        --disable-shared \
-        --disable-dict \
-        --disable-gopher \
-        --disable-ldap \
-        --disable-ldaps \
-        --disable-manual \
-        --disable-pop3 \
-        --disable-smtp \
-        --disable-imap \
-        --disable-rtsp \
-        --disable-smb \
-        --disable-telnet \
-        --disable-verbose
+        if make -j${CPU_CORE}; then
+            make install
+        
+            if [ ! -d ${WORKING_DIR}/include/curl ]; then
+                mkdir -p ${WORKING_DIR}/include/curl
+            fi
 
-	if make -j${CPU_CORE}; then
-		make install
-		
-		if [ ! -d ${WORKING_DIR}/include/curl ]; then
-			mkdir -p ${WORKING_DIR}/include/curl
-		fi
+            cp ${TMP_DIR}/include/curl/* ${WORKING_DIR}/include/curl/
+            cp ${TMP_DIR}/lib/libcurl.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
+        fi
 
-		cp ${TMP_DIR}/include/curl/* ${WORKING_DIR}/include/curl/
-        cp ${TMP_DIR}/lib/libcurl.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
-	fi
-
-    make clean
+        make clean
+    fi
 done
 
 cd ..
