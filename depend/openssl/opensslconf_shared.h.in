@@ -25,7 +25,11 @@
 		#error "Not supported Android platform"
 	#endif
 #elif __linux__
-	#error "Not supported Linux platform"
+	#if defined(__LP64__) && __LP64__
+		#include "linux/opensslconf-x86_64.h"
+	#else
+		#include "linux/opensslconf-x86.h"
+	#endif
 #else
 	#error "Not supported platform"
 #endif

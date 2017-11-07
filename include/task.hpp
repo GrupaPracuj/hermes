@@ -67,7 +67,7 @@ namespace hms
     class TaskManager
     {
     public:
-        bool initialize(const std::vector<std::pair<int, size_t>> pThreadPool);
+        bool initialize(const std::vector<std::pair<int, size_t>> pThreadPool, std::function<void(std::function<void()>)> pMainThreadHandler = nullptr);
         bool terminate();
 
         void flush(int pThreadPoolID);
@@ -108,7 +108,7 @@ namespace hms
         TaskManager& operator=(const TaskManager& pOther) = delete;
         TaskManager& operator=(TaskManager&& pOther) = delete;
 
-        void enqueueMainThreadTask(std::function<void()> pMethod);
+        void enqueueMainThreadTask(std::function<void()> pTask);
         void dequeueMainThreadTask();
 
 #if defined(ANDROID) || defined(__ANDROID__)
@@ -124,6 +124,8 @@ namespace hms
         int mMessagePipeAndroid[2] = {0, 0};
         ALooper* mLooperAndroid = nullptr;
 #endif
+
+        std::function<void(std::function<void()>)> mMainThreadHandler;
 
         // TODO - Use atomic + compare_exchange_strong for init
         uint32_t mInitialized = {0};

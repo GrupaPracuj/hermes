@@ -103,7 +103,7 @@ namespace hms
             std::lock_guard<std::mutex> lock(mTaskMutex);
             if (!mTask.empty())
             {
-                task = mTask.front();
+                task = std::move(mTask.front());
                 mTask.pop();
             }
         }
@@ -162,12 +162,13 @@ namespace hms
         terminate();
     }
 
-    bool TaskManager::initialize(const std::vector<std::pair<int, size_t>> pThreadPool)
+    bool TaskManager::initialize(const std::vector<std::pair<int, size_t>> pThreadPool, std::function<void(std::function<void()>)> pMainThreadHandler)
     {
         if (mInitialized != 0)
             return false;
         
         mInitialized = 1;
+        mMainThreadHandler = std::move(pMainThreadHandler);
 
 #if defined(ANDROID) || defined(__ANDROID__)
         pipe2(mMessagePipeAndroid, O_NONBLOCK | O_CLOEXEC);
@@ -208,6 +209,7 @@ namespace hms
         mLooperAndroid = nullptr;
 #endif
 
+        mMainThreadHandler = nullptr;
         mInitialized = 0;
         
         return true;
@@ -273,18 +275,18 @@ namespace hms
         thread->second->clearTask();
     }
 
-    void TaskManager::enqueueMainThreadTask(std::function<void()> pMethod)
+    void TaskManager::enqueueMainThreadTask(std::function<void()> pTask)
     {
 #if defined(__APPLE__)
         if ([NSThread isMainThread])
         {
-            pMethod();
+            pTask();
         }
         else
         {
             {
                 std::lock_guard<std::mutex> lock(mMainThreadMutex);
-                mMainThreadTask.push(std::move(pMethod));
+                mMainThreadTask.push(std::move(pTask));
             }
 
             dispatch_async(dispatch_get_main_queue(), ^
@@ -295,7 +297,7 @@ namespace hms
 #elif defined(ANDROID) || defined(__ANDROID__)
         {
             std::lock_guard<std::mutex> lock(mMainThreadMutex);
-            mMainThreadTask.push(std::move(pMethod));
+            mMainThreadTask.push(std::move(pTask));
         }
 
         if (mLooperAndroid != nullptr)
@@ -303,9 +305,9 @@ namespace hms
 
         int eventId = 0;
         write(mMessagePipeAndroid[1], &eventId, sizeof(eventId));
-#elif defined(__linux__)
-        // TO-DO
-        pMethod();
+#else
+        if (mMainThreadHandler != nullptr)
+            mMainThreadHandler(std::move(pTask));
 #endif
     }
 

@@ -102,7 +102,6 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	
 	if [ -e ${CC} ]; then
         ./Configure ${ARCH[$i]} --prefix=${TMP_DIR} \
-            --openssldir=${TMP_DIR} \
             --with-zlib-include=${SYSROOT}/usr/include \
             --with-zlib-lib=${SYSROOT}/usr/lib \
             zlib \
@@ -124,7 +123,6 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 done
 
 cp ${WORKING_DIR}/opensslconf_shared.h.in ${WORKING_DIR}/include/openssl/opensslconf.h
-cd ..
 
 # Cleanup
 rm -rf ${TMP_DIR}

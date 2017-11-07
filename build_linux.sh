@@ -13,15 +13,11 @@ fi
 # Internal variables
 WORKING_DIR=`pwd`
 TARGET_NAME=hermes
-TMP_DIR=${WORKING_DIR}/tmp
 ARCH_FLAG=("-m32" "-m64")
 ARCH_NAME=("x86" "x86_64")
 
 for ((i=0; i<${#ARCH_NAME[@]}; i++)); do
 	export CXXFLAGS="${ARCH_FLAG[$i]}"
-
-	rm -rf ${TMP_DIR}
-	mkdir ${TMP_DIR}
 	
 	if [ ! -d ${WORKING_DIR}/lib/linux/${ARCH_NAME[$i]} ]; then
 		mkdir -p ${WORKING_DIR}/lib/linux/${ARCH_NAME[$i]}
@@ -30,11 +26,8 @@ for ((i=0; i<${#ARCH_NAME[@]}; i++)); do
 	fi
 
 	if make $1 -j${CPU_CORE}; then
-        cp ${TMP_DIR}/lib${TARGET_NAME}.a ${WORKING_DIR}/lib/linux/${ARCH_NAME[$i]}/lib${TARGET_NAME}.a
+        cp ${WORKING_DIR}/lib${TARGET_NAME}.a ${WORKING_DIR}/lib/linux/${ARCH_NAME[$i]}/lib${TARGET_NAME}.a
 	fi
 
     make clean
 done
-
-# Cleanup
-rm -rf ${TMP_DIR}

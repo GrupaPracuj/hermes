@@ -49,7 +49,7 @@ for ((i=0; i<${#ARCH_NAME[@]}; i++)); do
 
 	./configure --prefix=${TMP_DIR} \
 		--host=${TOOLCHAIN_NAME[$i]} \
-        --with-darwinssl \
+        --with-ssl \
         --enable-ipv6 \
         --enable-static \
         --enable-threaded-resolver \
@@ -78,10 +78,8 @@ for ((i=0; i<${#ARCH_NAME[@]}; i++)); do
         cp ${TMP_DIR}/lib/lib${TARGET_NAME}.a ${WORKING_DIR}/../../lib/linux/${ARCH_NAME[$i]}/lib${TARGET_NAME}.a
 	fi
 
-	make clean
+    make clean
 done
-
-cd ${WORKING_DIR}
 
 # Cleanup
 rm -rf ${TMP_DIR}

@@ -1,5 +1,5 @@
 *
 !.gitignore
-!build_android.sh
+!*.sh
 !opensslconf_shared.h.in
 !readme.txt
