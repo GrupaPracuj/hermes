@@ -144,10 +144,10 @@ namespace hms
         const std::string& getName() const;
         
         const std::vector<std::pair<std::string, std::string>>& getHeader() const;
-		void setHeader(const std::vector<std::pair<std::string, std::string>>& pHeader);
+        void setHeader(const std::vector<std::pair<std::string, std::string>>& pHeader);
         
         const std::vector<std::pair<std::string, std::string>>& getParameter() const;
-		void setParameter(const std::vector<std::pair<std::string, std::string>>& pParameter);
+        void setParameter(const std::vector<std::pair<std::string, std::string>>& pParameter);
         
     private:
         friend class NetworkManager;
@@ -202,17 +202,17 @@ namespace hms
         //! Get a list of default headers.
         /** This method is used most of the time by internal methods, however if you want to retrieve default headers for this API you may use it.
          \return List of strings with headers. */
-		const std::vector<std::pair<std::string, std::string>>& getDefaultHeader() const;
+        const std::vector<std::pair<std::string, std::string>>& getDefaultHeader() const;
         
         //! Set a new list of default headers.
         /** Provided headers will be added to each request called through this API.
          \param pDefaultHeader List of headers, simple element may look like this: "{"Content-Type", "application/json; charset=UTF-8"}". */
-		void setDefaultHeader(std::vector<std::pair<std::string, std::string>> pDefaultHeader);
+        void setDefaultHeader(std::vector<std::pair<std::string, std::string>> pDefaultHeader);
         
         //! Get a global URL of this API.
         /** This method returns URL provided for this API at initialization process.
          \return The URL. */
-		const std::string& getURL() const;
+        const std::string& getURL() const;
         
         //! Register a post request callback.
         /** This feature is useful when you want to do some cyclic operation after a request call.
@@ -220,7 +220,7 @@ namespace hms
          \param pName Identificator of this callback.
          \param pOverwrite If set to True and a callback with requested identificator already existing an old callback will be overwritten.
          \return True if callback with requested identificator was registered properly otherwise False. */
-		bool registerCallback(std::function<void(const NetworkRequestParam& pRequest, const NetworkResponse& pResponse)> pCallback, std::string pName, bool pOverwrite);
+        bool registerCallback(std::function<void(const NetworkRequestParam& pRequest, const NetworkResponse& pResponse)> pCallback, std::string pName, bool pOverwrite);
         
         //! Register a post request advanced callback.
         /** This feature is useful when you want to do some cyclic operation after a request call.
@@ -236,22 +236,22 @@ namespace hms
         /** Use this method if you want to unregister previously registered callback.
          \param pName identificator of the callback.
          \return True if callback with requested pName was unregistered properly otherwise False. */
-		bool unregisterCallback(std::string pName);
+        bool unregisterCallback(std::string pName);
         
         //! Get the recovery of the Network API.
-		/** \return The pointer to a NetworkRecovery object. */
-		std::weak_ptr<NetworkRecovery> getRecovery() const;
+        /** \return The pointer to a NetworkRecovery object. */
+        std::weak_ptr<NetworkRecovery> getRecovery() const;
         
         //! Set the recovery for the Network API.
-		/** \param pRecovery The pointer to a NetworkRecovery object. */
+        /** \param pRecovery The pointer to a NetworkRecovery object. */
         void setRecovery(std::weak_ptr<NetworkRecovery> pRecovery);
         
         //! Get the Id of the Network API.
-		/** \return The Id. */
+        /** \return The Id. */
         size_t getId() const;
         
         //! Get the Name of the Network API.
-		/** \return The Name. */
+        /** \return The Name. */
         const std::string& getName() const;
         
     private:
@@ -284,22 +284,22 @@ namespace hms
             std::atomic<uint32_t>* mTerminateAbort = nullptr;
         };
     
-		bool initialize(long pTimeout, int pThreadPoolID, std::pair<int, int> pHttpCodeSuccess = {200, 299});
-		bool terminate();
+        bool initialize(long pTimeout, int pThreadPoolID, std::pair<int, int> pHttpCodeSuccess = {200, 299});
+        bool terminate();
         
-		std::shared_ptr<NetworkAPI> add(const std::string& pName, const std::string& pURL, size_t pUniqueID);
-		size_t count() const;
-		std::shared_ptr<NetworkAPI> get(size_t pID) const;
+        std::shared_ptr<NetworkAPI> add(const std::string& pName, const std::string& pURL, size_t pUniqueID);
+        size_t count() const;
+        std::shared_ptr<NetworkAPI> get(size_t pID) const;
         
         std::shared_ptr<NetworkRecovery> addRecovery(const std::string& pName, size_t pUniqueID);
         size_t countRecovery() const;
         std::shared_ptr<NetworkRecovery> getRecovery(size_t pID) const;
 
-		void request(NetworkRequestParam pParam);
+        void request(NetworkRequestParam pParam);
         void request(std::vector<NetworkRequestParam> pParam);
         
-		long getTimeout() const;
-		void setTimeout(long pTimeout);
+        long getTimeout() const;
+        void setTimeout(long pTimeout);
         
         bool getFlag(ENetworkFlag pFlag) const;
         void setFlag(ENetworkFlag pFlag, bool pState);
@@ -400,14 +400,16 @@ namespace hms
         
         std::weak_ptr<NetworkManager> mWeakThis;
         
-        std::vector<std::shared_ptr<NetworkAPI>> mAPI;
+        std::vector<std::shared_ptr<NetworkAPI>> mApi;
+        mutable std::mutex mApiMutex;
         std::vector<std::shared_ptr<NetworkRecovery>> mRecovery;
+        mutable std::mutex mRecoveryMutex;
         std::vector<CacheFileData> mCacheFileInfo;
         std::unordered_map<std::string, size_t> mCacheFileIndex;
 
         std::unordered_map<std::thread::id, void*> mHandle;
+        std::mutex mHandleMutex;
         std::unordered_map<std::thread::id, void*> mMultiHandle;
-		std::mutex mHandleMutex;
         std::mutex mMultiHandleMutex;
         void* mSimpleSocketCURL = nullptr;
 
@@ -432,6 +434,7 @@ namespace hms
         const long mSocketWaitTimeout = 1000;
         
         RequestSettings mRequestSettings;
+        mutable std::mutex mRequestSettingsMutex;
     };
 
 }
