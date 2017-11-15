@@ -43,11 +43,11 @@ fi
 WORKING_DIR=`pwd`
 TMP_DIR=${WORKING_DIR}/tmp
 TOOLCHAIN_DIR=${WORKING_DIR}/toolchain
-TOOLCHAIN_ARCH=("arm" "arm" "arm64" "mips" "mips64" "x86" "x86_64")
-TOOLCHAIN_NAME=("arm-linux-androideabi" "arm-linux-androideabi" "aarch64-linux-android" "mipsel-linux-android" "mips64el-linux-android" "i686-linux-android" "x86_64-linux-android")
-ARCH=("android" "android-armeabi" "android64-aarch64" "android-mips" "linux64-mips64" "android-x86" "android64")
-ARCH_FLAG=("-mthumb" "-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon" "" "" "" "-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse" "-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt")
-ARCH_NAME=("arm" "armv7" "arm64" "mips" "mips64" "x86" "x86_64")
+TOOLCHAIN_ARCH=("arm" "arm64" "x86" "x86_64")
+TOOLCHAIN_NAME=("arm-linux-androideabi" "aarch64-linux-android" "i686-linux-android" "x86_64-linux-android")
+ARCH=("android-armeabi" "android64-aarch64" "android-x86" "android64")
+ARCH_FLAG=("-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon" "" "-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse" "-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt")
+ARCH_NAME=("armv7" "arm64" "x86" "x86_64")
 
 # Prepare toolchains
 for ((i=0; i<${#TOOLCHAIN_ARCH[@]}; i++)); do
