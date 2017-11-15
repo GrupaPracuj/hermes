@@ -5,7 +5,7 @@ LIBRARY_VERSION="1.8.1"
 
 # Check settings
 if [ -z "${HERMES_ANDROID_API}" ]; then
-    ANDROID_API="android-21"
+    ANDROID_API="21"
 else
     ANDROID_API=${HERMES_ANDROID_API}
 fi
@@ -47,7 +47,7 @@ ARCH_NAME=("arm" "armv7" "arm64" "mips" "mips64" "x86" "x86_64")
 # Prepare toolchains
 for ((i=0; i<${#TOOLCHAIN_ARCH[@]}; i++)); do
 	if [ ! -d ${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]} ]; then
-		${ANDROID_NDK_ROOT}/build/tools/make-standalone-toolchain.sh --arch=${TOOLCHAIN_ARCH[$i]} --platform=${ANDROID_API} --stl=libc++ --install-dir=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}
+        python ${ANDROID_NDK_ROOT}/build/tools/make_standalone_toolchain.py --arch ${TOOLCHAIN_ARCH[$i]} --api ${ANDROID_API} --stl libc++ --install-dir ${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}
 	fi
 done
 

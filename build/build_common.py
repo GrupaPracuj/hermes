@@ -69,7 +69,7 @@ def prepareMake(pDestinationDir):
         
 def configure(pBuildTarget, pSettings):
     if sys.version_info < (3, 0):
-        print('Error: This script require Python 3.0 or higher.')
+        print('Error: This script requires Python 3.0 or higher. Please use "python3" command instead of "python".')
         return False
 
     pSettings.mHostName = platform.system()
