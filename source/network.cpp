@@ -785,7 +785,8 @@ namespace hms
                             auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
                             Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
                             {
-                                taskHandler->first(std::move(taskHandler->second));
+                                auto taskCallback = std::move(taskHandler->first);
+                                taskCallback(std::move(taskHandler->second));
                             });
                             
                             strongThis->mActivityCount--;
@@ -912,7 +913,8 @@ namespace hms
                             auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
                             Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
                             {
-                                taskHandler->first(std::move(taskHandler->second));
+                                auto taskCallback = std::move(taskHandler->first);
+                                taskCallback(std::move(taskHandler->second));
                             });
                         }
                     }
@@ -930,8 +932,9 @@ namespace hms
         std::tuple<decltype(requestTask), decltype(pParam), decltype(requestSettings)> taskData = std::make_tuple(std::move(requestTask), std::move(pParam), std::move(requestSettings));
         auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
         Hermes::getInstance()->getTaskManager()->execute(mThreadPoolID, [taskHandler]() -> void
-        {
-            std::get<0>(*taskHandler)(std::move(std::get<1>(*taskHandler)), std::move(std::get<2>(*taskHandler)));
+        {                                
+            auto taskCallback = std::move(std::get<0>(*taskHandler));
+            taskCallback(std::move(std::get<1>(*taskHandler)), std::move(std::get<2>(*taskHandler)));
         });
     }
     
@@ -969,7 +972,8 @@ namespace hms
                                 auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
                                 Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
                                 {
-                                    taskHandler->first(std::move(taskHandler->second));
+                                    auto taskCallback = std::move(taskHandler->first);
+                                    taskCallback(std::move(taskHandler->second));
                                 });
                             }
                         }
@@ -1170,7 +1174,8 @@ namespace hms
                                     auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
                                     Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
                                     {
-                                        taskHandler->first(std::move(taskHandler->second));
+                                        auto taskCallback = std::move(taskHandler->first);
+                                        taskCallback(std::move(taskHandler->second));
                                     });
                                 }
                             }
@@ -1200,7 +1205,8 @@ namespace hms
         auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
         Hermes::getInstance()->getTaskManager()->execute(mThreadPoolID, [taskHandler]() -> void
         {
-            std::get<0>(*taskHandler)(std::move(std::get<1>(*taskHandler)), std::move(std::get<2>(*taskHandler)));
+            auto taskCallback = std::move(std::get<0>(*taskHandler));
+            taskCallback(std::move(std::get<1>(*taskHandler)), std::move(std::get<2>(*taskHandler)));
         });
     }
     
@@ -1802,7 +1808,8 @@ namespace hms
                                 auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
                                 Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
                                 {
-                                    taskHandler->first(std::move(taskHandler->second));
+                                    auto taskCallback = std::move(taskHandler->first);
+                                    taskCallback(std::move(taskHandler->second));
                                 });
                             }
 
@@ -1835,7 +1842,8 @@ namespace hms
                                 auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
                                 Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
                                 {
-                                    taskHandler->first(std::move(taskHandler->second));
+                                    auto taskCallback = std::move(taskHandler->first);
+                                    taskCallback(std::move(taskHandler->second));
                                 });
                             }
                         }
@@ -1849,7 +1857,8 @@ namespace hms
         auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
         Hermes::getInstance()->getTaskManager()->execute(mThreadPoolSimpleSocketID, [taskHandler]() -> void
         {
-            std::get<0>(*taskHandler)(std::move(std::get<1>(*taskHandler)), std::move(std::get<2>(*taskHandler)));
+            auto taskCallback = std::move(std::get<0>(*taskHandler));
+            taskCallback(std::move(std::get<1>(*taskHandler)), std::move(std::get<2>(*taskHandler)));
         });
     }
     
@@ -2015,7 +2024,8 @@ namespace hms
                                                                 auto taskHandler = std::make_shared<decltype(lpParam.mConnectCallback)>(std::move(lpParam.mConnectCallback));
                                                                 Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
                                                                 {
-                                                                    (*taskHandler)();
+                                                                    auto taskCallback = std::move(*taskHandler);
+                                                                    taskCallback();
                                                                 });
                                                             }
                                                         }
@@ -2071,7 +2081,8 @@ namespace hms
                         auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
                         Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
                         {
-                            std::get<0>(*taskHandler)(std::move(std::get<1>(*taskHandler)), std::move(std::get<2>(*taskHandler)));
+                            auto taskCallback = std::move(std::get<0>(*taskHandler));
+                            taskCallback(std::move(std::get<1>(*taskHandler)), std::move(std::get<2>(*taskHandler)));
                         });
                     }
                 }
@@ -2089,7 +2100,8 @@ namespace hms
         auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
         Hermes::getInstance()->getTaskManager()->execute(mThreadPoolSimpleSocketID, [taskHandler]() -> void
         {
-            std::get<0>(*taskHandler)(std::move(std::get<1>(*taskHandler)), std::move(std::get<2>(*taskHandler)));
+            auto taskCallback = std::move(std::get<0>(*taskHandler));
+            taskCallback(std::move(std::get<1>(*taskHandler)), std::move(std::get<2>(*taskHandler)));
         });
     }
     
@@ -2371,7 +2383,7 @@ namespace hms
             else if (static_cast<ESocketOpCode>(opCode) != ESocketOpCode::Continue)
             {
                 if (pMessageCallback != nullptr)
-                    Hermes::getInstance()->getTaskManager()->execute(-1, pMessageCallback, std::move(it->mPayload), static_cast<ESocketOpCode>(opCode) == ESocketOpCode::Text);
+                    Hermes::getInstance()->getTaskManager()->execute(-1, std::move(pMessageCallback), std::move(it->mPayload), static_cast<ESocketOpCode>(opCode) == ESocketOpCode::Text);
                 
                 it = pOldFrame.erase(it);
             }
@@ -2380,7 +2392,7 @@ namespace hms
                 multiMessage += std::move(it->mPayload);
                 
                 if (pMessageCallback != nullptr)
-                    Hermes::getInstance()->getTaskManager()->execute(-1, pMessageCallback, std::move(multiMessage), multiFrameOpCode == ESocketOpCode::Text);
+                    Hermes::getInstance()->getTaskManager()->execute(-1, std::move(pMessageCallback), std::move(multiMessage), multiFrameOpCode == ESocketOpCode::Text);
                 
                 multiMessage = "";
                 

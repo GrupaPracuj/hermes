@@ -463,8 +463,14 @@ namespace hms
     
     bool DataManager::convertJSON(const Json::Value& pSource, std::string& pDestination) const
     {
-        Json::StyledWriter writer;
-        pDestination = writer.write(pSource);
+        Json::StreamWriterBuilder builder;
+        builder["commentStyle"] = "None";
+        builder["indentation"] = "    ";
+        std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
+
+        std::ostringstream stream;
+        writer->write(pSource, &stream);
+        pDestination = stream.str();
 
         return true;
     }
@@ -475,8 +481,13 @@ namespace hms
         
         if (pSource.size() > 0)
         {
-            Json::Reader reader;
-            status = reader.parse(pSource, pDestination);
+            Json::CharReaderBuilder builder;
+            builder["collectComments"] = false;
+            std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+            
+            const char* source = pSource.c_str();
+            std::string errors;
+            status = reader->parse(source, source + pSource.size(), &pDestination, &errors);
         }
         
         return status;

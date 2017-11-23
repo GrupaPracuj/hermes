@@ -206,6 +206,11 @@ namespace hms
         mThreadPool.clear();
 
 #if defined(ANDROID) || defined(__ANDROID__)
+        if (mLooperAndroid != nullptr)
+            ALooper_removeFd(mLooperAndroid, mMessagePipeAndroid[0]);
+
+        mMessagePipeAndroid[0] = 0;
+        mMessagePipeAndroid[1] = 0;
         mLooperAndroid = nullptr;
 #endif
 
@@ -301,7 +306,7 @@ namespace hms
         }
 
         if (mLooperAndroid != nullptr)
-            ALooper_addFd(mLooperAndroid, mMessagePipeAndroid[0], 0, ALOOPER_EVENT_INPUT, TaskManager::messageHandlerAndroid, this);
+            ALooper_addFd(mLooperAndroid, mMessagePipeAndroid[0], ALOOPER_POLL_CALLBACK, ALOOPER_EVENT_INPUT, TaskManager::messageHandlerAndroid, this);
 
         int eventId = 0;
         write(mMessagePipeAndroid[1], &eventId, sizeof(eventId));
@@ -313,11 +318,6 @@ namespace hms
 
     void TaskManager::dequeueMainThreadTask()
     {
-#if defined(ANDROID) || defined(__ANDROID__)
-        if (mLooperAndroid != nullptr)
-            ALooper_removeFd(mLooperAndroid, mMessagePipeAndroid[0]);
-#endif
-    
         bool hasMainThreadTask = false;
 
         {
@@ -346,7 +346,7 @@ namespace hms
         TaskManager* taskManager = static_cast<TaskManager*>(pData);
         taskManager->dequeueMainThreadTask();
 
-        return 1;
+        return 0;
     }
 #endif
 

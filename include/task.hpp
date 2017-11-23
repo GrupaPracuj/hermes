@@ -93,7 +93,7 @@ namespace hms
                 assert(mThreadPool.find(pThreadPoolID) != mThreadPool.end());
             
                 ThreadPool* threadPool = mThreadPool[pThreadPoolID];
-                threadPool->push(task);
+                threadPool->push(std::move(task));
             }
         }
 
