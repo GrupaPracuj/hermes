@@ -215,6 +215,16 @@ namespace hms
 #endif
 
         mMainThreadHandler = nullptr;
+        
+        while (mMainThreadTask.size() > 0)
+        {
+            mMainThreadTask.front()();
+            mMainThreadTask.pop();
+        }
+        
+        std::queue<std::function<void()>> mainThreadTaskEmpty;
+        std::swap(mMainThreadTask, mainThreadTaskEmpty);
+        
         mInitialized = 0;
         
         return true;

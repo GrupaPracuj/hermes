@@ -37,6 +37,7 @@ namespace hms
         InvalidHttpCodeRange,
         LostConnection,
         Timeout,
+        Cancel,
         Unknown = 100
     };
 
@@ -332,7 +333,8 @@ namespace hms
             DataBuffer mResponseRawData;
             ProgressData mProgressData;
             void* mHandle = nullptr;
-            char* mErrorBuffer = nullptr;
+            std::vector<char> mErrorBuffer;
+            bool mExecuteCancel = true;
             NetworkRequestParam* mParam = nullptr;
         };
         

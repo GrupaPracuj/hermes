@@ -769,6 +769,7 @@ namespace hms
         auto weakThis = mWeakThis;
         auto requestTask = [weakThis](NetworkRequestParam lpParam, RequestSettings lpRequestSettings) -> void
         {
+            bool executeCancel = true;
             std::shared_ptr<NetworkManager> strongThis = weakThis.lock();
             if (strongThis != nullptr)
             {
@@ -909,6 +910,7 @@ namespace hms
                             if (response.mCode == ENetworkCode::OK && lpParam.mAllowCache)
                                 strongThis->cacheResponse(response, requestUrl, lpParam.mCacheLifetime);
 
+                            executeCancel = false;
                             std::pair<decltype(lpParam.mCallback), decltype(response)> taskData = std::make_pair(std::move(lpParam.mCallback), std::move(response));
                             auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
                             Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
@@ -920,6 +922,19 @@ namespace hms
                     }
                 }
                 strongThis->mActivityCount--;
+            }
+            
+            if (executeCancel)
+            {
+                auto taskHandler = std::make_shared<decltype(lpParam.mCallback)>(std::move(lpParam.mCallback));
+                Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
+                {
+                    NetworkResponse response;
+                    response.mCode = ENetworkCode::Cancel;
+
+                    auto taskCallback = std::move(*taskHandler);
+                    taskCallback(std::move(response));
+                });
             }
         };
         
@@ -943,6 +958,13 @@ namespace hms
         auto weakThis = mWeakThis;
         auto requestTask = [weakThis](std::vector<NetworkRequestParam> lpParam, RequestSettings lpRequestSettings) -> void
         {
+            void* handle = nullptr;
+            size_t paramSize = lpParam.size();
+            std::vector<MultiRequestData> multiRequestData(paramSize);
+                        
+            for (size_t i = 0; i < paramSize; ++i)
+                multiRequestData[i].mParam = &lpParam[i];
+            
             std::shared_ptr<NetworkManager> strongThis = weakThis.lock();
             if (strongThis != nullptr)
             {
@@ -985,9 +1007,7 @@ namespace hms
                         
                         return;
                     }
-                    
-                    void* handle = nullptr;
-                    
+
                     {
                         std::lock_guard<std::mutex> lock(strongThis->mMultiHandleMutex);
                         handle = strongThis->mMultiHandle[std::this_thread::get_id()];
@@ -1001,16 +1021,14 @@ namespace hms
                         strongThis->mMultiHandle[std::this_thread::get_id()] = handle;
                     }
                 
-                    const size_t paramSize = param.size();
-                    
-                    std::vector<MultiRequestData> multiRequestData;
-                    multiRequestData.resize(paramSize);
+                    paramSize = param.size();                    
+                    multiRequestData = std::vector<MultiRequestData>(paramSize);
                 
                     for (size_t i = 0; i < paramSize; ++i)
                     {
                         multiRequestData[i].mHandle = curl_easy_init();
                         multiRequestData[i].mParam = &param[i];
-                        multiRequestData[i].mErrorBuffer = new char[CURL_ERROR_SIZE];
+                        multiRequestData[i].mErrorBuffer.resize(CURL_ERROR_SIZE);
                         multiRequestData[i].mErrorBuffer[0] = 0;
 
                         curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_HEADERFUNCTION, CURL_HEADER_CALLBACK);
@@ -1055,7 +1073,7 @@ namespace hms
                         
                         strongThis->configureHandle(multiRequestData[i].mHandle, param[i].mRequestType, param[i].mResponseType, requestUrl, param[i].mRequestBody, &multiRequestData[i].mResponseMessage,
                             &multiRequestData[i].mResponseRawData, &multiRequestData[i].mResponseHeader, header, lpRequestSettings.mTimeout, lpRequestSettings.mFlag, &multiRequestData[i].mProgressData,
-                            multiRequestData[i].mErrorBuffer, lpRequestSettings.mCACertificatePath);
+                            &multiRequestData[i].mErrorBuffer[0], lpRequestSettings.mCACertificatePath);
                         
                         curl_multi_add_handle(handle, multiRequestData[i].mHandle);
                     }
@@ -1164,12 +1182,13 @@ namespace hms
                                     response.mCode = code;
                                     response.mHttpCode = static_cast<int>(httpCode);
                                     response.mHeader = std::move(requestData->mResponseHeader);
-                                    response.mMessage = strlen(requestData->mErrorBuffer) == 0 ? std::move(requestData->mResponseMessage) : requestData->mErrorBuffer;
+                                    response.mMessage = strlen(&requestData->mErrorBuffer[0]) == 0 ? std::move(requestData->mResponseMessage) : &requestData->mErrorBuffer[0];
                                     response.mRawData = std::move(requestData->mResponseRawData);
                                     
                                     if (response.mCode == ENetworkCode::OK && requestData->mParam->mAllowCache)
                                         strongThis->cacheResponse(response, requestData->mParam->mMethod, requestData->mParam->mCacheLifetime);
                                     
+                                    requestData->mExecuteCancel = false;
                                     auto taskData = std::make_pair(std::move(requestData->mParam->mCallback), std::move(response));
                                     auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
                                     Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
@@ -1182,16 +1201,30 @@ namespace hms
                         }
                     }
                     while (activeHandle && terminateAbort == 0);
-
-                    for (size_t i = 0; i < paramSize; ++i)
-                    {
-                        curl_multi_remove_handle(handle, multiRequestData[i].mHandle);
-                        curl_easy_cleanup(multiRequestData[i].mHandle);
-                        
-                        delete[] multiRequestData[i].mErrorBuffer;
-                    }
                 }
                 strongThis->mActivityCount--;
+            }
+            
+            for (size_t i = 0; i < paramSize; ++i)
+            {
+                if (handle != nullptr)
+                {
+                    curl_multi_remove_handle(handle, multiRequestData[i].mHandle);
+                    curl_easy_cleanup(multiRequestData[i].mHandle);
+                }
+
+                if (multiRequestData[i].mExecuteCancel)
+                {
+                    auto taskHandler = std::make_shared<decltype(multiRequestData[i].mParam->mCallback)>(std::move(multiRequestData[i].mParam->mCallback));
+                    Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
+                    {
+                        NetworkResponse response;
+                        response.mCode = ENetworkCode::Cancel;
+
+                        auto taskCallback = std::move(*taskHandler);
+                        taskCallback(std::move(response));
+                    });
+                }
             }
         };
         
