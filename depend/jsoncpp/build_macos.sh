@@ -21,14 +21,12 @@ fi
 # Internal variables
 WORKING_DIR=`pwd`
 TARGET_NAME=jsoncpp
-TMP_DIR=${WORKING_DIR}/tmp
 TMP_LIB_DIR=${WORKING_DIR}/tmp_lib
 ARCH_FLAG=("-m32" "-m64")
 ARCH_NAME=("x86" "x86_64")
 
 # Download and extract library
 LIBRARY_NAME=jsoncpp-${LIBRARY_VERSION}
-TMP_DIR=${WORKING_DIR}/${LIBRARY_NAME}/tmp
 
 rm -rf ${LIBRARY_NAME}
 [ -f ${LIBRARY_VERSION}.tar.gz ] || wget --no-check-certificate https://github.com/open-source-parsers/jsoncpp/archive/${LIBRARY_VERSION}.tar.gz;
@@ -46,11 +44,8 @@ cd ${WORKING_DIR}/${LIBRARY_NAME}
 for ((i=0; i<${#ARCH_NAME[@]}; i++)); do
 	export CXXFLAGS="${ARCH_FLAG[$i]} -gdwarf-2 -fembed-bitcode"
 
-	rm -rf ${TMP_DIR}
-	mkdir ${TMP_DIR}
-
 	if make $1 -j${CPU_CORE}; then
-        cp ${TMP_DIR}/lib${TARGET_NAME}.a ${TMP_LIB_DIR}/lib${TARGET_NAME}-${ARCH_NAME[$i]}.a
+        cp lib${TARGET_NAME}.a ${TMP_LIB_DIR}/lib${TARGET_NAME}-${ARCH_NAME[$i]}.a
 	fi
 
     make clean
@@ -65,6 +60,5 @@ cd ${WORKING_DIR}
 
 # Cleanup
 rm -rf ${TMP_LIB_DIR}
-rm -rf ${TMP_DIR}
 rm -rf ${WORKING_DIR}/${LIBRARY_NAME}
 rm -rf ${WORKING_DIR}/${LIBRARY_VERSION}.tar.gz

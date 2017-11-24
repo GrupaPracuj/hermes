@@ -21,13 +21,11 @@ fi
 # Internal variables
 WORKING_DIR=`pwd`
 TARGET_NAME=jsoncpp
-TMP_DIR=${WORKING_DIR}/tmp
 ARCH_FLAG=("-m32" "-m64")
 ARCH_NAME=("x86" "x86_64")
 
 # Download and extract library
 LIBRARY_NAME=jsoncpp-${LIBRARY_VERSION}
-TMP_DIR=${WORKING_DIR}/${LIBRARY_NAME}/tmp
 
 rm -rf ${LIBRARY_NAME}
 [ -f ${LIBRARY_VERSION}.tar.gz ] || wget --no-check-certificate https://github.com/open-source-parsers/jsoncpp/archive/${LIBRARY_VERSION}.tar.gz;
@@ -42,9 +40,6 @@ cd ${WORKING_DIR}/${LIBRARY_NAME}
 
 for ((i=0; i<${#ARCH_NAME[@]}; i++)); do
 	export CXXFLAGS="${ARCH_FLAG[$i]}"
-
-	rm -rf ${TMP_DIR}
-	mkdir ${TMP_DIR}
 	
 	if [ ! -d ${WORKING_DIR}/../../lib/linux/${ARCH_NAME[$i]} ]; then
 		mkdir -p ${WORKING_DIR}/../../lib/linux/${ARCH_NAME[$i]}
@@ -53,7 +48,7 @@ for ((i=0; i<${#ARCH_NAME[@]}; i++)); do
 	fi
 
 	if make $1 -j${CPU_CORE}; then
-        cp ${TMP_DIR}/lib${TARGET_NAME}.a ${WORKING_DIR}/../../lib/linux/${ARCH_NAME[$i]}/lib${TARGET_NAME}.a
+        cp lib${TARGET_NAME}.a ${WORKING_DIR}/../../lib/linux/${ARCH_NAME[$i]}/lib${TARGET_NAME}.a
 	fi
 
     make clean
@@ -64,6 +59,5 @@ cp ${WORKING_DIR}/${LIBRARY_NAME}/include/json/* ${WORKING_DIR}/include/json/
 cd ${WORKING_DIR}
 
 # Cleanup
-rm -rf ${TMP_DIR}
 rm -rf ${WORKING_DIR}/${LIBRARY_NAME}
 rm -rf ${WORKING_DIR}/${LIBRARY_VERSION}.tar.gz

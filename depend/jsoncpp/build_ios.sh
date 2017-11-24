@@ -31,7 +31,6 @@ fi
 
 # Internal variables
 WORKING_DIR=`pwd`
-TMP_DIR=${WORKING_DIR}/tmp
 TMP_LIB_DIR=${WORKING_DIR}/tmp_lib
 TOOLCHAIN_DIR=${XCODE_ROOT}/Toolchains/XcodeDefault.xctoolchain
 TOOLCHAIN_NAME=("armv7-apple-darwin" "armv7s-apple-darwin" "arm-apple-darwin" "i386-apple-darwin" "x86_64-apple-darwin")
@@ -41,7 +40,6 @@ TARGET=("iPhoneOS" "iPhoneOS" "iPhoneOS" "iPhoneSimulator" "iPhoneSimulator")
 
 # Download and extract library
 LIBRARY_NAME=jsoncpp-${LIBRARY_VERSION}
-TMP_DIR=${WORKING_DIR}/${LIBRARY_NAME}/tmp
 
 rm -rf ${LIBRARY_NAME}
 [ -f ${LIBRARY_VERSION}.tar.gz ] || wget --no-check-certificate https://github.com/open-source-parsers/jsoncpp/archive/${LIBRARY_VERSION}.tar.gz;
@@ -70,12 +68,9 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	if [ "${TARGET[$i]}" = "iPhoneSimulator" ]; then
 		export CXXFLAGS="${CXXFLAGS} -D__IPHONE_OS_VERSION_MIN_REQUIRED=${IOS_DEPLOYMENT_TARGET%%.*}0000"
 	fi
-	
-	rm -rf ${TMP_DIR}
-	mkdir ${TMP_DIR}
 
 	if make $1 -j${CPU_CORE}; then
-        cp ${TMP_DIR}/libjsoncpp.a ${TMP_LIB_DIR}/libjsoncpp-${ARCH_NAME[$i]}.a
+        cp libjsoncpp.a ${TMP_LIB_DIR}/libjsoncpp-${ARCH_NAME[$i]}.a
 	fi
 
     make clean
@@ -90,6 +85,5 @@ cd ${WORKING_DIR}
 
 # Cleanup
 rm -rf ${TMP_LIB_DIR}
-rm -rf ${TMP_DIR}
 rm -rf ${WORKING_DIR}/${LIBRARY_NAME}
 rm -rf ${WORKING_DIR}/${LIBRARY_VERSION}.tar.gz

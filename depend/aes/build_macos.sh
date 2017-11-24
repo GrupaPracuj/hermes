@@ -13,7 +13,6 @@ fi
 # Internal variables
 WORKING_DIR=`pwd`
 TARGET_NAME=aes
-TMP_DIR=${WORKING_DIR}/tmp
 TMP_LIB_DIR=${WORKING_DIR}/tmp_lib
 ARCH_FLAG=("-m32" "-m64")
 ARCH_NAME=("x86" "x86_64")
@@ -27,11 +26,8 @@ mkdir ${TMP_LIB_DIR}
 for ((i=0; i<${#ARCH_NAME[@]}; i++)); do
 	export CFLAGS="${ARCH_FLAG[$i]} -gdwarf-2 -fembed-bitcode"
 
-	rm -rf ${TMP_DIR}
-	mkdir ${TMP_DIR}
-
 	if make $1 -j${CPU_CORE}; then
-        cp ${TMP_DIR}/lib${TARGET_NAME}.a ${TMP_LIB_DIR}/lib${TARGET_NAME}-${ARCH_NAME[$i]}.a
+        cp lib${TARGET_NAME}.a ${TMP_LIB_DIR}/lib${TARGET_NAME}-${ARCH_NAME[$i]}.a
 	fi
 
     make clean
@@ -43,4 +39,3 @@ cp ${TMP_LIB_DIR}/lib${TARGET_NAME}.a ${WORKING_DIR}/../../lib/macos/
 
 # Cleanup
 rm -rf ${TMP_LIB_DIR}
-rm -rf ${TMP_DIR}

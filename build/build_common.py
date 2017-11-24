@@ -12,9 +12,7 @@ class Settings:
         self.mAndroidNdkDir = ''
         self.mCoreCount = ''
         self.mMake = ''
-        self.mWorkingDir = ''
         self.mBuildDir = ''
-        self.mTmpDir = ''
         self.mToolchainRemovable = False
         self.mToolchainDir = ''
         self.mToolchainArch = []
@@ -23,25 +21,28 @@ class Settings:
         self.mArchFlag = []
         self.mArchName = []
         
-def downloadAndExtract(pURL, pDestinationDir, pFileName, pFileExtension):
+def downloadAndExtract(pURL, pDestinationDir, pFileName, pExtractDir):
+    print('Downloading and extracting...')
+
     import urllib.request
     import zipfile
 
     status = False
 
-    outputDir = os.path.join(pDestinationDir, pFileName)
-    downloadFile = outputDir + '.' + pFileExtension
+    downloadFile = os.path.join(pDestinationDir, pFileName)
     urllib.request.urlretrieve(pURL, downloadFile)
     
     if os.path.isfile(downloadFile):
         archiveFile = zipfile.ZipFile(downloadFile)
-        archiveFile.extractall(outputDir)
+        archiveFile.extractall(os.path.join(pDestinationDir, pExtractDir))
         archiveFile.close()
         status = True
         
     return status
     
 def prepareMake(pDestinationDir):
+    print('Preparing \'make\'...')
+
     status = False
 
     destinationMakePath = os.path.join(pDestinationDir, 'make.exe')
@@ -49,7 +50,7 @@ def prepareMake(pDestinationDir):
     destinationIntlPath = os.path.join(pDestinationDir, 'libintl3.dll')
     
     if not os.path.isfile(destinationMakePath):
-        if downloadAndExtract('https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-bin.zip/download', pDestinationDir, 'make-3.81-bin', 'zip'):
+        if downloadAndExtract('https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-bin.zip/download', pDestinationDir, 'make-3.81-bin.zip', 'make-3.81-bin'):
             extractDir = os.path.join(pDestinationDir, 'make-3.81-bin')
             binDir = os.path.join(extractDir, 'bin')
             shutil.copy2(os.path.join(binDir, 'make.exe'), destinationMakePath)
@@ -57,7 +58,7 @@ def prepareMake(pDestinationDir):
             os.remove(extractDir + '.zip')
      
     if not os.path.isfile(destinationIconvPath) or not os.path.isfile(destinationIntlPath):
-        if downloadAndExtract('https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-dep.zip/download', pDestinationDir, 'make-3.81-dep', 'zip'):
+        if downloadAndExtract('https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-dep.zip/download', pDestinationDir, 'make-3.81-dep.zip', 'make-3.81-dep'):
             extractDir = os.path.join(pDestinationDir, 'make-3.81-dep')
             binDir = os.path.join(extractDir, 'bin')
             shutil.copy2(os.path.join(binDir, 'libiconv2.dll'), destinationIconvPath)
@@ -68,14 +69,15 @@ def prepareMake(pDestinationDir):
     return os.path.isfile(destinationMakePath) and os.path.isfile(destinationIconvPath) and os.path.isfile(destinationIntlPath)
         
 def configure(pBuildTarget, pSettings):
+    print('Configuring...')
+
     if sys.version_info < (3, 0):
         print('Error: This script requires Python 3.0 or higher. Please use "python3" command instead of "python".')
         return False
-
+       
+    workingDir = os.getcwd()
     pSettings.mHostName = platform.system()
-    pSettings.mWorkingDir = os.getcwd()
-    pSettings.mBuildDir = os.path.join(pSettings.mWorkingDir, 'build')
-    pSettings.mTmpDir = os.path.join(pSettings.mWorkingDir, 'tmp')
+    pSettings.mBuildDir = os.path.join(workingDir, 'build')
     
     if pBuildTarget is not None and pBuildTarget == 'android':
         hostDetected = False
@@ -119,7 +121,7 @@ def configure(pBuildTarget, pSettings):
                     print('Error: Occurred problem related to ANDROID_HOME environment variable.')
                     return False
                     
-            pSettings.mToolchainDir = os.path.join(pSettings.mWorkingDir, 'toolchain')
+            pSettings.mToolchainDir = os.path.join(workingDir, 'toolchain')
             pSettings.mToolchainArch = ['arm', 'arm64', 'x86', 'x86_64']
             pSettings.mToolchainName = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
             pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
@@ -142,11 +144,13 @@ def configure(pBuildTarget, pSettings):
     return True
          
 def prepareToolchainAndroid(pSettings):
+    print('Preparing toolchains...')
+
     for i in range(0, len(pSettings.mArch)):
         destinationPath = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i])
         
         if not os.path.isdir(destinationPath):
-            os.system(os.path.join(pSettings.mAndroidNdkDir, 'build/tools/make_standalone_toolchain.py') + ' --arch ' + pSettings.mToolchainArch[i] + ' --api ' + pSettings.mAndroidApi + ' --stl libc++ --install-dir ' + destinationPath)
+            os.system(os.path.join(pSettings.mAndroidNdkDir, 'build', 'tools', 'make_standalone_toolchain.py') + ' --arch ' + pSettings.mToolchainArch[i] + ' --api ' + pSettings.mAndroidApi + ' --stl libc++ --install-dir ' + destinationPath)
             
     pSettings.mToolchainRemovable = True
             
@@ -176,18 +180,30 @@ def executeCmdCommand(pCommandLine, pWorkingDir):
     
     return returnCode
     
+def remove(pPath):
+    if pPath is not None:
+        if os.path.isdir(pPath):
+            shutil.rmtree(pPath)
+        elif os.path.isfile(pPath):
+            os.remove(pPath)
+            
+    return
+
 def cleanup(pSettings):
-    if pSettings.mTmpDir is not None and os.path.isdir(pSettings.mTmpDir):
-        shutil.rmtree(pSettings.mTmpDir)
-        
-    if pSettings.mToolchainRemovable and pSettings.mToolchainDir is not None and os.path.isdir(pSettings.mToolchainDir):
-        shutil.rmtree(pSettings.mToolchainDir)
+    print('Cleaning...')
+
+    if pSettings.mToolchainRemovable:
+        remove(pSettings.mToolchainDir)
         
     return
     
-def buildMakeAndroid(pLibraryName, pSettings):
+def buildMakeAndroid(pRootDir, pLibraryName, pSettings):
+    print('Building...')
+    status = False
+    workingDir = os.getcwd()
+
     for i in range(0, len(pSettings.mToolchainArch)):
-        toolchainBinDir = os.path.join(os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i]), 'bin')
+        toolchainBinDir = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i], 'bin')
         
         if os.path.isdir(toolchainBinDir):
             executablePrefix = os.path.join(toolchainBinDir, pSettings.mToolchainName[i])
@@ -198,7 +214,7 @@ def buildMakeAndroid(pLibraryName, pSettings):
             os.environ['RANLIB'] = executablePrefix + '-ranlib'
             os.environ['STRIP'] = executablePrefix + '-strip'
             
-            envSYSROOT = os.path.join(os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i]), 'sysroot')        
+            envSYSROOT = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i], 'sysroot')        
             envCXXFLAGS = pSettings.mArchFlag[i] + ' --sysroot=' + envSYSROOT
             
             if pSettings.mArch[i] == 'linux64-mips64':
@@ -207,7 +223,7 @@ def buildMakeAndroid(pLibraryName, pSettings):
             os.environ['SYSROOT'] = envSYSROOT
             os.environ['CXXFLAGS'] = envCXXFLAGS
             
-            libraryDir = os.path.join(os.path.join(os.path.join(pSettings.mWorkingDir, 'lib'), 'android'), pSettings.mArchName[i])
+            libraryDir = os.path.join(pRootDir, 'lib', 'android', pSettings.mArchName[i])
             libraryFilepath = os.path.join(libraryDir, 'lib' + pLibraryName + '.a')
             
             if not os.path.isdir(libraryDir):
@@ -225,15 +241,19 @@ def buildMakeAndroid(pLibraryName, pSettings):
             if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
                 buildSuccess = executeShellCommand(makeCommand) == 0
             elif pSettings.mHostName == 'Windows':
-                buildSuccess = executeCmdCommand(makeCommand, pSettings.mWorkingDir) == 0
+                buildSuccess = executeCmdCommand(makeCommand, workingDir) == 0
                 
             if buildSuccess:
-                shutil.copy2(os.path.join(pSettings.mWorkingDir, 'lib' + pLibraryName + '.a'), libraryFilepath)
+                shutil.copy2(os.path.join(workingDir, 'lib' + pLibraryName + '.a'), libraryFilepath)
 
             if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
                 executeShellCommand(pSettings.mMake + ' clean')
             elif pSettings.mHostName == 'Windows':
-                executeCmdCommand(pSettings.mMake + ' clean', pSettings.mWorkingDir)
+                executeCmdCommand(pSettings.mMake + ' clean', workingDir)
+                
+            print('Build status for ' + pSettings.mArchName[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
+            
+            status |= buildSuccess
         
-    return
+    return status
 

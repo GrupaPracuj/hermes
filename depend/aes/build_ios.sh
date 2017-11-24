@@ -31,7 +31,6 @@ fi
 
 # Internal variables
 WORKING_DIR=`pwd`
-TMP_DIR=${WORKING_DIR}/tmp
 TMP_LIB_DIR=${WORKING_DIR}/tmp_lib
 TOOLCHAIN_DIR=${XCODE_ROOT}/Toolchains/XcodeDefault.xctoolchain
 TOOLCHAIN_NAME=("armv7-apple-darwin" "armv7s-apple-darwin" "arm-apple-darwin" "i386-apple-darwin" "x86_64-apple-darwin")
@@ -59,12 +58,9 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	if [ "${TARGET[$i]}" = "iPhoneSimulator" ]; then
 		export CFLAGS="${CFLAGS} -D__IPHONE_OS_VERSION_MIN_REQUIRED=${IOS_DEPLOYMENT_TARGET%%.*}0000"
 	fi
-	
-	rm -rf ${TMP_DIR}
-	mkdir ${TMP_DIR}
 
 	if make $1 -j${CPU_CORE}; then
-        cp ${TMP_DIR}/libaes.a ${TMP_LIB_DIR}/libaes-${ARCH_NAME[$i]}.a
+        cp libaes.a ${TMP_LIB_DIR}/libaes-${ARCH_NAME[$i]}.a
 	fi
 
     make clean
@@ -76,4 +72,3 @@ cp ${TMP_LIB_DIR}/libaes.a ${WORKING_DIR}/../../lib/ios/
 
 # Cleanup
 rm -rf ${TMP_LIB_DIR}
-rm -rf ${TMP_DIR}
