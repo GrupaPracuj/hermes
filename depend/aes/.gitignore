@@ -1,9 +1,9 @@
 *
 !.gitignore
-!build_android.sh
-!build_ios.sh
-!build_linux.sh
-!build_macos.sh
+!build_android.*
+!build_ios.*
+!build_linux.*
+!build_macos.*
 !Makefile
 !readme.txt
 !include

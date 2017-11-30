@@ -20,6 +20,7 @@ class Settings:
         self.mArch = []
         self.mArchFlag = []
         self.mArchName = []
+        self.mMakeFlag = []
         
 def downloadAndExtract(pURL, pDestinationDir, pFileName, pExtractDir):
     print('Downloading and extracting...')
@@ -127,6 +128,7 @@ def configure(pBuildTarget, pSettings):
             pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
             pSettings.mArchFlag = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
             pSettings.mArchName = ['armv7', 'arm64', 'x86', 'x86_64']
+            pSettings.mMakeFlag = ['', 'ARCH64=1', '', 'ARCH64=1']
 
             print('Android API: "' + pSettings.mAndroidApi + '"')
             print('Android NDK path: "' + pSettings.mAndroidNdkDir + '"')
@@ -197,18 +199,26 @@ def cleanup(pSettings):
         
     return
     
-def buildMakeAndroid(pRootDir, pLibraryName, pSettings):
+def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
     print('Building...')
     status = False
     workingDir = os.getcwd()
 
     for i in range(0, len(pSettings.mToolchainArch)):
         toolchainBinDir = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i], 'bin')
+        libraryDir = os.path.join(pRootDir, 'lib', 'android', pSettings.mArchName[i])
+        libraryFilepath = os.path.join(libraryDir, 'lib' + pLibraryName + '.a')
+
+        if not os.path.isdir(libraryDir):
+            os.makedirs(libraryDir)
+        elif os.path.isfile(libraryFilepath):
+            os.remove(libraryFilepath)
         
         if os.path.isdir(toolchainBinDir):
             executablePrefix = os.path.join(toolchainBinDir, pSettings.mToolchainName[i])
         
             os.environ['CXX'] = executablePrefix + '-clang++'
+            os.environ['CC'] = executablePrefix + '-clang'
             os.environ['LD'] = executablePrefix + '-ld'
             os.environ['AR'] = executablePrefix + '-ar'
             os.environ['RANLIB'] = executablePrefix + '-ranlib'
@@ -216,25 +226,26 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings):
             
             envSYSROOT = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i], 'sysroot')        
             envCXXFLAGS = pSettings.mArchFlag[i] + ' --sysroot=' + envSYSROOT
+            envCFLAGS = pSettings.mArchFlag[i] + ' --sysroot=' + envSYSROOT
             
             if pSettings.mArch[i] == 'linux64-mips64':
                 envCXXFLAGS += ' -fintegrated-as'
+                envCFLAGS += ' -fintegrated-as'
 
             os.environ['SYSROOT'] = envSYSROOT
             os.environ['CXXFLAGS'] = envCXXFLAGS
-            
-            libraryDir = os.path.join(pRootDir, 'lib', 'android', pSettings.mArchName[i])
-            libraryFilepath = os.path.join(libraryDir, 'lib' + pLibraryName + '.a')
-            
-            if not os.path.isdir(libraryDir):
-                os.makedirs(libraryDir)
-            elif os.path.isfile(libraryFilepath):
-                os.remove(libraryFilepath)
+            os.environ['CFLAGS'] = envCFLAGS
 
             makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
             
             if len(sys.argv) > 1:
                 makeCommand += ' ' + sys.argv[1]
+                
+            if len(pSettings.mMakeFlag[i]) > 0:
+                makeCommand += ' ' + pSettings.mMakeFlag[i]
+                
+            if pMakeFlag is not None and len(pMakeFlag) > 0:
+                makeCommand += ' ' + pMakeFlag
                 
             buildSuccess = False
             
