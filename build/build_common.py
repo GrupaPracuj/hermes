@@ -1,4 +1,3 @@
-import multiprocessing
 import os
 import platform
 import subprocess
@@ -23,18 +22,27 @@ class Settings:
         self.mMakeFlag = []
         
 def downloadAndExtract(pURL, pDestinationDir, pFileName, pExtractDir):
-    print('Downloading and extracting...')
-
+    import io
+    import ssl
+    import urllib.error
     import urllib.request
     import zipfile
+    
+    print('Downloading and extracting...')
 
     status = False
+    downloadContent = None
 
-    downloadFile = os.path.join(pDestinationDir, pFileName)
-    urllib.request.urlretrieve(pURL, downloadFile)
+    try:
+        context = ssl._create_unverified_context()
+        downloadContent = urllib.request.urlopen(pURL, context = context).read()
+    except urllib.error.HTTPError as e:
+        print('Failed')
+    except urllib.error.URLError as e:
+        print('Failed')
     
-    if os.path.isfile(downloadFile):
-        archiveFile = zipfile.ZipFile(downloadFile)
+    if downloadContent is not None and len(downloadContent) > 0:
+        archiveFile = zipfile.ZipFile(io.BytesIO(downloadContent), "r")
         archiveFile.extractall(os.path.join(pDestinationDir, pExtractDir))
         archiveFile.close()
         status = True
@@ -70,6 +78,8 @@ def prepareMake(pDestinationDir):
     return os.path.isfile(destinationMakePath) and os.path.isfile(destinationIconvPath) and os.path.isfile(destinationIntlPath)
         
 def configure(pBuildTarget, pSettings):
+    import multiprocessing
+    
     print('Configuring...')
 
     if sys.version_info < (3, 0):
@@ -267,4 +277,3 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
             status |= buildSuccess
         
     return status
-

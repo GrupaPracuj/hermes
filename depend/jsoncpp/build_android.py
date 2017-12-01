@@ -19,6 +19,4 @@ if configure('android', settings):
             shutil.copytree(os.path.join('include', 'json'), os.path.join('..', 'include', 'json'))
         os.chdir('..')
         remove(libraryName)
-        remove(libraryName + '.zip')
         cleanup(settings)
-

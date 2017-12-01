@@ -9,4 +9,3 @@ if configure('android', settings):
     prepareToolchainAndroid(settings)
     buildMakeAndroid('', 'hermes', settings, '')
     cleanup(settings)
-

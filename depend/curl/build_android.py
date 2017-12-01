@@ -23,6 +23,4 @@ if configure('android', settings):
             remove(os.path.join('..', includePath, 'Makefile.in'))
         os.chdir('..')
         remove(libraryName)
-        remove(libraryName + '.zip')
         cleanup(settings)
-
