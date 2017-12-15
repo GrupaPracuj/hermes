@@ -117,8 +117,12 @@ namespace hms
     
     void ThreadPool::clearTask()
     {
-        std::lock_guard<std::mutex> lock(mTaskMutex);
-        std::queue<std::function<void()>>().swap(mTask);
+        {
+            std::lock_guard<std::mutex> lock(mTaskMutex);
+            std::queue<std::function<void()>>().swap(mTask);
+        }
+        
+        mTaskCount.store(0);
     }
     
     void ThreadPool::update(size_t pID)
@@ -198,8 +202,11 @@ namespace hms
         mInitialized = 1;
         
         for (auto& currentPool : mThreadPool)
+        {
             currentPool.second->stop();
-
+            currentPool.second->clearTask();
+        }
+        
         for (auto& currentPool : mThreadPool)
             delete currentPool.second;
         
@@ -214,17 +221,9 @@ namespace hms
         mLooperAndroid = nullptr;
 #endif
 
-        mMainThreadHandler = nullptr;
-        
-        while (mMainThreadTask.size() > 0)
-        {
-            mMainThreadTask.front()();
-            mMainThreadTask.pop();
-        }
-        
-        std::queue<std::function<void()>> mainThreadTaskEmpty;
-        std::swap(mMainThreadTask, mainThreadTaskEmpty);
-        
+        mMainThreadHandler = nullptr;        
+        std::queue<std::function<void()>>().swap(mMainThreadTask);
+
         mInitialized = 0;
         
         return true;
@@ -233,23 +232,27 @@ namespace hms
     void TaskManager::flush(int pThreadPoolID)
     {
         if (pThreadPoolID < 0)
-            return;
-    
-        assert(mThreadPool.find(pThreadPoolID) != mThreadPool.end());
+        {
+            dequeueMainThreadTask();
+        }
+        else
+        {
+            assert(mThreadPool.find(pThreadPoolID) != mThreadPool.end());
+                
+            ThreadPool* threadPool = mThreadPool[pThreadPoolID];
+            threadPool->stop();
             
-        ThreadPool* threadPool = mThreadPool[pThreadPoolID];
-        threadPool->stop();
-        
-        while (threadPool->hasTask())
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        
-        threadPool->start();
+            while (threadPool->hasTask())
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            
+            threadPool->start();
+        }
     }
     
     size_t TaskManager::threadCountForPool(int pThreadPoolID)
     {
         if (pThreadPoolID < 0)
-            return 0;
+            return 1;
         
         std::unordered_map<int, ThreadPool*>::const_iterator thread = mThreadPool.find(pThreadPoolID);
         assert(thread != mThreadPool.cend());
@@ -282,12 +285,17 @@ namespace hms
     void TaskManager::clearTask(int pThreadPoolID)
     {
         if (pThreadPoolID < 0)
-            return;
-        
-        std::unordered_map<int, ThreadPool*>::const_iterator thread = mThreadPool.find(pThreadPoolID);
-        assert(thread != mThreadPool.cend());
-        
-        thread->second->clearTask();
+        {
+            std::lock_guard<std::mutex> lock(mMainThreadMutex);
+            std::queue<std::function<void()>>().swap(mMainThreadTask);
+        }
+        else
+        {
+            std::unordered_map<int, ThreadPool*>::const_iterator thread = mThreadPool.find(pThreadPoolID);
+            assert(thread != mThreadPool.cend());
+            
+            thread->second->clearTask();
+        }
     }
 
     void TaskManager::enqueueMainThreadTask(std::function<void()> pTask)

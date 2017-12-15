@@ -615,6 +615,7 @@ namespace hms
             
             Hermes::getInstance()->getTaskManager()->flush(mThreadPoolID);
             Hermes::getInstance()->getTaskManager()->flush(mThreadPoolSimpleSocketID);
+            Hermes::getInstance()->getTaskManager()->flush(-1);
             
             while (mActivityCount.load() > 0)
                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
