@@ -182,6 +182,21 @@ namespace hms
                     ss << file.rdbuf();
                     std::string data = ss.str();
                     
+                    if (mTextCipherPair != nullptr)
+                    {
+                        std::string key, iv;
+                        mTextCipherPair(key, iv);
+                        data = Hermes::getInstance()->getDataManager()->decrypt(data, key, iv, EDataEncryption::AES_256_CBC);
+                        
+                        size_t eofCount = 0;
+                        auto it = data.rbegin();
+                        for (; it != data.rend() && *(it) == '\x03'; it++) // check for end of text character at the end
+                            eofCount++;
+                        
+                        if (eofCount != 0)
+                            data.erase(it.base(), data.end());
+                    }
+                    
                     status = unpack(data, pUserData);
                 }
                 break;
@@ -234,8 +249,22 @@ namespace hms
                     status = pack(data, pUserData);
                     
                     if (status)
+                    {
+                        if (mTextCipherPair != nullptr)
+                        {
+                            const size_t blockLength = 16;
+                            const size_t fillCount = data.length() % blockLength;
+                            if (fillCount != 0)
+                                data.insert(data.end(), blockLength - fillCount, '\x03');
+                            
+                            std::string key, iv;
+                            mTextCipherPair(key, iv);
+                            data = Hermes::getInstance()->getDataManager()->encrypt(data, key, iv, EDataEncryption::AES_256_CBC);
+                        }
+                        
                         file << data;
                     }
+                }
                 break;
             case EDataSharedType::Binary:
                 {
@@ -265,6 +294,11 @@ namespace hms
     size_t DataShared::getId() const
     {
         return mId;
+    }
+    
+    void DataShared::setTextCipherPair(std::function<void(std::string& lpKey, std::string& lpIV)> pTextCipherPair)
+    {
+        mTextCipherPair = std::move(pTextCipherPair);
     }
     
     void DataShared::printWarning(const std::string& pKey)
@@ -542,7 +576,7 @@ namespace hms
                     
                     unsigned char iv[blockLength];
                     memcpy(iv, pIV.c_str(), blockLength);
-
+                    
                     size_t offset = 0;
                     size_t length = blockLength;
 
@@ -561,13 +595,93 @@ namespace hms
                 }
                 break;
             default:
-                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Encryption mode not supported.");
+                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Decryption mode not supported.");
                 break;
             }
         }
         else
         {
-            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Invalid key/iv/data size.");
+            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Invalid key/iv/data size. Decryption");
+            assert(dataSize == 0);
+        }
+        
+        return result;
+    }
+    
+    std::string DataManager::encrypt(const std::string& pData, std::string pKey, std::string pIV, EDataEncryption pMode) const
+    {
+        std::string result;
+        const size_t blockLength = 16;
+        const size_t dataSize = pData.size();
+        
+        if (pKey.size() == 32 && pIV.size() == 16 && dataSize >= blockLength)
+        {
+            switch (pMode)
+            {
+                case EDataEncryption::AES_256_CBC:
+                    if (dataSize % blockLength == 0)
+                    {
+                        aes_encrypt_ctx context[1];
+                        aes_encrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
+                        
+                        auto inBuffer = reinterpret_cast<const unsigned char*>(pData.c_str());
+                        auto currBuffer = inBuffer;
+                        unsigned char outBuffer[blockLength] = {0};
+                        size_t offset = 0;
+                        
+                        for (size_t i = 0; i < blockLength; ++i)
+                            outBuffer[i] = static_cast<unsigned char>(pIV[i]);
+                        
+                        while (offset + blockLength <= dataSize)
+                        {
+                            for (size_t i = 0; i < blockLength; ++i)
+                                outBuffer[i] ^= currBuffer[i];
+                            
+                            aes_encrypt(outBuffer, outBuffer, context);
+                            
+                            offset += blockLength;
+                            currBuffer = inBuffer + offset;
+                            result += std::string(reinterpret_cast<char*>(outBuffer), blockLength);
+                        }
+                    }
+                    break;
+                case EDataEncryption::AES_256_OFB:
+                    if (dataSize >= blockLength)
+                    {
+                        aes_encrypt_ctx context[1];
+                        aes_encrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
+                        
+                        auto inBuffer = reinterpret_cast<const unsigned char*>(pData.c_str());
+                        unsigned char outBuffer[blockLength] = {0};
+                        
+                        unsigned char iv[blockLength];
+                        memcpy(iv, pIV.c_str(), blockLength);
+                        
+                        size_t offset = 0;
+                        size_t length = blockLength;
+                        
+                        while (true)
+                        {
+                            if (offset + blockLength >= dataSize)
+                                length = dataSize - offset;
+                            
+                            aes_ofb_crypt(inBuffer + offset, outBuffer, static_cast<int>(length), iv, context);
+                            offset += length;
+                            result += std::string(reinterpret_cast<char*>(outBuffer), length);
+                            
+                            if (length != blockLength)
+                                break;
+                        }
+                    }
+                    break;
+                default:
+                    Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Encryption mode not supported.");
+                    break;
+            }
+        }
+        else
+        {
+            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Invalid key/iv/data size. Encryption");
             assert(dataSize == 0);
         }
         

@@ -90,6 +90,8 @@ namespace hms
         virtual bool writeToFile(const std::string& pFilePath, const std::vector<unsigned>& pUserData, EDataSharedType pType = EDataSharedType::Text, bool pClearContent = true) const;
         
         size_t getId() const;
+        
+        void setTextCipherPair(std::function<void(std::string& lpKey, std::string& lpIV)> pTextCipherPair);
 
         template <typename T>
         static bool safeAs(const Json::Value& pSource, T& pDestination, const std::string& pKey = "")
@@ -131,6 +133,7 @@ namespace hms
         static void printWarning(const std::string& pKey);
         
         size_t mId;
+        std::function<void(std::string& lpKey, std::string& lpIV)> mTextCipherPair = nullptr;
     };
     
     template <>
@@ -179,8 +182,8 @@ namespace hms
         bool convertJSON(const Json::Value& pSource, std::string& pDestination) const;
         bool convertJSON(const std::string& pSource, Json::Value& pDestination) const;
 
-        // IV block must be included in pData.
         std::string decrypt(const std::string& pData, std::string pKey, std::string pIV, EDataEncryption pMode) const;
+        std::string encrypt(const std::string& pData, std::string pKey, std::string pIV, EDataEncryption pMode) const;
         
     private:
         friend class Hermes;
