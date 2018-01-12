@@ -6,9 +6,10 @@
 #define _DATA_HPP_
 
 #include <cassert>
-#include <memory>
 #include <cstring>
 #include <string>
+#include <functional>
+#include <memory>
 #include <vector>
 #include <functional>
 

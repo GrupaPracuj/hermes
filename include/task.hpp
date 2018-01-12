@@ -37,7 +37,7 @@ namespace hms
     public:
         ThreadPool(const ThreadPool& pSource) = delete;
     
-        bool push(std::function<void()> pTask);
+        bool push(std::function<void()>& pTask);
         bool hasTask();
         void start();
         void stop();
@@ -57,7 +57,7 @@ namespace hms
         std::condition_variable mTaskCondition;
         std::mutex mTaskMutex;
         std::queue<std::function<void()>> mTask;
-        std::atomic<uint32_t> mTaskCount {0};
+        std::atomic<uint32_t> mProcessingTaskCount {0};
 
         std::atomic<uint32_t> mForceFinish {0};
         std::atomic<uint32_t> mIsActive {1};
@@ -93,7 +93,7 @@ namespace hms
                 assert(mThreadPool.find(pThreadPoolID) != mThreadPool.end());
             
                 ThreadPool* threadPool = mThreadPool[pThreadPoolID];
-                threadPool->push(std::move(task));
+                threadPool->push(task);
             }
         }
 
