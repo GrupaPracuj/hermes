@@ -17,6 +17,8 @@
 		55DD5FFE1F38980400BFA8E5 /* network.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F51C3AC9A6008AE1A3 /* network.cpp */; };
 		55DD5FFF1F38980400BFA8E5 /* task.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F61C3AC9A6008AE1A3 /* task.cpp */; };
 		55DD60001F38980400BFA8E5 /* hermes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55A5745E1EA780F3003ECB8C /* hermes.cpp */; };
+		9E1950702007AED500CE339D /* tools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E19506E2007AED500CE339D /* tools.cpp */; };
+		9E1950732007AF2500CE339D /* tools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E19506E2007AED500CE339D /* tools.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -44,6 +46,8 @@
 		5584A27D1FA1DEC500709CE5 /* libhermes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhermes.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		55A5745E1EA780F3003ECB8C /* hermes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hermes.cpp; path = source/hermes.cpp; sourceTree = "<group>"; };
 		55A574601EA78108003ECB8C /* hermes.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hermes.hpp; path = include/hermes.hpp; sourceTree = "<group>"; };
+		9E19506E2007AED500CE339D /* tools.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = tools.cpp; path = source/tools.cpp; sourceTree = "<group>"; };
+		9E1950712007AEF300CE339D /* tools.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = tools.hpp; path = include/tools.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,6 +93,7 @@
 				38EC90F01C3AC999008AE1A3 /* logger.hpp */,
 				38EC90F11C3AC999008AE1A3 /* network.hpp */,
 				38EC90F21C3AC999008AE1A3 /* task.hpp */,
+				9E1950712007AEF300CE339D /* tools.hpp */,
 				55A574601EA78108003ECB8C /* hermes.hpp */,
 			);
 			name = "Header Files";
@@ -101,6 +106,7 @@
 				38EC90F41C3AC9A6008AE1A3 /* logger.cpp */,
 				38EC90F51C3AC9A6008AE1A3 /* network.cpp */,
 				38EC90F61C3AC9A6008AE1A3 /* task.cpp */,
+				9E19506E2007AED500CE339D /* tools.cpp */,
 				55A5745E1EA780F3003ECB8C /* hermes.cpp */,
 			);
 			name = "Source Files";
@@ -198,6 +204,7 @@
 				38EC90F71C3AC9A6008AE1A3 /* data.cpp in Sources */,
 				38EC90F91C3AC9A6008AE1A3 /* network.cpp in Sources */,
 				38EC90F81C3AC9A6008AE1A3 /* logger.cpp in Sources */,
+				9E1950702007AED500CE339D /* tools.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -210,6 +217,7 @@
 				55DD5FFE1F38980400BFA8E5 /* network.cpp in Sources */,
 				55DD5FFF1F38980400BFA8E5 /* task.cpp in Sources */,
 				55DD60001F38980400BFA8E5 /* hermes.cpp in Sources */,
+				9E1950732007AF2500CE339D /* tools.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
