@@ -57,7 +57,7 @@ namespace hms
         delete[] mThread;
     }
 
-    bool ThreadPool::push(std::function<void()> pTask)
+    bool ThreadPool::push(std::function<void()>& pTask)
     {
         bool status = mIsActive.load() != 0;
 
@@ -68,7 +68,6 @@ namespace hms
                 mTask.push(std::move(pTask));
             }
 
-            mTaskCount++;
             mTaskCondition.notify_one();
         }
 
@@ -77,7 +76,14 @@ namespace hms
     
     bool ThreadPool::hasTask()
     {
-        return mTaskCount.load() > 0;
+        size_t taskCount = 0;
+        
+        {    
+            std::lock_guard<std::mutex> lock(mTaskMutex);
+            taskCount = mTask.size();
+        }
+        
+        return taskCount > 0 || mProcessingTaskCount.load() > 0;
     }
     
     void ThreadPool::start()
@@ -103,6 +109,7 @@ namespace hms
             std::lock_guard<std::mutex> lock(mTaskMutex);
             if (!mTask.empty())
             {
+                mProcessingTaskCount++;
                 task = std::move(mTask.front());
                 mTask.pop();
             }
@@ -111,18 +118,14 @@ namespace hms
         if (task != nullptr)
         {
             task();
-            mTaskCount--;
+            mProcessingTaskCount--;
         }
     }
     
     void ThreadPool::clearTask()
     {
-        {
-            std::lock_guard<std::mutex> lock(mTaskMutex);
-            std::queue<std::function<void()>>().swap(mTask);
-        }
-        
-        mTaskCount.store(0);
+        std::lock_guard<std::mutex> lock(mTaskMutex);
+        std::queue<std::function<void()>>().swap(mTask);
     }
     
     void ThreadPool::update(size_t pID)
@@ -141,6 +144,7 @@ namespace hms
 
             if (!mTask.empty())
             {
+                mProcessingTaskCount++;
                 task = std::move(mTask.front());
                 mTask.pop();
             }
@@ -150,7 +154,7 @@ namespace hms
             if (task != nullptr)
             {
                 task();
-                mTaskCount--;
+                mProcessingTaskCount--;
             }
         }
     }

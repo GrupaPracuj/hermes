@@ -615,7 +615,6 @@ namespace hms
             
             Hermes::getInstance()->getTaskManager()->flush(mThreadPoolID);
             Hermes::getInstance()->getTaskManager()->flush(mThreadPoolSimpleSocketID);
-            Hermes::getInstance()->getTaskManager()->flush(-1);
             
             while (mActivityCount.load() > 0)
                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -927,15 +926,7 @@ namespace hms
             
             if (executeCancel)
             {
-                auto taskHandler = std::make_shared<decltype(lpParam.mCallback)>(std::move(lpParam.mCallback));
-                Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
-                {
-                    NetworkResponse response;
-                    response.mCode = ENetworkCode::Cancel;
-
-                    auto taskCallback = std::move(*taskHandler);
-                    taskCallback(std::move(response));
-                });
+                // TO-DO execute cancel
             }
         };
         
@@ -1216,15 +1207,7 @@ namespace hms
 
                 if (multiRequestData[i].mExecuteCancel)
                 {
-                    auto taskHandler = std::make_shared<decltype(multiRequestData[i].mParam->mCallback)>(std::move(multiRequestData[i].mParam->mCallback));
-                    Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
-                    {
-                        NetworkResponse response;
-                        response.mCode = ENetworkCode::Cancel;
-
-                        auto taskCallback = std::move(*taskHandler);
-                        taskCallback(std::move(response));
-                    });
+                    // TO-DO execute cancel
                 }
             }
         };

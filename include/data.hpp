@@ -8,8 +8,9 @@
 #include "json/json.h"
 
 #include <cassert>
-#include <memory>
 #include <cstring>
+#include <functional>
+#include <memory>
 #include <vector>
 
 namespace hms
