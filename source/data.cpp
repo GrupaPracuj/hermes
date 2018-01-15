@@ -92,6 +92,17 @@ namespace hms
         return mData;
     }
     
+    void DataBuffer::pop_back(size_t pCount, bool pShrinkToFit)
+    {
+        if (pCount != 0)
+        {
+            mSize = pCount > mSize ? 0 : mSize - pCount;
+            
+            if (pShrinkToFit)
+                reallocate(mSize);
+        }
+    }
+    
     size_t DataBuffer::size() const
     {
         return mSize;
@@ -176,6 +187,44 @@ namespace hms
         
         if (file.is_open())
         {
+            auto decryptCallback = [](std::string* lpString, DataBuffer* lpBuffer, EDataCrypto lpMode) -> void
+            {
+                if (Hermes::getInstance()->getDataManager()->mCipher != nullptr && lpMode != EDataCrypto::None)
+                {
+                    std::string key, iv;
+                    Hermes::getInstance()->getDataManager()->mCipher(key, iv);
+                    
+                    if (lpString != nullptr)
+                    {
+                        *lpString = decrypt(*lpString, key, iv, lpMode);
+                        
+                        size_t eofCount = 0;
+                        auto it = lpString->rbegin();
+                        for (; it != lpString->rend() && *(it) == '\x03'; it++) // check for end of text character at the end
+                            eofCount++;
+
+                        if (eofCount != 0)
+                            lpString->erase(it.base(), lpString->end());
+                    }
+                    else if (lpBuffer != nullptr)
+                    {
+                        *lpBuffer = decrypt(*lpBuffer, key, iv, lpMode);
+                        
+                        auto data = reinterpret_cast<const char*>(lpBuffer->data());
+                        size_t eofCount = 0;
+                        for (size_t i = lpBuffer->size(); i > 0 && data[i] == '\x03'; i--)
+                            eofCount++;
+                        
+                        if (eofCount != 0)
+                            lpBuffer->pop_back(eofCount);
+                    }
+                    
+                    // TODO find reliable way to clear strings without compiler optimizing it away
+                    key.clear();
+                    iv.clear();
+                }
+            };
+            
             switch (pType)
             {
             case EDataSharedType::Text:
@@ -184,24 +233,7 @@ namespace hms
                     ss << file.rdbuf();
                     std::string data = ss.str();
                     
-                    if (Hermes::getInstance()->getDataManager()->mCipher != nullptr && mCryptoMode != EDataCrypto::None)
-                    {
-                        std::string key, iv;
-                        Hermes::getInstance()->getDataManager()->mCipher(key, iv);
-                        data = decrypt(data.data(), data.size(), key, iv, mCryptoMode);
-                        
-                        // TODO find reliable way to clear strings without compiler optimizing it away
-                        key.clear();
-                        iv.clear();
-
-                        size_t eofCount = 0;
-                        auto it = data.rbegin();
-                        for (; it != data.rend() && *(it) == '\x03'; it++) // check for end of text character at the end
-                            eofCount++;
-
-                        if (eofCount != 0)
-                            data.erase(it.base(), data.end());
-                    }
+                    decryptCallback(&data, nullptr, mCryptoMode);
                     
                     status = unpack(data, pUserData);
                 }
@@ -212,6 +244,8 @@ namespace hms
                     
                     DataBuffer dataBuffer;
                     dataBuffer.push_back<char>(data.data(), data.size());
+                    
+                    decryptCallback(nullptr, &dataBuffer, mCryptoMode);
 
                     status = unpackBuffer(std::move(dataBuffer), pUserData);
                 }
@@ -249,6 +283,41 @@ namespace hms
         
         if (file.is_open())
         {
+            auto encryptCallback = [](std::string* lpString, DataBuffer* lpBuffer, EDataCrypto lpMode) -> void
+            {
+                if (Hermes::getInstance()->getDataManager()->mCipher != nullptr && lpMode != EDataCrypto::None)
+                {
+                    const size_t blockLength = 16;
+                    std::string key, iv;
+                    
+                    Hermes::getInstance()->getDataManager()->mCipher(key, iv);
+                    
+                    if (lpString != nullptr)
+                    {
+                        const size_t fillCount = lpString->length() % blockLength;
+                        if (fillCount != 0)
+                            lpString->insert(lpString->end(), blockLength - fillCount, '\x03');
+
+                        *lpString = encrypt(*lpString, key, iv, lpMode);
+                    }
+                    else if (lpBuffer != nullptr)
+                    {
+                        const size_t fillCount = lpBuffer->size() % blockLength;
+                        if (fillCount != 0)
+                        {
+                            std::string fill(blockLength - fillCount, '\x03');
+                            lpBuffer->push_back(fill.data(), fill.size());
+                        }
+                        
+                        *lpBuffer = encrypt(*lpBuffer, key, iv, lpMode);
+                    }
+                    
+                    // TODO find reliable way to clear strings without compiler optimizing it away
+                    key.clear();
+                    iv.clear();
+                }
+            };
+            
             switch (pType)
             {
             case EDataSharedType::Text:
@@ -258,22 +327,7 @@ namespace hms
                     
                     if (status)
                     {
-                        if (Hermes::getInstance()->getDataManager()->mCipher != nullptr && mCryptoMode != EDataCrypto::None)
-                        {
-                            const size_t blockLength = 16;
-                            const size_t fillCount = data.length() % blockLength;
-                            if (fillCount != 0)
-                                data.insert(data.end(), blockLength - fillCount, '\x03');
-                            
-                            std::string key, iv;
-                            Hermes::getInstance()->getDataManager()->mCipher(key, iv);
-                            data = encrypt(data.data(), data.size(), key, iv, mCryptoMode);
-                            
-                            // TODO find reliable way to clear strings without compiler optimizing it away
-                            key.clear();
-                            iv.clear();
-                        }
-                        
+                        encryptCallback(&data, nullptr, mCryptoMode);
                         file << data;
                     }
                 }
@@ -284,7 +338,10 @@ namespace hms
                     status = packBuffer(dataBuffer, pUserData);
                         
                     if (status)
+                    {
+                        encryptCallback(nullptr, &dataBuffer, mCryptoMode);
                         file.write(static_cast<const char*>(dataBuffer.data()), static_cast<int>(dataBuffer.size()));
+                    }
                 }
                 break;
             default:

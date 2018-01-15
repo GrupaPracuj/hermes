@@ -6,11 +6,12 @@
 #define _TOOLS_HPP_
 
 #include "json/json.h"
+#include "data.hpp"
 
 #include <string>
 
 namespace hms
-{
+{    
     namespace tools
     {
         uint16_t byteSwap16(uint16_t pX);
@@ -136,12 +137,14 @@ namespace hms
         std::string encodeBase64(unsigned char const* bytes_to_encode, size_t in_len);
         std::string decodeBase64(std::string const& encoded_string);
             
+        std::string getSHA1Digest(const std::string& pData, bool pNetworkOrder = true);
         std::string getRandomCryptoBytes(size_t pLength);
             
-        std::string decrypt(const void* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV, EDataCrypto pMode);
-        std::string encrypt(const void* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV, EDataCrypto pMode);
-            
-        std::string getSHA1Digest(const std::string& pData, bool pNetworkOrder = true);
+
+        std::string encrypt(const std::string& pData, const std::string& pKey, const std::string& pIV, EDataCrypto pMode);
+        DataBuffer encrypt(const DataBuffer& pData, const std::string& pKey, const std::string& pIV, EDataCrypto pMode);
+        std::string decrypt(const std::string& pData, const std::string& pKey, const std::string& pIV, EDataCrypto pMode);
+        DataBuffer decrypt(const DataBuffer& pData, const std::string& pKey, const std::string& pIV, EDataCrypto pMode);
     }
 }
 

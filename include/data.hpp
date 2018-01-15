@@ -55,6 +55,8 @@ namespace hms
             }
         }
         
+        void pop_back(size_t pCount, bool pShrinkToFit = false);
+        
         size_t size() const;
         
     private:

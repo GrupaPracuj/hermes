@@ -430,190 +430,6 @@ namespace hms
             return ret;
         }
         
-        std::string getRandomCryptoBytes(size_t pLength)
-        {
-            // TODO: make proper crypto random generator
-            std::string data(pLength, 0);
-            
-            std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char> engine;
-            engine.seed(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-            
-            std::generate(data.begin(), data.end(), std::ref(engine));
-            
-            return data;
-        }
-        
-        std::string ofb_crypt(const void* pData, size_t pDataSize, const std::string pKey, const std::string pIV)
-        {
-            std::string result;
-            const size_t blockLength = 16;
-            
-            if (pDataSize >= blockLength)
-            {
-                aes_encrypt_ctx context[1];
-                aes_encrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
-                
-                auto inBuffer = reinterpret_cast<const unsigned char*>(pData);
-                unsigned char outBuffer[blockLength] = {0};
-                
-                unsigned char iv[blockLength];
-                memcpy(iv, pIV.c_str(), blockLength);
-                
-                size_t offset = 0;
-                size_t length = blockLength;
-                
-                while (true)
-                {
-                    if (offset + blockLength >= pDataSize)
-                        length = pDataSize - offset;
-                    
-                    aes_ofb_crypt(inBuffer + offset, outBuffer, static_cast<int>(length), iv, context);
-                    offset += length;
-                    result += std::string(reinterpret_cast<char*>(outBuffer), length);
-                    
-                    if (length != blockLength)
-                        break;
-                }
-            }
-            else
-            {
-                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "OFB encryption: data size must be bigger than %.", blockLength);
-            }
-            
-            return result;
-        }
-        
-        std::string cbc_encrypt(const void* pData, size_t pDataSize, const std::string pKey, const std::string pIV)
-        {
-            std::string result;
-            const size_t blockLength = 16;
-            
-            if (pDataSize % blockLength == 0)
-            {
-                aes_encrypt_ctx context[1];
-                aes_encrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
-                
-                auto inBuffer = reinterpret_cast<const unsigned char*>(pData);
-                auto currBuffer = inBuffer;
-                unsigned char outBuffer[blockLength] = {0};
-                size_t offset = 0;
-                
-                for (size_t i = 0; i < blockLength; ++i)
-                    outBuffer[i] = static_cast<unsigned char>(pIV[i]);
-                
-                while (offset + blockLength <= pDataSize)
-                {
-                    for (size_t i = 0; i < blockLength; ++i)
-                        outBuffer[i] ^= currBuffer[i];
-                    
-                    aes_encrypt(outBuffer, outBuffer, context);
-                    
-                    offset += blockLength;
-                    currBuffer = inBuffer + offset;
-                    result += std::string(reinterpret_cast<char*>(outBuffer), blockLength);
-                }
-            }
-            else
-            {
-                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "CBC encryption: data size must be divisible by %", blockLength);
-            }
-            
-            return result;
-        }
-        
-        std::string cbc_decrypt(const void* pData, size_t pDataSize, const std::string pKey, const std::string pIV)
-        {
-            std::string result;
-            const size_t blockLength = 16;
-            
-            if (pDataSize % blockLength == 0)
-            {
-                aes_decrypt_ctx context[1];
-                aes_decrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
-                
-                auto inBuffer = reinterpret_cast<const unsigned char*>(pData);
-                auto prevBuffer = reinterpret_cast<const unsigned char*>(pIV.c_str());
-                unsigned char outBuffer[blockLength] = {0};
-                size_t offset = 0;
-                
-                while (offset + blockLength <= pDataSize)
-                {
-                    aes_decrypt(inBuffer + offset, outBuffer, context);
-                    
-                    for (size_t i = 0; i < blockLength; ++i)
-                        outBuffer[i] ^= prevBuffer[i];
-                    
-                    prevBuffer = inBuffer + offset;
-                    offset += blockLength;
-                    result += std::string(reinterpret_cast<char*>(outBuffer), blockLength);
-                }
-            }
-            else
-            {
-                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "CBC decryption: data size must be divisible by %", blockLength);
-            }
-            
-            return result;
-        }
-        
-        std::string decrypt(const void* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV, EDataCrypto pMode)
-        {
-            std::string result;
-            const size_t blockLength = 16;
-            
-            if (pKey.size() == 32 && pIV.size() == 16 && pDataSize >= blockLength)
-            {
-                switch (pMode)
-                {
-                    case EDataCrypto::AES_256_CBC:
-                        result = cbc_decrypt(pData, pDataSize, pKey, pIV);
-                        break;
-                    case EDataCrypto::AES_256_OFB:
-                        result = ofb_crypt(pData, pDataSize, pKey, pIV);
-                        break;
-                    default:
-                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Decryption mode not supported.");
-                        break;
-                }
-            }
-            else
-            {
-                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Invalid key/iv/data size. Decryption");
-                assert(pDataSize == 0);
-            }
-            
-            return result;
-        }
-        
-        std::string encrypt(const void* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV, EDataCrypto pMode)
-        {
-            std::string result;
-            const size_t blockLength = 16;
-            
-            if (pKey.size() == 32 && pIV.size() == 16 && pDataSize >= blockLength)
-            {
-                switch (pMode)
-                {
-                    case EDataCrypto::AES_256_CBC:
-                        result = cbc_encrypt(pData, pDataSize, pKey, pIV);
-                        break;
-                    case EDataCrypto::AES_256_OFB:
-                        result = ofb_crypt(pData, pDataSize, pKey, pIV);
-                        break;
-                    default:
-                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Encryption mode not supported.");
-                        break;
-                }
-            }
-            else
-            {
-                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Invalid key/iv/data size. Encryption");
-                assert(pDataSize == 0);
-            }
-            
-            return result;
-        }
-        
         /*
          sha1.cpp - source code of
          ============
@@ -876,6 +692,216 @@ namespace hms
             
             std::string result(bytes, resultSize);
             return result;
+        }
+        
+        std::string getRandomCryptoBytes(size_t pLength)
+        {
+            // TODO: make proper crypto random generator
+            std::string data(pLength, 0);
+            
+            std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char> engine;
+            engine.seed(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+            
+            std::generate(data.begin(), data.end(), std::ref(engine));
+            
+            return data;
+        }
+        
+        std::vector<unsigned char> cbc_encrypt(const unsigned char* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV)
+        {
+            std::vector<unsigned char> result;
+            const size_t blockLength = 16;
+            
+            if (pDataSize % blockLength == 0)
+            {
+                aes_encrypt_ctx context[1];
+                aes_encrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
+                
+                auto currBuffer = pData;
+                unsigned char outBuffer[blockLength] = {0};
+                size_t offset = 0;
+                
+                for (size_t i = 0; i < blockLength; ++i)
+                    outBuffer[i] = static_cast<unsigned char>(pIV[i]);
+                
+                while (offset + blockLength <= pDataSize)
+                {
+                    for (size_t i = 0; i < blockLength; ++i)
+                        outBuffer[i] ^= currBuffer[i];
+                    
+                    aes_encrypt(outBuffer, outBuffer, context);
+                    
+                    offset += blockLength;
+                    currBuffer = pData + offset;
+                    result.insert(result.end(), outBuffer, outBuffer + blockLength);
+                }
+            }
+            else
+            {
+                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "CBC encryption: data size must be divisible by %", blockLength);
+            }
+            
+            return result;
+        }
+        
+        std::vector<unsigned char> cbc_decrypt(const unsigned char* pData, size_t pDataSize, const std::string pKey, const std::string pIV)
+        {
+            std::vector<unsigned char> result;
+            const size_t blockLength = 16;
+            
+            if (pDataSize % blockLength == 0)
+            {
+                aes_decrypt_ctx context[1];
+                aes_decrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
+                
+                auto prevBuffer = reinterpret_cast<const unsigned char*>(pIV.c_str());
+                unsigned char outBuffer[blockLength] = {0};
+                size_t offset = 0;
+                result.reserve(pDataSize);
+                
+                while (offset + blockLength <= pDataSize)
+                {
+                    aes_decrypt(pData + offset, outBuffer, context);
+                    
+                    for (size_t i = 0; i < blockLength; ++i)
+                        outBuffer[i] ^= prevBuffer[i];
+                    
+                    prevBuffer = pData + offset;
+                    offset += blockLength;
+                    result.insert(result.end(), outBuffer, outBuffer + blockLength);
+                }
+            }
+            else
+            {
+                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "CBC decryption: data size must be divisible by %", blockLength);
+            }
+            
+            return result;
+        }
+        
+        std::vector<unsigned char> ofb_crypt(const unsigned char* pData, size_t pDataSize, const std::string pKey, const std::string pIV)
+        {
+            std::vector<unsigned char> result;
+            const size_t blockLength = 16;
+            
+            if (pDataSize >= blockLength)
+            {
+                aes_encrypt_ctx context[1];
+                aes_encrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
+                
+                unsigned char outBuffer[blockLength] = {0};
+                unsigned char iv[blockLength];
+                memcpy(iv, pIV.c_str(), blockLength);
+                result.reserve(pDataSize);
+                
+                size_t offset = 0;
+                size_t length = blockLength;
+                
+                while (true)
+                {
+                    if (offset + blockLength >= pDataSize)
+                        length = pDataSize - offset;
+                    
+                    aes_ofb_crypt(pData + offset, outBuffer, static_cast<int>(length), iv, context);
+                    offset += length;
+                    result.insert(result.end(), outBuffer, outBuffer + length);
+                    
+                    if (length != blockLength)
+                        break;
+                }
+            }
+            else
+            {
+                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "OFB encryption: data size must be bigger than %.", blockLength);
+            }
+            
+            return result;
+        }
+        
+        std::vector<unsigned char> encrypt(const unsigned char* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV, EDataCrypto pMode)
+        {
+            std::vector<unsigned char> result;
+            const size_t blockLength = 16;
+            
+            if (pKey.size() == 32 && pIV.size() == 16 && pDataSize >= blockLength)
+            {
+                switch (pMode)
+                {
+                    case EDataCrypto::AES_256_CBC:
+                        result = cbc_encrypt(pData, pDataSize, pKey, pIV);
+                        break;
+                    case EDataCrypto::AES_256_OFB:
+                        result = ofb_crypt(pData, pDataSize, pKey, pIV);
+                        break;
+                    default:
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Encryption mode not supported.");
+                        break;
+                }
+            }
+            else
+            {
+                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Invalid key/iv/data size. Encryption");
+                assert(pDataSize == 0);
+            }
+            
+            return result;
+        }
+        
+        std::vector<unsigned char> decrypt(const unsigned char* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV, EDataCrypto pMode)
+        {
+            std::vector<unsigned char> result;
+            const size_t blockLength = 16;
+            
+            if (pKey.size() == 32 && pIV.size() == 16 && pDataSize >= blockLength)
+            {
+                switch (pMode)
+                {
+                    case EDataCrypto::AES_256_CBC:
+                        result = cbc_decrypt(pData, pDataSize, pKey, pIV);
+                        break;
+                    case EDataCrypto::AES_256_OFB:
+                        result = ofb_crypt(pData, pDataSize, pKey, pIV);
+                        break;
+                    default:
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Decryption mode not supported.");
+                        break;
+                }
+            }
+            else
+            {
+                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Invalid key/iv/data size. Decryption");
+                assert(pDataSize == 0);
+            }
+            
+            return result;
+        }
+        
+        std::string encrypt(const std::string& pData, const std::string& pKey, const std::string& pIV, EDataCrypto pMode)
+        {
+            auto result = encrypt(reinterpret_cast<const unsigned char*>(pData.data()), pData.size(), pKey, pIV, pMode);
+            return std::string(reinterpret_cast<char*>(result.data()), result.size());
+        }
+        
+        DataBuffer encrypt(const DataBuffer& pData, const std::string& pKey, const std::string& pIV, EDataCrypto pMode)
+        {
+            auto result = encrypt(reinterpret_cast<const unsigned char*>(pData.data()), pData.size(), pKey, pIV, pMode);
+            DataBuffer buffer;
+            buffer.push_back(result.data(), result.size());
+            return buffer;
+        }
+        
+        std::string decrypt(const std::string& pData, const std::string& pKey, const std::string& pIV, EDataCrypto pMode)
+        {
+            auto result = decrypt(reinterpret_cast<const unsigned char*>(pData.data()), pData.size(), pKey, pIV, pMode);
+            return std::string(reinterpret_cast<char*>(result.data()), result.size());
+        }
+        
+        DataBuffer decrypt(const DataBuffer& pData, const std::string& pKey, const std::string& pIV, EDataCrypto pMode)
+        {
+            auto result = decrypt(reinterpret_cast<const unsigned char*>(pData.data()), pData.size(), pKey, pIV, pMode);
+            DataBuffer buffer;
+            buffer.push_back(result.data(), result.size());
+            return buffer;
         }
     }
 }
