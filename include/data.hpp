@@ -11,7 +11,6 @@
 #include <functional>
 #include <memory>
 #include <vector>
-#include <functional>
 
 namespace hms
 {
