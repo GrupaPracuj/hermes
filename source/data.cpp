@@ -5,7 +5,7 @@
 #include "data.hpp"
 
 #include "hermes.hpp"
-#include "aes.h"
+#include "tools.hpp"
 
 #include <fstream>
 
@@ -92,6 +92,17 @@ namespace hms
         return mData;
     }
     
+    void DataBuffer::pop_back(size_t pCount, bool pShrinkToFit)
+    {
+        if (pCount != 0)
+        {
+            mSize = pCount > mSize ? 0 : mSize - pCount;
+            
+            if (pShrinkToFit)
+                reallocate(mSize);
+        }
+    }
+    
     size_t DataBuffer::size() const
     {
         return mSize;
@@ -128,7 +139,7 @@ namespace hms
     
     /* DataShared */
     
-    DataShared::DataShared(size_t pId) : mId(pId)
+    DataShared::DataShared(size_t pId) : mId(pId), mCryptoMode(crypto::ECryptoMode::None)
     {
     }
     
@@ -168,12 +179,52 @@ namespace hms
     
     bool DataShared::readFromFile(const std::string& pFilePath, const std::vector<unsigned>& pUserData, EDataSharedType pType)
     {
+        using namespace crypto;
+        
         bool status = false;
         
         std::ifstream file(pFilePath, std::ifstream::in | std::ifstream::binary);
         
         if (file.is_open())
         {
+            auto decryptCallback = [](std::string* lpString, DataBuffer* lpBuffer, ECryptoMode lpMode) -> void
+            {
+                if (Hermes::getInstance()->getDataManager()->mCipher != nullptr && lpMode != ECryptoMode::None)
+                {
+                    std::string key, iv;
+                    Hermes::getInstance()->getDataManager()->mCipher(key, iv);
+                    
+                    if (lpString != nullptr)
+                    {
+                        *lpString = decrypt(*lpString, key, iv, lpMode);
+                        
+                        size_t eofCount = 0;
+                        auto it = lpString->rbegin();
+                        for (; it != lpString->rend() && *(it) == '\x03'; it++) // check for end of text character at the end
+                            eofCount++;
+
+                        if (eofCount != 0)
+                            lpString->erase(it.base(), lpString->end());
+                    }
+                    else if (lpBuffer != nullptr)
+                    {
+                        *lpBuffer = decrypt(*lpBuffer, key, iv, lpMode);
+                        
+                        auto data = reinterpret_cast<const char*>(lpBuffer->data());
+                        size_t eofCount = 0;
+                        for (size_t i = lpBuffer->size(); i > 0 && data[i] == '\x03'; i--)
+                            eofCount++;
+                        
+                        if (eofCount != 0)
+                            lpBuffer->pop_back(eofCount);
+                    }
+                    
+                    // TODO find reliable way to clear strings without compiler optimizing it away
+                    key.clear();
+                    iv.clear();
+                }
+            };
+            
             switch (pType)
             {
             case EDataSharedType::Text:
@@ -182,20 +233,7 @@ namespace hms
                     ss << file.rdbuf();
                     std::string data = ss.str();
                     
-                    if (mTextCipherPair != nullptr)
-                    {
-                        std::string key, iv;
-                        mTextCipherPair(key, iv);
-                        data = Hermes::getInstance()->getDataManager()->decrypt(data, key, iv, EDataEncryption::AES_256_CBC);
-                        
-                        size_t eofCount = 0;
-                        auto it = data.rbegin();
-                        for (; it != data.rend() && *(it) == '\x03'; it++) // check for end of text character at the end
-                            eofCount++;
-                        
-                        if (eofCount != 0)
-                            data.erase(it.base(), data.end());
-                    }
+                    decryptCallback(&data, nullptr, mCryptoMode);
                     
                     status = unpack(data, pUserData);
                 }
@@ -206,6 +244,8 @@ namespace hms
                     
                     DataBuffer dataBuffer;
                     dataBuffer.push_back<char>(data.data(), data.size());
+                    
+                    decryptCallback(nullptr, &dataBuffer, mCryptoMode);
 
                     status = unpackBuffer(std::move(dataBuffer), pUserData);
                 }
@@ -228,6 +268,8 @@ namespace hms
     
     bool DataShared::writeToFile(const std::string& pFilePath, const std::vector<unsigned>& pUserData, EDataSharedType pType, bool pClearContent) const
     {
+        using namespace crypto;
+        
         bool status = false;
         
         std::ios_base::openmode opmode = std::fstream::in | std::fstream::out | std::fstream::binary;
@@ -241,6 +283,41 @@ namespace hms
         
         if (file.is_open())
         {
+            auto encryptCallback = [](std::string* lpString, DataBuffer* lpBuffer, ECryptoMode lpMode) -> void
+            {
+                if (Hermes::getInstance()->getDataManager()->mCipher != nullptr && lpMode != ECryptoMode::None)
+                {
+                    const size_t blockLength = 16;
+                    std::string key, iv;
+                    
+                    Hermes::getInstance()->getDataManager()->mCipher(key, iv);
+                    
+                    if (lpString != nullptr)
+                    {
+                        const size_t fillCount = lpString->length() % blockLength;
+                        if (fillCount != 0)
+                            lpString->insert(lpString->end(), blockLength - fillCount, '\x03');
+
+                        *lpString = encrypt(*lpString, key, iv, lpMode);
+                    }
+                    else if (lpBuffer != nullptr)
+                    {
+                        const size_t fillCount = lpBuffer->size() % blockLength;
+                        if (fillCount != 0)
+                        {
+                            std::string fill(blockLength - fillCount, '\x03');
+                            lpBuffer->push_back(fill.data(), fill.size());
+                        }
+                        
+                        *lpBuffer = encrypt(*lpBuffer, key, iv, lpMode);
+                    }
+                    
+                    // TODO find reliable way to clear strings without compiler optimizing it away
+                    key.clear();
+                    iv.clear();
+                }
+            };
+            
             switch (pType)
             {
             case EDataSharedType::Text:
@@ -250,18 +327,7 @@ namespace hms
                     
                     if (status)
                     {
-                        if (mTextCipherPair != nullptr)
-                        {
-                            const size_t blockLength = 16;
-                            const size_t fillCount = data.length() % blockLength;
-                            if (fillCount != 0)
-                                data.insert(data.end(), blockLength - fillCount, '\x03');
-                            
-                            std::string key, iv;
-                            mTextCipherPair(key, iv);
-                            data = Hermes::getInstance()->getDataManager()->encrypt(data, key, iv, EDataEncryption::AES_256_CBC);
-                        }
-                        
+                        encryptCallback(&data, nullptr, mCryptoMode);
                         file << data;
                     }
                 }
@@ -272,7 +338,10 @@ namespace hms
                     status = packBuffer(dataBuffer, pUserData);
                         
                     if (status)
+                    {
+                        encryptCallback(nullptr, &dataBuffer, mCryptoMode);
                         file.write(static_cast<const char*>(dataBuffer.data()), static_cast<int>(dataBuffer.size()));
+                    }
                 }
                 break;
             default:
@@ -296,134 +365,14 @@ namespace hms
         return mId;
     }
     
-    void DataShared::setTextCipherPair(std::function<void(std::string& lpKey, std::string& lpIV)> pTextCipherPair)
+    crypto::ECryptoMode DataShared::getCryptoMode() const
     {
-        mTextCipherPair = std::move(pTextCipherPair);
+        return mCryptoMode;
     }
     
-    void DataShared::printWarning(const std::string& pKey)
+    void DataShared::setCryptoMode(crypto::ECryptoMode pCryptoMode)
     {
-        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Could not access \"%\" value.", (pKey.size() > 0) ? pKey : "");
-    }
-    
-    template <>
-    bool DataShared::assignOp<bool>(const Json::Value* pSource, bool& pDestination)
-    {
-        bool status = false;
-        
-        if (pSource->isBool())
-        {
-            pDestination = pSource->asBool();
-            
-            status = true;
-        }
-        
-        return status;
-    }
-    
-    template <>
-    bool DataShared::assignOp<int>(const Json::Value* pSource, int& pDestination)
-    {
-        bool status = false;
-        
-        if (pSource->isNumeric())
-        {
-            pDestination = pSource->asInt();
-            
-            status = true;
-        }
-        
-        return status;
-    }
-    
-    template <>
-    bool DataShared::assignOp<long long int>(const Json::Value* pSource, long long int& pDestination)
-    {
-        bool status = false;
-        
-        if (pSource->isNumeric())
-        {
-            pDestination = pSource->asInt64();
-            
-            status = true;
-        }
-        
-        return status;
-    }
-    
-    template <>
-    bool DataShared::assignOp<unsigned>(const Json::Value* pSource, unsigned& pDestination)
-    {
-        bool status = false;
-        
-        if (pSource->isNumeric())
-        {
-            pDestination = pSource->asUInt();
-            
-            status = true;
-        }
-        
-        return status;
-    }
-    
-    template <>
-    bool DataShared::assignOp<unsigned long long int>(const Json::Value* pSource, unsigned long long int& pDestination)
-    {
-        bool status = false;
-        
-        if (pSource->isNumeric())
-        {
-            pDestination = pSource->asUInt64();
-            
-            status = true;
-        }
-        
-        return status;
-    }
-    
-    template <>
-    bool DataShared::assignOp<float>(const Json::Value* pSource, float& pDestination)
-    {
-        bool status = false;
-        
-        if (pSource->isNumeric())
-        {
-            pDestination = pSource->asFloat();
-            
-            status = true;
-        }
-        
-        return status;
-    }
-    
-    template <>
-    bool DataShared::assignOp<double>(const Json::Value* pSource, double& pDestination)
-    {
-        bool status = false;
-        
-        if (pSource->isNumeric())
-        {
-            pDestination = pSource->asDouble();
-            
-            status = true;
-        }
-        
-        return status;
-    }
-    
-    template <>
-    bool DataShared::assignOp<std::string>(const Json::Value* pSource, std::string& pDestination)
-    {
-        bool status = false;
-        
-        if (pSource->isString())
-        {
-            pDestination = pSource->asString();
-            
-            status = true;
-        }
-        
-        return status;
+        mCryptoMode = pCryptoMode;
     }
     
     /* DataManager */
@@ -495,197 +444,9 @@ namespace hms
         return mData[pID];
     }
     
-    bool DataManager::convertJSON(const Json::Value& pSource, std::string& pDestination) const
+    void DataManager::setCipher(std::function<void(std::string& lpKey, std::string& lpIV)> pCipher)
     {
-        Json::StreamWriterBuilder builder;
-        builder["commentStyle"] = "None";
-        builder["indentation"] = "    ";
-        std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
-
-        std::ostringstream stream;
-        writer->write(pSource, &stream);
-        pDestination = stream.str();
-
-        return true;
-    }
-
-    bool DataManager::convertJSON(const std::string& pSource, Json::Value& pDestination) const
-    {
-        bool status = false;
-        
-        if (pSource.size() > 0)
-        {
-            Json::CharReaderBuilder builder;
-            builder["collectComments"] = false;
-            std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
-            
-            const char* source = pSource.c_str();
-            std::string errors;
-            status = reader->parse(source, source + pSource.size(), &pDestination, &errors);
-        }
-        
-        return status;
-    }
-
-    std::string DataManager::decrypt(const std::string& pData, std::string pKey, std::string pIV, EDataEncryption pMode) const
-    {
-        std::string result;
-        const size_t blockLength = 16;
-        const size_t dataSize = pData.size();
-        
-        if (pKey.size() == 32 && pIV.size() == 16 && dataSize >= blockLength)
-        {
-            switch (pMode)
-            {
-            case EDataEncryption::AES_256_CBC:
-                if (dataSize % blockLength == 0)
-                {
-                    aes_decrypt_ctx context[1];
-                    aes_decrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
-
-                    auto inBuffer = reinterpret_cast<const unsigned char*>(pData.c_str());
-                    auto prevBuffer = reinterpret_cast<const unsigned char*>(pIV.c_str());
-                    unsigned char outBuffer[blockLength] = {0};
-                    size_t offset = 0;
-
-                    while (offset + blockLength <= dataSize)
-                    {
-                        aes_decrypt(inBuffer + offset, outBuffer, context);
-
-                        for (size_t i = 0; i < blockLength; ++i)
-                            outBuffer[i] ^= prevBuffer[i];
-
-                        prevBuffer = inBuffer + offset;
-                        offset += blockLength;
-                        result += std::string(reinterpret_cast<char*>(outBuffer), blockLength);
-                    }
-                }
-                else
-                {
-                    Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Invalid data size for CBC mode.");
-                }
-                break;
-            case EDataEncryption::AES_256_OFB:
-                if (dataSize >= blockLength)
-                {
-                    aes_encrypt_ctx context[1];
-                    aes_encrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
-
-                    auto inBuffer = reinterpret_cast<const unsigned char*>(pData.c_str());
-                    unsigned char outBuffer[blockLength] = {0};
-                    
-                    unsigned char iv[blockLength];
-                    memcpy(iv, pIV.c_str(), blockLength);
-                    
-                    size_t offset = 0;
-                    size_t length = blockLength;
-
-                    while (true)
-                    {
-                        if (offset + blockLength >= dataSize)
-                            length = dataSize - offset;
-                        
-                        aes_ofb_crypt(inBuffer + offset, outBuffer, static_cast<int>(length), iv, context);
-                        offset += length;
-                        result += std::string(reinterpret_cast<char*>(outBuffer), length);
-                        
-                        if (length != blockLength)
-                            break;
-                    }
-                }
-                break;
-            default:
-                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Decryption mode not supported.");
-                break;
-            }
-        }
-        else
-        {
-            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Invalid key/iv/data size. Decryption");
-            assert(dataSize == 0);
-        }
-        
-        return result;
-    }
-    
-    std::string DataManager::encrypt(const std::string& pData, std::string pKey, std::string pIV, EDataEncryption pMode) const
-    {
-        std::string result;
-        const size_t blockLength = 16;
-        const size_t dataSize = pData.size();
-        
-        if (pKey.size() == 32 && pIV.size() == 16 && dataSize >= blockLength)
-        {
-            switch (pMode)
-            {
-                case EDataEncryption::AES_256_CBC:
-                    if (dataSize % blockLength == 0)
-                    {
-                        aes_encrypt_ctx context[1];
-                        aes_encrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
-                        
-                        auto inBuffer = reinterpret_cast<const unsigned char*>(pData.c_str());
-                        auto currBuffer = inBuffer;
-                        unsigned char outBuffer[blockLength] = {0};
-                        size_t offset = 0;
-                        
-                        for (size_t i = 0; i < blockLength; ++i)
-                            outBuffer[i] = static_cast<unsigned char>(pIV[i]);
-                        
-                        while (offset + blockLength <= dataSize)
-                        {
-                            for (size_t i = 0; i < blockLength; ++i)
-                                outBuffer[i] ^= currBuffer[i];
-                            
-                            aes_encrypt(outBuffer, outBuffer, context);
-                            
-                            offset += blockLength;
-                            currBuffer = inBuffer + offset;
-                            result += std::string(reinterpret_cast<char*>(outBuffer), blockLength);
-                        }
-                    }
-                    break;
-                case EDataEncryption::AES_256_OFB:
-                    if (dataSize >= blockLength)
-                    {
-                        aes_encrypt_ctx context[1];
-                        aes_encrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
-                        
-                        auto inBuffer = reinterpret_cast<const unsigned char*>(pData.c_str());
-                        unsigned char outBuffer[blockLength] = {0};
-                        
-                        unsigned char iv[blockLength];
-                        memcpy(iv, pIV.c_str(), blockLength);
-                        
-                        size_t offset = 0;
-                        size_t length = blockLength;
-                        
-                        while (true)
-                        {
-                            if (offset + blockLength >= dataSize)
-                                length = dataSize - offset;
-                            
-                            aes_ofb_crypt(inBuffer + offset, outBuffer, static_cast<int>(length), iv, context);
-                            offset += length;
-                            result += std::string(reinterpret_cast<char*>(outBuffer), length);
-                            
-                            if (length != blockLength)
-                                break;
-                        }
-                    }
-                    break;
-                default:
-                    Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Encryption mode not supported.");
-                    break;
-            }
-        }
-        else
-        {
-            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Invalid key/iv/data size. Encryption");
-            assert(dataSize == 0);
-        }
-        
-        return result;
+        mCipher = std::move(pCipher);
     }
     
 }

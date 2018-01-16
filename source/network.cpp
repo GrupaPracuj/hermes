@@ -5,6 +5,7 @@
 #include "network.hpp"
 
 #include "hermes.hpp"
+#include "tools.hpp"
 #include "curl/curl.h"
 
 #include <cassert>
@@ -2126,11 +2127,11 @@ namespace hms
     {
         CURLcode code = CURLE_OK;
         
-        std::string key = tools::getRandomCryptoBytes(16);
-        key = tools::encodeBase64(reinterpret_cast<const unsigned char*>(key.data()), key.size());
+        std::string key = crypto::getRandomCryptoBytes(16);
+        key = crypto::encodeBase64(reinterpret_cast<const unsigned char*>(key.data()), key.size());
         
-        std::string shaAccept = tools::getSHA1Digest(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
-        pSecAccept = tools::encodeBase64(reinterpret_cast<const unsigned char*>(shaAccept.data()), shaAccept.size());
+        std::string shaAccept = crypto::getSHA1Digest(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
+        pSecAccept = crypto::encodeBase64(reinterpret_cast<const unsigned char*>(shaAccept.data()), shaAccept.size());
         
         std::string header = "GET ";
         header.reserve(1024);
@@ -2198,7 +2199,7 @@ namespace hms
         else if (payloadLength64 > 0)
             message.append(reinterpret_cast<const char*>(&payloadLength64), sizeof(payloadLength64));
         
-        memcpy(mask, tools::getRandomCryptoBytes(4).data(), sizeof(mask));
+        memcpy(mask, crypto::getRandomCryptoBytes(4).data(), sizeof(mask));
         message.append(reinterpret_cast<const char*>(mask), sizeof(mask));
         
         if (pMessage.length() > 0)

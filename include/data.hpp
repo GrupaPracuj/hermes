@@ -5,27 +5,24 @@
 #ifndef _DATA_HPP_
 #define _DATA_HPP_
 
-#include "json/json.h"
-
 #include <cassert>
 #include <cstring>
+#include <string>
 #include <functional>
 #include <memory>
 #include <vector>
 
 namespace hms
 {
+    namespace crypto
+    {
+        enum class ECryptoMode : int;
+    }
 
     enum class EDataSharedType : int
     {
         Text = 0,
         Binary
-    };
-    
-    enum class EDataEncryption : int
-    {
-        AES_256_OFB = 0,
-        AES_256_CBC
     };
 
     class DataBuffer
@@ -56,6 +53,8 @@ namespace hms
                 mSize += copySize;
             }
         }
+        
+        void pop_back(size_t pCount, bool pShrinkToFit = false);
         
         size_t size() const;
         
@@ -91,75 +90,14 @@ namespace hms
         virtual bool writeToFile(const std::string& pFilePath, const std::vector<unsigned>& pUserData, EDataSharedType pType = EDataSharedType::Text, bool pClearContent = true) const;
         
         size_t getId() const;
+        crypto::ECryptoMode getCryptoMode() const;
         
-        void setTextCipherPair(std::function<void(std::string& lpKey, std::string& lpIV)> pTextCipherPair);
-
-        template <typename T>
-        static bool safeAs(const Json::Value& pSource, T& pDestination, const std::string& pKey = "")
-        {
-            const Json::Value* source = nullptr;
-            
-            if (!pSource.empty())
-            {
-                if (pKey.size() > 0)
-                {
-                    if (pSource.isMember(pKey))
-                        source = &pSource[pKey];
-                }
-                else
-                {
-                    source = &pSource;
-                }
-            }
-            
-            if (source)
-            {
-                if (!assignOp<T>(source, pDestination))
-                    source = nullptr;
-            }
-            
-            if (source == nullptr)
-                printWarning(pKey);
-            
-            return (source != nullptr) ? true : false;
-        }
+        void setCryptoMode(crypto::ECryptoMode pCryptoMode);
         
     private:
-        template <typename T>
-        static bool assignOp(const Json::Value* pSource, T& pDestination)
-        {
-            return false;
-        }
-        
-        static void printWarning(const std::string& pKey);
-        
         size_t mId;
-        std::function<void(std::string& lpKey, std::string& lpIV)> mTextCipherPair = nullptr;
+        crypto::ECryptoMode mCryptoMode;
     };
-    
-    template <>
-    bool DataShared::assignOp<bool>(const Json::Value* pSource, bool& pDestination);
-    
-    template <>
-    bool DataShared::assignOp<int>(const Json::Value* pSource, int& pDestination);
-    
-    template <>
-    bool DataShared::assignOp<long long int>(const Json::Value* pSource, long long int& pDestination);
-    
-    template <>
-    bool DataShared::assignOp<unsigned>(const Json::Value* pSource, unsigned& pDestination);
-    
-    template <>
-    bool DataShared::assignOp<unsigned long long int>(const Json::Value* pSource, unsigned long long int& pDestination);
-    
-    template <>
-    bool DataShared::assignOp<float>(const Json::Value* pSource, float& pDestination);
-    
-    template <>
-    bool DataShared::assignOp<double>(const Json::Value* pSource, double& pDestination);
-    
-    template <>
-    bool DataShared::assignOp<std::string>(const Json::Value* pSource, std::string& pDestination);
     
     class DataManager
     {
@@ -179,15 +117,12 @@ namespace hms
         
             return std::static_pointer_cast<T>(mData[pId]);
         }
-
-        bool convertJSON(const Json::Value& pSource, std::string& pDestination) const;
-        bool convertJSON(const std::string& pSource, Json::Value& pDestination) const;
-
-        std::string decrypt(const std::string& pData, std::string pKey, std::string pIV, EDataEncryption pMode) const;
-        std::string encrypt(const std::string& pData, std::string pKey, std::string pIV, EDataEncryption pMode) const;
+        
+        void setCipher(std::function<void(std::string& lpKey, std::string& lpIV)> pCipher);
         
     private:
         friend class Hermes;
+        friend class DataShared;
         
         DataManager();
         DataManager(const DataManager& pOther) = delete;
@@ -198,6 +133,7 @@ namespace hms
         DataManager& operator=(DataManager&& pOther) = delete;
         
         std::vector<std::shared_ptr<DataShared>> mData;
+        std::function<void(std::string& lpKey, std::string& lpIV)> mCipher = nullptr;
         bool mInitialized = false;
     };
 
