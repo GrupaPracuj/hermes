@@ -16,7 +16,7 @@ namespace hms
 {
     namespace crypto
     {
-        enum class EDataCrypto : int;
+        enum class ECryptoMode : int;
     }
 
     enum class EDataSharedType : int
@@ -90,13 +90,13 @@ namespace hms
         virtual bool writeToFile(const std::string& pFilePath, const std::vector<unsigned>& pUserData, EDataSharedType pType = EDataSharedType::Text, bool pClearContent = true) const;
         
         size_t getId() const;
-        crypto::EDataCrypto getCryptoMode() const;
+        crypto::ECryptoMode getCryptoMode() const;
         
-        void setCryptoMode(crypto::EDataCrypto pCryptoMode);
+        void setCryptoMode(crypto::ECryptoMode pCryptoMode);
         
     private:
         size_t mId;
-        crypto::EDataCrypto mCryptoMode;
+        crypto::ECryptoMode mCryptoMode;
     };
     
     class DataManager

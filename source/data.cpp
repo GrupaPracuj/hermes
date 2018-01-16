@@ -139,7 +139,7 @@ namespace hms
     
     /* DataShared */
     
-    DataShared::DataShared(size_t pId) : mId(pId), mCryptoMode(crypto::EDataCrypto::None)
+    DataShared::DataShared(size_t pId) : mId(pId), mCryptoMode(crypto::ECryptoMode::None)
     {
     }
     
@@ -187,9 +187,9 @@ namespace hms
         
         if (file.is_open())
         {
-            auto decryptCallback = [](std::string* lpString, DataBuffer* lpBuffer, EDataCrypto lpMode) -> void
+            auto decryptCallback = [](std::string* lpString, DataBuffer* lpBuffer, ECryptoMode lpMode) -> void
             {
-                if (Hermes::getInstance()->getDataManager()->mCipher != nullptr && lpMode != EDataCrypto::None)
+                if (Hermes::getInstance()->getDataManager()->mCipher != nullptr && lpMode != ECryptoMode::None)
                 {
                     std::string key, iv;
                     Hermes::getInstance()->getDataManager()->mCipher(key, iv);
@@ -283,9 +283,9 @@ namespace hms
         
         if (file.is_open())
         {
-            auto encryptCallback = [](std::string* lpString, DataBuffer* lpBuffer, EDataCrypto lpMode) -> void
+            auto encryptCallback = [](std::string* lpString, DataBuffer* lpBuffer, ECryptoMode lpMode) -> void
             {
-                if (Hermes::getInstance()->getDataManager()->mCipher != nullptr && lpMode != EDataCrypto::None)
+                if (Hermes::getInstance()->getDataManager()->mCipher != nullptr && lpMode != ECryptoMode::None)
                 {
                     const size_t blockLength = 16;
                     std::string key, iv;
@@ -365,12 +365,12 @@ namespace hms
         return mId;
     }
     
-    crypto::EDataCrypto DataShared::getCryptoMode() const
+    crypto::ECryptoMode DataShared::getCryptoMode() const
     {
         return mCryptoMode;
     }
     
-    void DataShared::setCryptoMode(crypto::EDataCrypto pCryptoMode)
+    void DataShared::setCryptoMode(crypto::ECryptoMode pCryptoMode)
     {
         mCryptoMode = pCryptoMode;
     }
