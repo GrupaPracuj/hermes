@@ -10,6 +10,7 @@
 #include <string>
 #include <functional>
 #include <memory>
+#include <type_traits>
 #include <vector>
 
 namespace hms
@@ -106,13 +107,19 @@ namespace hms
         bool terminate();
         
         bool add(std::shared_ptr<DataShared> pData);
+        
+        template <typename T, typename = typename std::enable_if<std::is_base_of<DataShared, T>::value>::type>
+        bool add(std::shared_ptr<T> pData) const
+        {
+            return add(std::static_pointer_cast<DataShared>(pData));
+        }
+        
         size_t count() const;
         std::shared_ptr<DataShared> get(size_t pId) const;
         
-        template <typename T>
+        template <typename T, typename = typename std::enable_if<std::is_base_of<DataShared, T>::value>::type>
         std::shared_ptr<T> get(size_t pId) const
         {
-            // check if Id has a valid value
             assert(pId < mData.size());
         
             return std::static_pointer_cast<T>(mData[pId]);
