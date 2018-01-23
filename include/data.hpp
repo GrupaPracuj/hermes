@@ -109,7 +109,7 @@ namespace hms
         bool add(std::shared_ptr<DataShared> pData);
         
         template <typename T, typename = typename std::enable_if<std::is_base_of<DataShared, T>::value>::type>
-        bool add(std::shared_ptr<T> pData) const
+        bool add(std::shared_ptr<T> pData)
         {
             return add(std::static_pointer_cast<DataShared>(pData));
         }
