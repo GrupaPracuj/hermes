@@ -5,8 +5,5 @@ exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, 
 
 settings = Settings()
 
-if configure('android', settings):
-    prepareToolchainAndroid(settings)
-    buildMakeAndroid('', ['hermes', 'hmsextmodule', 'hmsextjni'], settings, '')
-    cleanup(settings)
-    
+if configure('linux', settings):
+    buildMakeLinux('', ['hermes', 'hmsextmodule'], settings, '')

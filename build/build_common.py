@@ -90,63 +90,95 @@ def configure(pBuildTarget, pSettings):
     pSettings.mHostName = platform.system()
     pSettings.mBuildDir = os.path.join(workingDir, 'build')
     
-    if pBuildTarget is not None and pBuildTarget == 'android':
-        hostDetected = False
-        
-        if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
-            hostDetected = True
-            pSettings.mMake = 'make'
-        elif pSettings.mHostName == 'Windows':
-            hostDetected = True
+    if pBuildTarget is not None:
+        if pBuildTarget == 'android':
+            hostDetected = False
             
-            if prepareMake(pSettings.mBuildDir):
-                pSettings.mMake = os.path.join(pSettings.mBuildDir, 'make.exe')
-            else:    
-                print('Error: make.exe not found.')
-                return False
-    
-        if hostDetected:
-            androidApi = os.getenv('HERMES_ANDROID_API')
-            name, separator, version = androidApi.partition('-')
-            
-            if version is not None and len(version) > 0:
-                pSettings.mAndroidApi = version
-            else:
-                pSettings.mAndroidApi = name;
-            
-            pSettings.mAndroidNdkDir = os.getenv('ANDROID_NDK_ROOT')
-
-            if pSettings.mAndroidApi is None:
-                pSettings.mAndroidApi = '21'
-
-            if pSettings.mAndroidNdkDir is None or not os.path.isdir(pSettings.mAndroidNdkDir):
-                androidHome = os.getenv('ANDROID_HOME')
+            if pSettings.mHostName == 'Linux':
+                hostDetected = True
                 
-                if androidHome is not None and os.path.isdir(androidHome):
-                    pSettings.mAndroidNdkDir = os.path.join(androidHome, 'ndk-bundle')
-                    
-                    if not os.path.isdir(pSettings.mAndroidNdkDir):
-                        print('Error: ' + pSettings.mAndroidNdkDir + ' is not a valid path.')
-                        return False
-                else:
-                    print('Error: Occurred problem related to ANDROID_HOME environment variable.')
+                if os.path.isfile('/usr/bin/make'):
+                    pSettings.mMake = '/usr/bin/make'
+                else:    
+                    print('Error: /usr/bin/make not found.')
                     return False
                     
-            pSettings.mToolchainDir = os.path.join(workingDir, 'toolchain')
-            pSettings.mToolchainArch = ['arm', 'arm64', 'x86', 'x86_64']
-            pSettings.mToolchainName = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
-            pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
-            pSettings.mArchFlag = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
-            pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
-            pSettings.mMakeFlag = ['', 'ARCH64=1', '', 'ARCH64=1']
+            elif pSettings.mHostName == 'Darwin':
+                hostDetected = True
+                pSettings.mMake = 'make'
+            elif pSettings.mHostName == 'Windows':
+                hostDetected = True
+                
+                if prepareMake(pSettings.mBuildDir):
+                    pSettings.mMake = os.path.join(pSettings.mBuildDir, 'make.exe')
+                else:    
+                    print('Error: make.exe not found.')
+                    return False
+        
+            if hostDetected:
+                androidApi = os.getenv('HERMES_ANDROID_API')
+                name, separator, version = androidApi.partition('-')
+                
+                if version is not None and len(version) > 0:
+                    pSettings.mAndroidApi = version
+                else:
+                    pSettings.mAndroidApi = name;
+                
+                pSettings.mAndroidNdkDir = os.getenv('ANDROID_NDK_ROOT')
 
-            print('Android API: "' + pSettings.mAndroidApi + '"')
-            print('Android NDK path: "' + pSettings.mAndroidNdkDir + '"')
+                if pSettings.mAndroidApi is None:
+                    pSettings.mAndroidApi = '21'
+
+                if pSettings.mAndroidNdkDir is None or not os.path.isdir(pSettings.mAndroidNdkDir):
+                    androidHome = os.getenv('ANDROID_HOME')
+                    
+                    if androidHome is not None and os.path.isdir(androidHome):
+                        pSettings.mAndroidNdkDir = os.path.join(androidHome, 'ndk-bundle')
+                        
+                        if not os.path.isdir(pSettings.mAndroidNdkDir):
+                            print('Error: ' + pSettings.mAndroidNdkDir + ' is not a valid path.')
+                            return False
+                    else:
+                        print('Error: Occurred problem related to ANDROID_HOME environment variable.')
+                        return False
+                        
+                pSettings.mToolchainDir = os.path.join(workingDir, 'toolchain')
+                pSettings.mToolchainArch = ['arm', 'arm64', 'x86', 'x86_64']
+                pSettings.mToolchainName = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
+                pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
+                pSettings.mArchFlag = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
+                pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
+                pSettings.mMakeFlag = ['', 'ARCH64=1', '', 'ARCH64=1']
+
+                print('Android API: "' + pSettings.mAndroidApi + '"')
+                print('Android NDK path: "' + pSettings.mAndroidNdkDir + '"')
+            else:
+                print('Error: Not supported host platform: ' + pSettings.mHostName + '.')
+                return False                  
+        elif pBuildTarget == 'linux':
+            hostDetected = False
+            
+            if pSettings.mHostName == 'Linux':
+                hostDetected = True
+                
+                if os.path.isfile('/usr/bin/make'):
+                    pSettings.mMake = '/usr/bin/make'
+                else:    
+                    print('Error: /usr/bin/make not found.')
+                    return False
+        
+            if hostDetected:      
+                pSettings.mArchFlag = ['-m32', '-m64']
+                pSettings.mArchName = ['x86', 'x86_64']
+                pSettings.mMakeFlag = ['', '']
+            else:
+                print('Error: Not supported host platform: ' + pSettings.mHostName + '.')
+                return False 
         else:
-            print('Error: Not supported host platform: ' + pSettings.mHostName + '.')
+            print('Error: Not supported build target.')
             return False
     else:
-        print('Error: Not supported build target and/or host platform.')
+        print('Error: Missing build target.')
         return False
         
     pSettings.mCoreCount = str(multiprocessing.cpu_count())
@@ -219,7 +251,7 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
     elif pSettings.mHostName == 'Windows':
         executeCmdCommand(pSettings.mMake + ' clean', workingDir)
 
-    for i in range(0, len(pSettings.mToolchainArch)):
+    for i in range(0, len(pSettings.mArchName)):
         toolchainBinDir = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i], 'bin')
         libraryDir = os.path.join(pRootDir, 'lib', 'android', pSettings.mArchName[i])
 
@@ -245,10 +277,6 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
             envSYSROOT = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i], 'sysroot')        
             envCXXFLAGS = pSettings.mArchFlag[i] + ' --sysroot=' + envSYSROOT
             envCFLAGS = pSettings.mArchFlag[i] + ' --sysroot=' + envSYSROOT
-            
-            if pSettings.mArch[i] == 'linux64-mips64':
-                envCXXFLAGS += ' -fintegrated-as'
-                envCFLAGS += ' -fintegrated-as'
 
             os.environ['SYSROOT'] = envSYSROOT
             os.environ['CXXFLAGS'] = envCXXFLAGS
@@ -256,14 +284,17 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
 
             makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
             
-            for j in range(1, len(sys.argv)):
-                makeCommand += ' ' + sys.argv[j]
-                
+            for j in range(0, len(pLibraryName)):
+                makeCommand += ' lib' + pLibraryName[j] + '.a'
+ 
             if len(pSettings.mMakeFlag[i]) > 0:
                 makeCommand += ' ' + pSettings.mMakeFlag[i]
                 
             if pMakeFlag is not None and len(pMakeFlag) > 0:
                 makeCommand += ' ' + pMakeFlag
+                
+            for j in range(1, len(sys.argv)):
+                makeCommand += ' ' + sys.argv[j]
                 
             buildSuccess = False
 
@@ -274,7 +305,10 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
                 
             if buildSuccess:
                 for j in range(0, len(pLibraryName)):
-                    shutil.copy2(os.path.join(workingDir, 'lib' + pLibraryName[j] + '.a'), os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a'))
+                    try:
+                        shutil.copy2(os.path.join(workingDir, 'lib' + pLibraryName[j] + '.a'), os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a'))
+                    except FileNotFoundError:
+                        pass
 
             if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
                 executeShellCommand(pSettings.mMake + ' clean')
@@ -286,3 +320,60 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
             status |= buildSuccess
         
     return status
+    
+def buildMakeLinux(pRootDir, pLibraryName, pSettings, pMakeFlag):
+    print('Building...')
+    status = False
+    workingDir = os.getcwd()
+
+    executeShellCommand(pSettings.mMake + ' clean')
+
+    for i in range(0, len(pSettings.mArchName)):
+        libraryDir = os.path.join(pRootDir, 'lib', 'linux', pSettings.mArchName[i])
+
+        if not os.path.isdir(libraryDir):
+            os.makedirs(libraryDir)
+        else:
+            for j in range(0, len(pLibraryName)):
+                libraryFilepath = os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a')
+                
+                if os.path.isfile(libraryFilepath):
+                    os.remove(libraryFilepath)
+      
+        envCXXFLAGS = pSettings.mArchFlag[i]
+        envCFLAGS = pSettings.mArchFlag[i]
+
+        os.environ['CXXFLAGS'] = envCXXFLAGS
+        os.environ['CFLAGS'] = envCFLAGS
+
+        makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
+        
+        for j in range(0, len(pLibraryName)):
+            makeCommand += ' lib' + pLibraryName[j] + '.a'
+
+        if len(pSettings.mMakeFlag[i]) > 0:
+            makeCommand += ' ' + pSettings.mMakeFlag[i]
+            
+        if pMakeFlag is not None and len(pMakeFlag) > 0:
+            makeCommand += ' ' + pMakeFlag
+            
+        for j in range(1, len(sys.argv)):
+            makeCommand += ' ' + sys.argv[j]
+            
+        buildSuccess = executeShellCommand(makeCommand) == 0
+            
+        if buildSuccess:
+            for j in range(0, len(pLibraryName)):
+                try:
+                    shutil.copy2(os.path.join(workingDir, 'lib' + pLibraryName[j] + '.a'), os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a'))
+                except FileNotFoundError:
+                    pass
+
+        executeShellCommand(pSettings.mMake + ' clean')
+            
+        print('Build status for ' + pSettings.mArchName[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
+        
+        status |= buildSuccess
+        
+    return status
+    
