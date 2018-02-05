@@ -137,7 +137,7 @@ def configure(pBuildTarget, pSettings):
             pSettings.mToolchainName = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
             pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
             pSettings.mArchFlag = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
-            pSettings.mArchName = ['armv7', 'arm64', 'x86', 'x86_64']
+            pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
             pSettings.mMakeFlag = ['', 'ARCH64=1', '', 'ARCH64=1']
 
             print('Android API: "' + pSettings.mAndroidApi + '"')
@@ -213,16 +213,24 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
     print('Building...')
     status = False
     workingDir = os.getcwd()
+    
+    if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
+        executeShellCommand(pSettings.mMake + ' clean')
+    elif pSettings.mHostName == 'Windows':
+        executeCmdCommand(pSettings.mMake + ' clean', workingDir)
 
     for i in range(0, len(pSettings.mToolchainArch)):
         toolchainBinDir = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i], 'bin')
         libraryDir = os.path.join(pRootDir, 'lib', 'android', pSettings.mArchName[i])
-        libraryFilepath = os.path.join(libraryDir, 'lib' + pLibraryName + '.a')
 
         if not os.path.isdir(libraryDir):
             os.makedirs(libraryDir)
-        elif os.path.isfile(libraryFilepath):
-            os.remove(libraryFilepath)
+        else:
+            for j in range(0, len(pLibraryName)):
+                libraryFilepath = os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a')
+                
+                if os.path.isfile(libraryFilepath):
+                    os.remove(libraryFilepath)
         
         if os.path.isdir(toolchainBinDir):
             executablePrefix = os.path.join(toolchainBinDir, pSettings.mToolchainName[i])
@@ -248,8 +256,8 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
 
             makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
             
-            if len(sys.argv) > 1:
-                makeCommand += ' ' + sys.argv[1]
+            for j in range(1, len(sys.argv)):
+                makeCommand += ' ' + sys.argv[j]
                 
             if len(pSettings.mMakeFlag[i]) > 0:
                 makeCommand += ' ' + pSettings.mMakeFlag[i]
@@ -258,14 +266,15 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
                 makeCommand += ' ' + pMakeFlag
                 
             buildSuccess = False
-            
+
             if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
                 buildSuccess = executeShellCommand(makeCommand) == 0
             elif pSettings.mHostName == 'Windows':
                 buildSuccess = executeCmdCommand(makeCommand, workingDir) == 0
                 
             if buildSuccess:
-                shutil.copy2(os.path.join(workingDir, 'lib' + pLibraryName + '.a'), libraryFilepath)
+                for j in range(0, len(pLibraryName)):
+                    shutil.copy2(os.path.join(workingDir, 'lib' + pLibraryName[j] + '.a'), os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a'))
 
             if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
                 executeShellCommand(pSettings.mMake + ' clean')

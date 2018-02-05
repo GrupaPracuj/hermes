@@ -6,21 +6,13 @@
 	#error "Not supported Apple platform"
 #elif defined(ANDROID) || defined(__ANDROID__)
 	#if defined(__arm__)
-		#if defined(__ARM_ARCH_7A__)
-			#include "android/opensslconf-armv7.h"
-		#else
-			#include "android/opensslconf-arm.h"
-		#endif
+		#include "android/opensslconf-armeabi-v7a.h"
 	#elif defined(__aarch64__)
-		#include "android/opensslconf-arm64.h"
+		#include "android/opensslconf-arm64-v8a.h"
 	#elif defined(__i386__)
 		#include "android/opensslconf-x86.h"
 	#elif defined(__x86_64__)
 		#include "android/opensslconf-x86_64.h"
-	#elif defined(__mips64)
-		#include "android/opensslconf-mips64.h"
-	#elif defined(__mips__)
-		#include "android/opensslconf-mips.h"
 	#else
 		#error "Not supported Android platform"
 	#endif

@@ -1,0 +1,117 @@
+#ifndef _HMS_MODULE_HPP_
+#define _HMS_MODULE_HPP_
+
+#include <functional>
+#include <memory>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+namespace hms
+{
+namespace ext
+{
+    
+    class ModuleShared
+    {
+        friend class ModuleHandler;
+    public:
+        template <typename T, typename = typename std::enable_if<std::is_base_of<ModuleShared, T>::value>::type, typename... U>
+        static std::shared_ptr<T> create(U&&... pArgument)
+        {
+            std::shared_ptr<T> module(new T(std::forward<U>(pArgument)...), std::bind(&ModuleShared::invokeDelete<T>, std::placeholders::_1));
+            module->mThis = module;
+            
+            return module;
+        }
+        
+        void setOnAttachCallback(std::function<void(std::shared_ptr<ModuleShared>)> pCallback);
+        void setOnDetachCallback(std::function<void()> pCallback);
+
+        std::pair<int, int> getIndex() const;
+        
+    protected:
+        ModuleShared() = default;
+        virtual ~ModuleShared() = default;
+        
+        void attach(std::shared_ptr<ModuleShared> pThis);
+        void detach();
+        
+        std::weak_ptr<ModuleShared> mThis;
+        std::pair<int, int> mIndex = {-1, -1};
+        
+    private:
+        ModuleShared(const ModuleShared& pOther) = delete;
+        ModuleShared(ModuleShared&& pOther) = delete;
+        
+        ModuleShared& operator=(const ModuleShared& pOther) = delete;
+        ModuleShared& operator=(ModuleShared&& pOther) = delete;
+        
+        template <typename T>
+        static void invokeDelete(T* pObject)
+        {
+            delete pObject;
+        }
+        
+        std::function<void(std::shared_ptr<ModuleShared>)> mOnAttach;
+        std::function<void()> mOnDetach;
+    };
+    
+    class ModuleHandler
+    {
+    public:
+        int countPrimary() const;
+        int countSecondary(int pPrimaryIndex) const;
+        
+        std::shared_ptr<ModuleShared> getMain() const;
+        
+        template <typename T, typename = typename std::enable_if<std::is_base_of<ModuleShared, T>::value>::type>
+        std::shared_ptr<T> getMain() const
+        {
+            return std::static_pointer_cast<T>(getMain());
+        }
+
+        void setMain(std::shared_ptr<ModuleShared> pModule);
+        
+        template <typename T, typename = typename std::enable_if<std::is_base_of<ModuleShared, T>::value>::type>
+        void setMain(std::shared_ptr<T> pModule)
+        {
+            return setMain(std::static_pointer_cast<ModuleShared>(pModule));
+        }
+        
+        std::weak_ptr<ModuleShared> get(std::pair<int, int> pIndex) const;
+        
+        template <typename T, typename = typename std::enable_if<std::is_base_of<ModuleShared, T>::value>::type>
+        std::weak_ptr<T> get(std::pair<int, int> pIndex) const
+        {
+            return std::static_pointer_cast<T>(get(pIndex));
+        }
+        
+        void push(int pPrimaryIndex, std::shared_ptr<ModuleShared> pModule);
+        void pop(int pPrimaryIndex, size_t pCount);
+        void erase(std::shared_ptr<ModuleShared> pModule, size_t pCount);
+        void clear();
+        
+        void setOnChangeCallback(std::function<void()> pCallback);
+        
+        static ModuleHandler* getInstance();
+        
+    private:
+        ModuleHandler() = default;
+        ~ModuleHandler() = default;
+        ModuleHandler(const ModuleHandler& pOther) = delete;
+        ModuleHandler(ModuleHandler&& pOther) = delete;
+        
+        ModuleHandler& operator=(const ModuleHandler& pOther) = delete;
+        ModuleHandler& operator=(ModuleHandler&& pOther) = delete;
+        
+        std::shared_ptr<ModuleShared> mMainModule;
+        std::vector<std::vector<std::shared_ptr<ModuleShared>>> mModule;
+        
+        std::function<void()> mOnChangeCallback;
+    };
+    
+}
+}
+
+#endif

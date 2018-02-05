@@ -16,7 +16,7 @@ if configure('android', settings):
         shutil.copy2('Makefile.in', os.path.join(libraryName, 'Makefile'))
         openSSL = ('CURL_OPENSSL=1' if os.path.isdir(os.path.join('..', 'openssl', 'include', 'openssl', 'android')) else '')
         os.chdir(libraryName)
-        if buildMakeAndroid(os.path.join('..', '..', '..'), 'curl', settings, openSSL):
+        if buildMakeAndroid(os.path.join('..', '..', '..'), ['curl'], settings, openSSL):
             includePath = os.path.join('include', 'curl')
             shutil.copytree(includePath, os.path.join('..', includePath))
             remove(os.path.join('..', includePath, 'Makefile.am'))

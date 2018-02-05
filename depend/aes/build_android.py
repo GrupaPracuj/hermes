@@ -7,5 +7,5 @@ settings = Settings()
 
 if configure('android', settings):
     prepareToolchainAndroid(settings)
-    buildMakeAndroid(os.path.join('..', '..'), 'aes', settings, '')
+    buildMakeAndroid(os.path.join('..', '..'), ['aes'], settings, '')
     cleanup(settings)

@@ -15,7 +15,7 @@ if configure('android', settings):
         remove('include')
         shutil.copy2('Makefile.in', os.path.join(libraryName, 'Makefile'))
         os.chdir(libraryName)
-        if buildMakeAndroid(os.path.join('..', '..', '..'), 'jsoncpp', settings, ''):
+        if buildMakeAndroid(os.path.join('..', '..', '..'), ['jsoncpp'], settings, ''):
             shutil.copytree(os.path.join('include', 'json'), os.path.join('..', 'include', 'json'))
         os.chdir('..')
         remove(libraryName)

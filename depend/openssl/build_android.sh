@@ -47,7 +47,7 @@ TOOLCHAIN_ARCH=("arm" "arm64" "x86" "x86_64")
 TOOLCHAIN_NAME=("arm-linux-androideabi" "aarch64-linux-android" "i686-linux-android" "x86_64-linux-android")
 ARCH=("android-armeabi" "android64-aarch64" "android-x86" "android64")
 ARCH_FLAG=("-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon" "" "-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse" "-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt")
-ARCH_NAME=("armv7" "arm64" "x86" "x86_64")
+ARCH_NAME=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
 
 # Prepare toolchains
 for ((i=0; i<${#TOOLCHAIN_ARCH[@]}; i++)); do
