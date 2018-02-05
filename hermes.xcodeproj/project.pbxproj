@@ -11,6 +11,8 @@
 		38EC90F81C3AC9A6008AE1A3 /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F41C3AC9A6008AE1A3 /* logger.cpp */; };
 		38EC90F91C3AC9A6008AE1A3 /* network.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F51C3AC9A6008AE1A3 /* network.cpp */; };
 		38EC90FA1C3AC9A6008AE1A3 /* task.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F61C3AC9A6008AE1A3 /* task.cpp */; };
+		55465B662028CCA300060DED /* hmsModule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55465B632028CC8200060DED /* hmsModule.cpp */; };
+		55465B672028CCA400060DED /* hmsModule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55465B632028CC8200060DED /* hmsModule.cpp */; };
 		55A5745F1EA780F3003ECB8C /* hermes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55A5745E1EA780F3003ECB8C /* hermes.cpp */; };
 		55DD5FFC1F38980400BFA8E5 /* data.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F31C3AC9A6008AE1A3 /* data.cpp */; };
 		55DD5FFD1F38980400BFA8E5 /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F41C3AC9A6008AE1A3 /* logger.cpp */; };
@@ -31,10 +33,19 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		55465B4F2028CB8300060DED /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		3871E9AD1C3C07D200A2EC70 /* libhermes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhermes.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		3871E9AD1C3C07D200A2EC70 /* libhermes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = libhermes.a; path = "/Users/patryk.nadrowski/Programowanie/hermes/build/Debug-iphoneos/libhermes.a"; sourceTree = "<absolute>"; };
 		38EC90EF1C3AC999008AE1A3 /* data.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = data.hpp; path = include/data.hpp; sourceTree = "<group>"; };
 		38EC90F01C3AC999008AE1A3 /* logger.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = logger.hpp; path = include/logger.hpp; sourceTree = "<group>"; };
 		38EC90F11C3AC999008AE1A3 /* network.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = network.hpp; path = include/network.hpp; sourceTree = "<group>"; };
@@ -43,7 +54,11 @@
 		38EC90F41C3AC9A6008AE1A3 /* logger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = logger.cpp; path = source/logger.cpp; sourceTree = "<group>"; };
 		38EC90F51C3AC9A6008AE1A3 /* network.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = network.cpp; path = source/network.cpp; sourceTree = "<group>"; };
 		38EC90F61C3AC9A6008AE1A3 /* task.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = task.cpp; path = source/task.cpp; sourceTree = "<group>"; };
-		5584A27D1FA1DEC500709CE5 /* libhermes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhermes.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		55465B532028CB8300060DED /* libhmsextmodule.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = libhmsextmodule.a; path = "/Users/patryk.nadrowski/Programowanie/hermes/build/Debug-iphoneos/libhmsextmodule.a"; sourceTree = "<absolute>"; };
+		55465B612028CB8900060DED /* libhmsextmodule.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = libhmsextmodule.a; path = /Users/patryk.nadrowski/Programowanie/hermes/build/Debug/libhmsextmodule.a; sourceTree = "<absolute>"; };
+		55465B632028CC8200060DED /* hmsModule.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hmsModule.cpp; path = ext/hmsModule.cpp; sourceTree = "<group>"; };
+		55465B642028CC8200060DED /* hmsModule.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hmsModule.hpp; path = ext/hmsModule.hpp; sourceTree = "<group>"; };
+		5584A27D1FA1DEC500709CE5 /* libhermes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = libhermes.a; path = /Users/patryk.nadrowski/Programowanie/hermes/build/Debug/libhermes.a; sourceTree = "<absolute>"; };
 		55A5745E1EA780F3003ECB8C /* hermes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hermes.cpp; path = source/hermes.cpp; sourceTree = "<group>"; };
 		55A574601EA78108003ECB8C /* hermes.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hermes.hpp; path = include/hermes.hpp; sourceTree = "<group>"; };
 		9E19506E2007AED500CE339D /* tools.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = tools.cpp; path = source/tools.cpp; sourceTree = "<group>"; };
@@ -52,6 +67,20 @@
 
 /* Begin PBXFrameworksBuildPhase section */
 		38EC90C91C3AC853008AE1A3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55465B4E2028CB8300060DED /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55465B5C2028CB8900060DED /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -68,25 +97,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		3871E9AE1C3C084600A2EC70 /* Product */ = {
-			isa = PBXGroup;
-			children = (
-				3871E9AD1C3C07D200A2EC70 /* libhermes.a */,
-			);
-			name = Product;
-			sourceTree = "<group>";
-		};
 		38EC90C31C3AC853008AE1A3 = {
 			isa = PBXGroup;
 			children = (
-				38EC90ED1C3AC92E008AE1A3 /* Header Files */,
-				38EC90EE1C3AC974008AE1A3 /* Source Files */,
-				3871E9AE1C3C084600A2EC70 /* Product */,
-				5584A27D1FA1DEC500709CE5 /* libhermes.a */,
+				38EC90ED1C3AC92E008AE1A3 /* Include */,
+				38EC90EE1C3AC974008AE1A3 /* Source */,
+				55465B622028CC4A00060DED /* Extension */,
 			);
 			sourceTree = "<group>";
 		};
-		38EC90ED1C3AC92E008AE1A3 /* Header Files */ = {
+		38EC90ED1C3AC92E008AE1A3 /* Include */ = {
 			isa = PBXGroup;
 			children = (
 				38EC90EF1C3AC999008AE1A3 /* data.hpp */,
@@ -96,10 +116,10 @@
 				9E1950712007AEF300CE339D /* tools.hpp */,
 				55A574601EA78108003ECB8C /* hermes.hpp */,
 			);
-			name = "Header Files";
+			name = Include;
 			sourceTree = "<group>";
 		};
-		38EC90EE1C3AC974008AE1A3 /* Source Files */ = {
+		38EC90EE1C3AC974008AE1A3 /* Source */ = {
 			isa = PBXGroup;
 			children = (
 				38EC90F31C3AC9A6008AE1A3 /* data.cpp */,
@@ -109,12 +129,28 @@
 				9E19506E2007AED500CE339D /* tools.cpp */,
 				55A5745E1EA780F3003ECB8C /* hermes.cpp */,
 			);
-			name = "Source Files";
+			name = Source;
+			sourceTree = "<group>";
+		};
+		55465B622028CC4A00060DED /* Extension */ = {
+			isa = PBXGroup;
+			children = (
+				55465B632028CC8200060DED /* hmsModule.cpp */,
+				55465B642028CC8200060DED /* hmsModule.hpp */,
+			);
+			name = Extension;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
+		55465B5D2028CB8900060DED /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		55DD5FED1F38956600BFA8E5 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -140,6 +176,40 @@
 			name = hermes_ios;
 			productName = hermes;
 			productReference = 3871E9AD1C3C07D200A2EC70 /* libhermes.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		55465B462028CB8300060DED /* hmsextmodule_ios */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 55465B502028CB8300060DED /* Build configuration list for PBXNativeTarget "hmsextmodule_ios" */;
+			buildPhases = (
+				55465B472028CB8300060DED /* Sources */,
+				55465B4E2028CB8300060DED /* Frameworks */,
+				55465B4F2028CB8300060DED /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = hmsextmodule_ios;
+			productName = hermes;
+			productReference = 55465B532028CB8300060DED /* libhmsextmodule.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		55465B542028CB8900060DED /* hmsextmodule_macos */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 55465B5E2028CB8900060DED /* Build configuration list for PBXNativeTarget "hmsextmodule_macos" */;
+			buildPhases = (
+				55465B552028CB8900060DED /* Sources */,
+				55465B5C2028CB8900060DED /* Frameworks */,
+				55465B5D2028CB8900060DED /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = hmsextmodule_macos;
+			productName = hermes_macos;
+			productReference = 55465B612028CB8900060DED /* libhmsextmodule.a */;
 			productType = "com.apple.product-type.library.static";
 		};
 		55DD5FEE1F38956600BFA8E5 /* hermes_macos */ = {
@@ -189,7 +259,9 @@
 			projectRoot = "";
 			targets = (
 				38EC90CB1C3AC853008AE1A3 /* hermes_ios */,
+				55465B462028CB8300060DED /* hmsextmodule_ios */,
 				55DD5FEE1F38956600BFA8E5 /* hermes_macos */,
+				55465B542028CB8900060DED /* hmsextmodule_macos */,
 			);
 		};
 /* End PBXProject section */
@@ -205,6 +277,22 @@
 				38EC90F91C3AC9A6008AE1A3 /* network.cpp in Sources */,
 				38EC90F81C3AC9A6008AE1A3 /* logger.cpp in Sources */,
 				9E1950702007AED500CE339D /* tools.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55465B472028CB8300060DED /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				55465B662028CCA300060DED /* hmsModule.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		55465B552028CB8900060DED /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				55465B672028CCA400060DED /* hmsModule.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -363,6 +451,40 @@
 			};
 			name = Release;
 		};
+		55465B512028CB8300060DED /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = "$(SRCROOT)/lib/ios";
+				PRODUCT_NAME = hmsextmodule;
+			};
+			name = Debug;
+		};
+		55465B522028CB8300060DED /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = "$(SRCROOT)/lib/ios";
+				PRODUCT_NAME = hmsextmodule;
+			};
+			name = Release;
+		};
+		55465B5F2028CB8900060DED /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = "$(SRCROOT)/lib/macos";
+				PRODUCT_NAME = hmsextmodule;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		55465B602028CB8900060DED /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = "$(SRCROOT)/lib/macos";
+				PRODUCT_NAME = hmsextmodule;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
 		55DD5FF71F38956600BFA8E5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -398,6 +520,24 @@
 			buildConfigurations = (
 				38EC90D61C3AC853008AE1A3 /* Debug */,
 				38EC90D71C3AC853008AE1A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		55465B502028CB8300060DED /* Build configuration list for PBXNativeTarget "hmsextmodule_ios" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				55465B512028CB8300060DED /* Debug */,
+				55465B522028CB8300060DED /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		55465B5E2028CB8900060DED /* Build configuration list for PBXNativeTarget "hmsextmodule_macos" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				55465B5F2028CB8900060DED /* Debug */,
+				55465B602028CB8900060DED /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
