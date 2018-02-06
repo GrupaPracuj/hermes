@@ -4,17 +4,20 @@
 #include <jni.h>
 #include <memory>
 #include <list>
+#include <string>
 
 namespace hms
 {
 namespace ext
 {
+namespace jni
+{
 
     template<typename T>
-    class JNIObjectHandle
+    class ObjectHandle
     {
     public:
-        JNIObjectHandle(JNIEnv* pEnvironment, jobject pObject, const char* pFieldName, T pNativeObject)
+        ObjectHandle(JNIEnv* pEnvironment, jobject pObject, const char* pFieldName, T pNativeObject)
         {
             mNativeObject = pNativeObject;
 
@@ -22,7 +25,7 @@ namespace ext
                 set(pEnvironment, pObject, pFieldName, this);
         }
 
-        virtual ~JNIObjectHandle() noexcept
+        virtual ~ObjectHandle() noexcept
         {
         }
 
@@ -31,15 +34,15 @@ namespace ext
             return mNativeObject;
         }
 
-        static JNIObjectHandle* get(JNIEnv* pEnvironment, jobject pObject, const char* pFieldName)
+        static ObjectHandle* get(JNIEnv* pEnvironment, jobject pObject, const char* pFieldName)
         {
             jclass jClass = pEnvironment->GetObjectClass(pObject);
             jfieldID jField = pEnvironment->GetFieldID(jClass, pFieldName, "J");
             jlong handle = pEnvironment->GetLongField(pObject, jField);
-            return reinterpret_cast<JNIObjectHandle*>(handle);
+            return reinterpret_cast<ObjectHandle*>(handle);
         }
 
-        static void set(JNIEnv* pEnvironment, jobject pObject, const char* pFieldName, JNIObjectHandle* pNativeObject)
+        static void set(JNIEnv* pEnvironment, jobject pObject, const char* pFieldName, ObjectHandle* pNativeObject)
         {
             jclass jClass = pEnvironment->GetObjectClass(pObject);
             jfieldID jField = pEnvironment->GetFieldID(jClass, pFieldName, "J");
@@ -58,11 +61,11 @@ namespace ext
         T mNativeObject;
     };
     
-    class JNISmartRef
+    class SmartRef
     {
     public:
-        JNISmartRef(jobject pObject, JNIEnv* pEnvironment);
-        ~JNISmartRef();
+        SmartRef(jobject pObject, JNIEnv* pEnvironment);
+        ~SmartRef();
         
         jobject getObject() const;
         JNIEnv* getEnvironment() const;
@@ -72,11 +75,11 @@ namespace ext
         JavaVM* mJavaVM = nullptr;
     };
     
-    class JNISmartWeakRef
+    class SmartWeakRef
     {
     public:
-        JNISmartWeakRef(jobject pObject, JNIEnv* pEnvironment);
-        ~JNISmartWeakRef();
+        SmartWeakRef(jobject pObject, JNIEnv* pEnvironment);
+        ~SmartWeakRef();
         
         jobject getWeakObject() const;
         JNIEnv* getEnvironment() const;
@@ -86,29 +89,43 @@ namespace ext
         JavaVM* mJavaVM = nullptr;
     };
     
-    class JNISmartRefHandler
+    class SmartRefHandler
     {
     public:
         void flush();
         
-        void push(std::shared_ptr<JNISmartRef> pSmartRef);
-        void push(std::shared_ptr<JNISmartWeakRef> pSmartWeakRef);
+        void push(std::shared_ptr<SmartRef> pSmartRef);
+        void push(std::shared_ptr<SmartWeakRef> pSmartWeakRef);
         
-        static JNISmartRefHandler* getInstance();
+        static SmartRefHandler* getInstance();
         
     private:
-        JNISmartRefHandler() = default;
-        ~JNISmartRefHandler();
-        JNISmartRefHandler(const JNISmartRefHandler& pOther) = delete;
-        JNISmartRefHandler(JNISmartRefHandler&& pOther) = delete;
+        SmartRefHandler() = default;
+        ~SmartRefHandler();
+        SmartRefHandler(const SmartRefHandler& pOther) = delete;
+        SmartRefHandler(SmartRefHandler&& pOther) = delete;
         
-        JNISmartRefHandler& operator=(const JNISmartRefHandler& pOther) = delete;
-        JNISmartRefHandler& operator=(JNISmartRefHandler&& pOther) = delete;
+        SmartRefHandler& operator=(const SmartRefHandler& pOther) = delete;
+        SmartRefHandler& operator=(SmartRefHandler&& pOther) = delete;
         
-        std::list<std::shared_ptr<JNISmartRef>> mSmartRef;
-        std::list<std::shared_ptr<JNISmartWeakRef>> mSmartWeakRef;
+        std::list<std::shared_ptr<SmartRef>> mSmartRef;
+        std::list<std::shared_ptr<SmartWeakRef>> mSmartWeakRef;
+    };
+    
+    class Utility
+    {
+    public:
+        Utility() = delete;
+        Utility(const Utility& pOther) = delete;
+        Utility(Utility&& pOther) = delete;
+        
+        Utility& operator=(const Utility& pOther) = delete;
+        Utility& operator=(Utility&& pOther) = delete;
+        
+        static std::string string(jstring pData, JNIEnv* pEnvironment);
     };
 
+}
 }
 }
 

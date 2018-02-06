@@ -6,10 +6,12 @@ namespace hms
 {
 namespace ext
 {
+namespace jni
+{
     
-    /* JNISmartRef */
+    /* SmartRef */
     
-    JNISmartRef::JNISmartRef(jobject pObject, JNIEnv* pEnvironment)
+    SmartRef::SmartRef(jobject pObject, JNIEnv* pEnvironment)
     {
         assert(pObject != nullptr && pEnvironment != nullptr);
 
@@ -18,7 +20,7 @@ namespace ext
             mObject = pEnvironment->NewGlobalRef(pObject);
     }
 
-    JNISmartRef::~JNISmartRef()
+    SmartRef::~SmartRef()
     {
         if (mObject != nullptr)
         {
@@ -28,12 +30,12 @@ namespace ext
         }
     }
 
-    jobject JNISmartRef::getObject() const
+    jobject SmartRef::getObject() const
     {
         return mObject;
     }
 
-    JNIEnv* JNISmartRef::getEnvironment() const
+    JNIEnv* SmartRef::getEnvironment() const
     {
         JNIEnv* environment = nullptr;
         if (mJavaVM != nullptr)
@@ -42,9 +44,9 @@ namespace ext
         return environment;
     }
     
-    /* JNISmartWeakRef */
+    /* SmartWeakRef */
 
-    JNISmartWeakRef::JNISmartWeakRef(jobject pObject, JNIEnv* pEnvironment)
+    SmartWeakRef::SmartWeakRef(jobject pObject, JNIEnv* pEnvironment)
     {
         assert(pObject != nullptr && pEnvironment != nullptr);
 
@@ -53,7 +55,7 @@ namespace ext
             mObject = pEnvironment->NewWeakGlobalRef(pObject);
     }
 
-    JNISmartWeakRef::~JNISmartWeakRef()
+    SmartWeakRef::~SmartWeakRef()
     {
         if (mObject != nullptr)
         {
@@ -63,12 +65,12 @@ namespace ext
         }
     }
 
-    jobject JNISmartWeakRef::getWeakObject() const
+    jobject SmartWeakRef::getWeakObject() const
     {
         return mObject;
     }
 
-    JNIEnv* JNISmartWeakRef::getEnvironment() const
+    JNIEnv* SmartWeakRef::getEnvironment() const
     {
         JNIEnv* environment = nullptr;
         if (mJavaVM != nullptr)
@@ -77,14 +79,14 @@ namespace ext
         return environment;
     }
     
-    /* JNISmartRefHandler */
+    /* SmartRefHandler */
 
-    JNISmartRefHandler::~JNISmartRefHandler()
+    SmartRefHandler::~SmartRefHandler()
     {
         flush();
     }
 
-    void JNISmartRefHandler::flush()
+    void SmartRefHandler::flush()
     {
         {
             auto it = mSmartRef.begin();
@@ -111,22 +113,46 @@ namespace ext
         }
     }
 
-    void JNISmartRefHandler::push(std::shared_ptr<JNISmartRef> pSmartRef)
+    void SmartRefHandler::push(std::shared_ptr<SmartRef> pSmartRef)
     {
         mSmartRef.push_back(std::move(pSmartRef));
     }
 
-    void JNISmartRefHandler::push(std::shared_ptr<JNISmartWeakRef> pSmartWeakRef)
+    void SmartRefHandler::push(std::shared_ptr<SmartWeakRef> pSmartWeakRef)
     {
         mSmartWeakRef.push_back(std::move(pSmartWeakRef));
     }
 
-    JNISmartRefHandler* JNISmartRefHandler::getInstance()
+    SmartRefHandler* SmartRefHandler::getInstance()
     {
-        static JNISmartRefHandler instance;
+        static SmartRefHandler instance;
 
         return &instance;
     }
     
+    /* Utility */
+    
+    std::string Utility::string(jstring pData, JNIEnv* pEnvironment)
+    {
+        assert(pEnvironment != nullptr);
+        
+        std::string data;
+        
+        if (pData != nullptr)
+        {
+            const char* tmp = pEnvironment->GetStringUTFChars(pData, nullptr);
+            
+            if (tmp)
+            {
+                const jsize length = pEnvironment->GetStringUTFLength(pData);
+                data = std::string(tmp, length);
+                pEnvironment->ReleaseStringUTFChars(pData, tmp);
+            }
+        }
+        
+        return data;
+    }
+    
+}
 }
 }
