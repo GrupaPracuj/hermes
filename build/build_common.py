@@ -94,7 +94,7 @@ def configure(pBuildTarget, pSettings):
         if pBuildTarget == 'android':
             hostDetected = False
             
-            if pSettings.mHostName == 'Linux':
+            if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
                 hostDetected = True
                 
                 if os.path.isfile('/usr/bin/make'):
@@ -102,10 +102,6 @@ def configure(pBuildTarget, pSettings):
                 else:    
                     print('Error: /usr/bin/make not found.')
                     return False
-                    
-            elif pSettings.mHostName == 'Darwin':
-                hostDetected = True
-                pSettings.mMake = 'make'
             elif pSettings.mHostName == 'Windows':
                 hostDetected = True
                 
@@ -171,6 +167,7 @@ def configure(pBuildTarget, pSettings):
                 pSettings.mArchFlag = ['-m32', '-m64']
                 pSettings.mArchName = ['x86', 'x86_64']
                 pSettings.mMakeFlag = ['', '']
+                pSettings.mMakeFlag = ['', 'ARCH64=1']
             else:
                 print('Error: Not supported host platform: ' + pSettings.mHostName + '.')
                 return False 
