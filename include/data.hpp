@@ -12,9 +12,12 @@
 #include <memory>
 #include <type_traits>
 #include <vector>
+#include <fstream>
 
 namespace hms
 {
+    class DataManager;
+    
     namespace crypto
     {
         enum class ECryptoMode : int;
@@ -87,9 +90,6 @@ namespace hms
         virtual bool unpackBuffer(const DataBuffer& pData, const std::vector<unsigned>& pUserData);
         virtual bool unpackBuffer(DataBuffer&& pData, const std::vector<unsigned>& pUserData);
         
-        virtual bool readFromFile(const std::string& pFilePath, const std::vector<unsigned>& pUserData, EDataSharedType pType = EDataSharedType::Text);
-        virtual bool writeToFile(const std::string& pFilePath, const std::vector<unsigned>& pUserData, EDataSharedType pType = EDataSharedType::Text, bool pClearContent = true) const;
-        
         size_t getId() const;
         crypto::ECryptoMode getCryptoMode() const;
         
@@ -98,6 +98,84 @@ namespace hms
     private:
         size_t mId;
         crypto::ECryptoMode mCryptoMode;
+    };
+        
+    class DataWriter
+    {
+    public:
+        DataWriter(const std::string& pFilePath, bool pAppend = false);
+        DataWriter(void* pMemory, std::streamsize pSize, bool pDeleteOnClose = false);
+        DataWriter() = delete;
+        DataWriter(const DataWriter& pOther) = delete;
+        DataWriter(DataWriter&& pOther) = delete;
+        ~DataWriter();
+        
+        DataWriter& operator=(const DataWriter& pOther) = delete;
+        DataWriter& operator=(DataWriter&& pOther) = delete;
+        
+        std::streamsize write(const void* pBuffer, std::streamsize pSize);
+        std::streamsize write(const std::string& pText);
+        std::streamsize write(const DataBuffer& pBuffer);
+        
+        bool seek(std::streamoff pPosition, bool pRelative = false);
+        bool flush();
+        
+        std::streampos getPosition() const;
+        bool isOpen() const;
+        
+    private:
+        std::ofstream mStream;
+        void* mBuffer = nullptr;
+        bool mDeleteBufferOnClose = false;
+        std::streampos mPosition = 0;
+        std::streamsize mSize = 0;
+        
+    };
+        
+    class DataReader
+    {
+    public:
+        DataReader(const std::string& pFilePath);
+        DataReader(const void* pMemory, std::streamsize pSize, bool pDeleteOnClose = false);
+        DataReader() = delete;
+        DataReader(const DataReader& pOther) = delete;
+        DataReader(DataWriter&& pOther) = delete;
+        ~DataReader();
+        
+        DataReader& operator=(const DataReader& pOther) = delete;
+        DataReader& operator=(DataReader&& pOther) = delete;
+        
+        std::streamsize read(void* pBuffer);
+        std::streamsize read(void* pBuffer, std::streamsize pSize);
+        void read(std::string& pText);
+        void read(std::string& pText, std::streamsize pSize);
+        void read(DataBuffer& pBuffer);
+        void read(DataBuffer& pBuffer, std::streamsize pSize);
+        
+        bool seek(std::streamoff pPosition, bool pRelative = false);
+        
+        std::streampos getPosition() const;
+        std::streamsize getSize() const;
+        bool isOpen() const;
+        
+    private:
+        std::ifstream mStream;
+        const void* mBuffer = nullptr;
+        bool mDeleteBufferOnClose = false;
+        std::streamsize mSize = 0;
+        std::streampos mPosition = 0;
+        
+    };
+        
+    class DataStorageReader // TODO
+    {
+    public:
+        DataStorageReader(std::unique_ptr<DataReader> pSource, std::string pCallPrefix);
+        
+        std::unique_ptr<DataReader> openFile(const std::string& pName);
+        
+    protected:
+        std::vector<std::string> mName;
     };
     
     class DataManager
@@ -126,10 +204,23 @@ namespace hms
         }
         
         void setCipher(std::function<void(std::string& lpKey, std::string& lpIV)> pCipher);
+        void setWorkingDirectory(std::string pWorkingDirectory);
+        
+        std::string getWorkingDirectory() const;
+        
+        bool readData(std::shared_ptr<DataShared> pData, const std::string& pFileName, const std::vector<unsigned>& pUserData, EDataSharedType pType = EDataSharedType::Text);
+        bool readFile(const std::string& pFileName, std::string& pText) const;
+        bool readFile(const std::string& pFileName, DataBuffer& pDataBuffer) const;
+        
+        bool writeData(std::shared_ptr<DataShared> pData, const std::string& pFileName, const std::vector<unsigned>& pUserData, EDataSharedType pType = EDataSharedType::Text, bool pClearContent = true) const;
+        bool writeFile(const std::string& pFileName, const std::string& pText, bool pClearContent = true) const;
+        bool writeFile(const std::string& pFileName, const DataBuffer& pDataBuffer, bool pClearContent = true) const;
+        
+        std::unique_ptr<DataReader> getDataReader(const std::string& pFileName) const;
+        std::unique_ptr<DataWriter> getDataWriter(const std::string& pFileName, bool pAppend = false) const;
         
     private:
         friend class Hermes;
-        friend class DataShared;
         
         DataManager();
         DataManager(const DataManager& pOther) = delete;
@@ -140,7 +231,9 @@ namespace hms
         DataManager& operator=(DataManager&& pOther) = delete;
         
         std::vector<std::shared_ptr<DataShared>> mData;
+        std::vector<std::unique_ptr<DataStorageReader>> mStorage;
         std::function<void(std::string& lpKey, std::string& lpIV)> mCipher = nullptr;
+        std::string mWorkingDirectory;
         bool mInitialized = false;
     };
 
