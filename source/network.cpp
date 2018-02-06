@@ -126,7 +126,7 @@ namespace hms
     
         if (pUserData != nullptr)
         {
-            result = static_cast<int>(pUserData->mTerminateAbort->load());
+            result = static_cast<int>(pUserData->mTerminateAbort->load()) + static_cast<int>(pUserData->mRequestHandle->isCancel());
 
             if (pUserData->mProgressTask != nullptr)
                 pUserData->mProgressTask(pDownloadNow, pDownloadTotal, pUploadNow, pUploadTotal);
@@ -158,6 +158,18 @@ namespace hms
         /* select() returns the number of signalled sockets or -1 */
         res = select(pSockfd + 1, &infd, &outfd, &errfd, &tv);
         return res;
+    }
+    
+    /* NetworkRequestHandle */
+    
+    void NetworkRequestHandle::cancel()
+    {
+        mCancel.store(1);
+    }
+    
+    bool NetworkRequestHandle::isCancel() const
+    {
+        return static_cast<bool>(mCancel.load());
     }
     
     /* NetworkRecovery */
@@ -199,7 +211,7 @@ namespace hms
                 
                 while (mReceiver.size() != 0)
                 {
-                    std::tuple<size_t, NetworkRequestParam>& receiver = mReceiver.front();
+                    std::tuple<size_t, NetworkRequestParam, std::shared_ptr<NetworkRequestHandle>>& receiver = mReceiver.front();
                     
                     auto networkManager = Hermes::getInstance()->getNetworkManager();
                     auto networkAPI = (std::get<0>(receiver) < networkManager->count()) ? networkManager->get(std::get<0>(receiver)) : nullptr;
@@ -215,7 +227,7 @@ namespace hms
 
                         Hermes::getInstance()->getLogger()->print(ELogLevel::Info, "Executed method from recovery: %.", param->mMethod);
 
-                        networkManager->request(*param);
+                        networkManager->request(*param, std::get<2>(receiver));
                     }
                     
                     mReceiver.pop();
@@ -265,7 +277,7 @@ namespace hms
         return mPreCallback != nullptr && mPreCallback(pResponse, pRequestBody, pParameter, pHeader);
     }
     
-    void NetworkRecovery::pushReceiver(std::tuple<size_t, NetworkRequestParam> pReceiver)
+    void NetworkRecovery::pushReceiver(std::tuple<size_t, NetworkRequestParam, std::shared_ptr<NetworkRequestHandle>> pReceiver)
     {
         assert(mInitialized.load() == 2);
 
@@ -376,8 +388,9 @@ namespace hms
     {
     }
 
-    void NetworkAPI::request(NetworkRequestParam pParam)
+    std::shared_ptr<NetworkRequestHandle> NetworkAPI::request(NetworkRequestParam pParam)
     {
+        std::shared_ptr<NetworkRequestHandle> requestHandle = std::make_shared<NetworkRequestHandle>();
         auto postRequestCallback = mCallback;
     
         auto callback = [pParam, postRequestCallback](NetworkResponse lpResponse) -> void
@@ -420,7 +433,7 @@ namespace hms
 
         if (pParam.mAllowRecovery && recovery != nullptr)
         {
-            auto callbackForRecovery = [recovery, identifier, url, pParam, callback](NetworkResponse lpResponse) -> void
+            auto callbackForRecovery = [recovery, identifier, url, pParam, callback, requestHandle](NetworkResponse lpResponse) -> void
             {
                 std::string requestBody = "";
                 std::vector<std::pair<std::string, std::string>> parameter;
@@ -428,7 +441,7 @@ namespace hms
                 
                 if (recovery->isLocked() || recovery->checkCondition(lpResponse, requestBody, parameter, header))
                 {
-                    recovery->pushReceiver(std::make_tuple(identifier, pParam));
+                    recovery->pushReceiver(std::make_tuple(identifier, pParam, requestHandle));
 
                     if (recovery->lock())
                         recovery->runRequest(std::move(requestBody), std::move(parameter), std::move(header));
@@ -450,7 +463,7 @@ namespace hms
 
         if (recovery != nullptr && recovery->isLocked())
         {
-            recovery->pushReceiver(std::make_tuple(mId, pParam));
+            recovery->pushReceiver(std::make_tuple(mId, pParam, requestHandle));
 
             Hermes::getInstance()->getLogger()->print(ELogLevel::Info, "Queued method for recovery: %.", url);
         }
@@ -459,8 +472,10 @@ namespace hms
             pParam.mMethod = std::move(url);
             pParam.mHeader.insert(pParam.mHeader.end(), mDefaultHeader.begin(), mDefaultHeader.end());
         
-            Hermes::getInstance()->getNetworkManager()->request(pParam);
+            Hermes::getInstance()->getNetworkManager()->request(pParam, requestHandle);
         }
+        
+        return requestHandle;
     }
     
     const std::vector<std::pair<std::string, std::string>>& NetworkAPI::getDefaultHeader() const
@@ -765,12 +780,14 @@ namespace hms
         return mRecovery[pID];
     }
     
-    void NetworkManager::request(NetworkRequestParam pParam)
+    void NetworkManager::request(NetworkRequestParam pParam, std::shared_ptr<NetworkRequestHandle> pRequestHandle)
     {
+        if (pRequestHandle == nullptr)
+            pRequestHandle = std::make_shared<NetworkRequestHandle>();
+        
         auto weakThis = mWeakThis;
-        auto requestTask = [weakThis](NetworkRequestParam lpParam, RequestSettings lpRequestSettings) -> void
+        auto requestTask = [weakThis, pRequestHandle](NetworkRequestParam lpParam, RequestSettings lpRequestSettings) -> void
         {
-            bool executeCancel = true;
             std::shared_ptr<NetworkManager> strongThis = weakThis.lock();
             if (strongThis != nullptr)
             {
@@ -835,6 +852,7 @@ namespace hms
                     errorBuffer[0] = 0;
 
                     ProgressData progressData;
+                    progressData.mRequestHandle = pRequestHandle;
                     progressData.mTerminateAbort = &strongThis->mTerminateAbort;
                     
                     if (lpParam.mProgress != nullptr)
@@ -887,11 +905,15 @@ namespace hms
                             break;
                         case CURLE_COULDNT_RESOLVE_HOST:
                             code = ENetworkCode::LostConnection;
-                            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Lost connection. URL: %", requestUrl);
+                            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Lost connection: %", requestUrl);
                             break;
                         case CURLE_OPERATION_TIMEDOUT:
                             code = ENetworkCode::Timeout;
-                            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Timeout. URL: %", requestUrl);
+                            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Timeout: %", requestUrl);
+                            break;
+                        case CURLE_ABORTED_BY_CALLBACK:
+                            code = ENetworkCode::Cancel;
+                            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Cancel: %", requestUrl);
                             break;
                         default:
                             code = static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(curlCode));
@@ -911,7 +933,6 @@ namespace hms
                             if (response.mCode == ENetworkCode::OK && lpParam.mAllowCache)
                                 strongThis->cacheResponse(response, requestUrl, lpParam.mCacheLifetime);
 
-                            executeCancel = false;
                             std::pair<decltype(lpParam.mCallback), decltype(response)> taskData = std::make_pair(std::move(lpParam.mCallback), std::move(response));
                             auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
                             Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
@@ -923,11 +944,6 @@ namespace hms
                     }
                 }
                 strongThis->mActivityCount--;
-            }
-            
-            if (executeCancel)
-            {
-                // TO-DO execute cancel
             }
         };
         
@@ -946,10 +962,22 @@ namespace hms
         });
     }
     
-    void NetworkManager::request(std::vector<NetworkRequestParam> pParam)
+    void NetworkManager::request(std::vector<NetworkRequestParam> pParam, std::vector<std::shared_ptr<NetworkRequestHandle>> pRequestHandle)
     {
+        if (pParam.size() == 0)
+            return;
+
+        if (pParam.size() > pRequestHandle.size())
+            pRequestHandle.resize(pParam.size());
+        
+        for (size_t i = 0; i < pRequestHandle.size(); ++i)
+        {
+            if (pRequestHandle[i] == nullptr)
+                pRequestHandle[i] = std::make_shared<NetworkRequestHandle>();
+        }
+
         auto weakThis = mWeakThis;
-        auto requestTask = [weakThis](std::vector<NetworkRequestParam> lpParam, RequestSettings lpRequestSettings) -> void
+        auto requestTask = [weakThis, pRequestHandle](std::vector<NetworkRequestParam> lpParam, RequestSettings lpRequestSettings) -> void
         {
             void* handle = nullptr;
             size_t paramSize = lpParam.size();
@@ -1040,6 +1068,7 @@ namespace hms
                             header = curl_slist_append(header, singleHeader.c_str());
                         }
 
+                        multiRequestData[i].mProgressData.mRequestHandle = pRequestHandle[i];
                         multiRequestData[i].mProgressData.mTerminateAbort = &strongThis->mTerminateAbort;
                         
                         if (param[i].mProgress != nullptr)
@@ -1156,11 +1185,15 @@ namespace hms
                                     break;
                                 case CURLE_COULDNT_RESOLVE_HOST:
                                     code = ENetworkCode::LostConnection;
-                                    Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Lost connection. URL: %", (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
+                                    Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Lost connection: %", (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
                                     break;
                                 case CURLE_OPERATION_TIMEDOUT:
                                     code = ENetworkCode::Timeout;
-                                    Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Timeout. URL: %", (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
+                                    Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Timeout: %", (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
+                                    break;
+                                case CURLE_ABORTED_BY_CALLBACK:
+                                    code = ENetworkCode::Cancel;
+                                    Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Cancel: %", (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
                                     break;
                                 default:
                                     code = static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(curlCode));
@@ -1180,8 +1213,7 @@ namespace hms
                                     
                                     if (response.mCode == ENetworkCode::OK && requestData->mParam->mAllowCache)
                                         strongThis->cacheResponse(response, requestData->mParam->mMethod, requestData->mParam->mCacheLifetime);
-                                    
-                                    requestData->mExecuteCancel = false;
+
                                     auto taskData = std::make_pair(std::move(requestData->mParam->mCallback), std::move(response));
                                     auto taskHandler = std::make_shared<decltype(taskData)>(std::move(taskData));
                                     Hermes::getInstance()->getTaskManager()->execute(-1, [taskHandler]() -> void
@@ -1204,11 +1236,6 @@ namespace hms
                 {
                     curl_multi_remove_handle(handle, multiRequestData[i].mHandle);
                     curl_easy_cleanup(multiRequestData[i].mHandle);
-                }
-
-                if (multiRequestData[i].mExecuteCancel)
-                {
-                    // TO-DO execute cancel
                 }
             }
         };

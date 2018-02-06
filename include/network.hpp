@@ -123,6 +123,23 @@ namespace hms
         std::function<void(ESocketDisconnectCause lpCause, std::chrono::milliseconds lpMiliseconds)> mDisconnectCallback;
     };
         
+    class NetworkRequestHandle
+    {
+    public:
+        NetworkRequestHandle() = default;
+        NetworkRequestHandle(const NetworkRequestHandle& pOther) = delete;
+        NetworkRequestHandle(NetworkRequestHandle&& pOther) = delete;
+        
+        NetworkRequestHandle& operator=(const NetworkRequestHandle& pOther) = delete;
+        NetworkRequestHandle& operator=(NetworkRequestHandle&& pOther) = delete;
+        
+        void cancel();
+        bool isCancel() const;
+        
+    private:
+        std::atomic<uint32_t> mCancel = {0};
+    };
+        
     class NetworkRecovery
     {
     public:
@@ -134,7 +151,7 @@ namespace hms
         bool isQueueEmpty() const;
             
         bool checkCondition(const NetworkResponse& pResponse, std::string& pRequestBody, std::vector<std::pair<std::string, std::string>>& pParameter, std::vector<std::pair<std::string, std::string>>& pHeader) const;
-        void pushReceiver(std::tuple<size_t, NetworkRequestParam> pReceiver);
+        void pushReceiver(std::tuple<size_t, NetworkRequestParam, std::shared_ptr<NetworkRequestHandle>> pReceiver);
         void runRequest(std::string pRequestBody, std::vector<std::pair<std::string, std::string>> pParameter, std::vector<std::pair<std::string, std::string>> pHeader);
         
         bool isLocked() const;
@@ -163,7 +180,7 @@ namespace hms
         
         std::function<bool(const NetworkResponse& lpResponse, std::string& lpRequestBody, std::vector<std::pair<std::string, std::string>>& lpParameter, std::vector<std::pair<std::string, std::string>>& lpHeader)> mPreCallback = nullptr;
         NetworkRequestParam mRequestParam;
-        std::queue<std::tuple<size_t, NetworkRequestParam>> mReceiver;
+        std::queue<std::tuple<size_t, NetworkRequestParam, std::shared_ptr<NetworkRequestHandle>>> mReceiver;
             
         bool mUnsafeLock = false;
         
@@ -180,7 +197,7 @@ namespace hms
         //! Call a request.
         /** This method is used to send a HTTP request.
          \param pParam Parameters of the request. */
-        void request(NetworkRequestParam pParam);
+        std::shared_ptr<NetworkRequestHandle> request(NetworkRequestParam pParam);
         
         //! Call a request.
         /** This is an alternative method for a HTTP request.
@@ -188,7 +205,7 @@ namespace hms
          \param pMethod Endpoint of the request.
          \param pRequestBody The request body.
          \param pCallback Callback with a response from the server. */
-        void request(ENetworkRequestType pRequestType, std::string pMethod, std::string pRequestBody, std::function<void(NetworkResponse pResponse)> pCallback)
+        std::shared_ptr<NetworkRequestHandle> request(ENetworkRequestType pRequestType, std::string pMethod, std::string pRequestBody, std::function<void(NetworkResponse pResponse)> pCallback)
         {
             NetworkRequestParam param;
             
@@ -197,7 +214,7 @@ namespace hms
             param.mRequestBody = std::move(pRequestBody);
             param.mCallback = std::move(pCallback);
             
-            request(std::move(param));
+            return request(std::move(param));
         }
 
         //! Get a list of default headers.
@@ -282,6 +299,7 @@ namespace hms
         struct ProgressData
         {
             std::function<void(const long long& lpDN, const long long& lpDT, const long long& lpUN, const long long& lpUT)> mProgressTask = nullptr;
+            std::shared_ptr<NetworkRequestHandle> mRequestHandle;
             std::atomic<uint32_t>* mTerminateAbort = nullptr;
         };
     
@@ -296,8 +314,8 @@ namespace hms
         size_t countRecovery() const;
         std::shared_ptr<NetworkRecovery> getRecovery(size_t pID) const;
 
-        void request(NetworkRequestParam pParam);
-        void request(std::vector<NetworkRequestParam> pParam);
+        void request(NetworkRequestParam pParam, std::shared_ptr<NetworkRequestHandle> pRequestHandle = nullptr);
+        void request(std::vector<NetworkRequestParam> pParam, std::vector<std::shared_ptr<NetworkRequestHandle>> pRequestHandle = {});
         
         long getTimeout() const;
         void setTimeout(long pTimeout);
@@ -334,7 +352,6 @@ namespace hms
             ProgressData mProgressData;
             void* mHandle = nullptr;
             std::vector<char> mErrorBuffer;
-            bool mExecuteCancel = true;
             NetworkRequestParam* mParam = nullptr;
         };
         
