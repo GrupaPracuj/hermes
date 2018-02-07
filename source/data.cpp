@@ -652,7 +652,7 @@ namespace hms
         return mWorkingDirectory;
     }
     
-    bool DataManager::readData(std::shared_ptr<DataShared> pData, const std::string& pFileName, const std::vector<unsigned>& pUserData, EDataSharedType pType)
+    bool DataManager::readFile(const std::string& pFileName, DataShared* pData, const std::vector<unsigned>& pUserData, EDataSharedType pType)
     {
         using namespace crypto;
         
@@ -799,7 +799,7 @@ namespace hms
         return status;
     }
     
-    bool DataManager::writeData(std::shared_ptr<DataShared> pData, const std::string& pFileName, const std::vector<unsigned>& pUserData, EDataSharedType pType, bool pClearContent) const
+    bool DataManager::writeFile(const std::string& pFileName, const DataShared* pData, const std::vector<unsigned>& pUserData, EDataSharedType pType, bool pClearContent) const
     {
         using namespace crypto;
         

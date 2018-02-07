@@ -208,11 +208,11 @@ namespace hms
         
         std::string getWorkingDirectory() const;
         
-        bool readData(std::shared_ptr<DataShared> pData, const std::string& pFileName, const std::vector<unsigned>& pUserData, EDataSharedType pType = EDataSharedType::Text);
+        bool readFile(const std::string& pFileName, DataShared* pData, const std::vector<unsigned>& pUserData, EDataSharedType pType = EDataSharedType::Text);
         bool readFile(const std::string& pFileName, std::string& pText) const;
         bool readFile(const std::string& pFileName, DataBuffer& pDataBuffer) const;
         
-        bool writeData(std::shared_ptr<DataShared> pData, const std::string& pFileName, const std::vector<unsigned>& pUserData, EDataSharedType pType = EDataSharedType::Text, bool pClearContent = true) const;
+        bool writeFile(const std::string& pFileName, const DataShared* pData, const std::vector<unsigned>& pUserData, EDataSharedType pType = EDataSharedType::Text, bool pClearContent = true) const;
         bool writeFile(const std::string& pFileName, const std::string& pText, bool pClearContent = true) const;
         bool writeFile(const std::string& pFileName, const DataBuffer& pDataBuffer, bool pClearContent = true) const;
         
