@@ -7,6 +7,11 @@
 #include "hermes.hpp"
 #include "tools.hpp"
 
+#if defined(__APPLE__) || defined(__linux__)
+#include <dirent.h>
+#include <sys/stat.h>
+#endif
+
 namespace hms
 {
 
@@ -552,23 +557,147 @@ namespace hms
     {
         return mBuffer == nullptr ? mStream.is_open() : true;
     }
+
+    /* DirectoryReader */
     
-    /* DataStorageReader */
-    
-    DataStorageReader::DataStorageReader(std::unique_ptr<DataReader> pSource, std::string pCallPrefix)
+    class DirectoryReader : public DataStorageReader
     {
+    public:
+        DirectoryReader() = delete;
+        DirectoryReader(const DirectoryReader& pOther) = delete;
+        DirectoryReader(DirectoryReader&& pOther) = delete;
         
-    }
+        DirectoryReader& operator=(const DirectoryReader& pOther) = delete;
+        DirectoryReader& operator=(DirectoryReader&& pOther) = delete;
+        
+        virtual ~DirectoryReader() = default;
+        virtual std::unique_ptr<DataReader> openFile(const std::string& pName) const override
+        {
+            std::unique_ptr<DataReader> reader = nullptr;
+            
+            for (auto& name : mFileName)
+            {
+                if (mPrefix + name == pName)
+                {
+                    reader = std::unique_ptr<DataReader>(new DataReader(mPath + name));
+                    break;
+                }
+            }
+            
+            if (reader == nullptr)
+            {
+                for (auto it = mSubdirectory.cbegin(); it != mSubdirectory.cend(); it++)
+                {
+                    if ((reader = it->get()->openFile(pName)) != nullptr)
+                        break;
+                }
+            }
+            
+            return reader;
+        }
+        
+    private:
+        friend class DirectoryLoader;
+        
+        std::vector<std::string> mFileName;
+        std::vector<std::unique_ptr<DirectoryReader>> mSubdirectory;
+        std::string mPath;
+        
+        DirectoryReader(const std::string& pPath, const std::string& pPrefix) : DataStorageReader(pPrefix)
+        {
+#if defined(__APPLE__) || defined(__linux__)
+            DIR* dir = NULL;
+            if ((dir = opendir(pPath.c_str())) != NULL)
+            {
+                const size_t reserveSize = 10;
+                
+                mPath = pPath.back() != '/' ? pPath + '/' : pPath;
+                auto isDir = [](const std::string& lpFilePath) -> bool
+                {
+                    struct stat stat_buf;
+                    stat(lpFilePath.c_str(), &stat_buf);
+                    return S_ISDIR(stat_buf.st_mode);
+                };
+                
+                struct dirent *file;
+                while ((file = readdir(dir)) != NULL)
+                {
+                    std::string name{file->d_name, file->d_namlen};
+                    if (name != "." && name != "..")
+                    {
+                        std::string fullPath = mPath + name;
+                        if (!isDir(fullPath))
+                        {
+                            if (mFileName.capacity() == mFileName.size())
+                                mFileName.reserve(mFileName.capacity() + reserveSize);
+                            
+                            mFileName.push_back(std::move(name));
+                        }
+                        else
+                        {
+                            if (name.back() != '/')
+                                name += '/';
+                            
+                            if (mSubdirectory.capacity() == mSubdirectory.size())
+                                mSubdirectory.reserve(mSubdirectory.capacity() + reserveSize);
+                            
+                            mSubdirectory.push_back(std::unique_ptr<DirectoryReader>(new DirectoryReader(fullPath, pPrefix + name)));
+                        }
+                    }
+                }
+                closedir(dir);
+                mFileName.shrink_to_fit();
+                mSubdirectory.shrink_to_fit();
+            }
+#endif
+        }
+    };
     
-    std::unique_ptr<DataReader> DataStorageReader::openFile(const std::string& pName)
+    /* DirectoryLoader */
+    
+    class DirectoryLoader : public DataStorageLoader
     {
-        return nullptr;
-    }
+    public:
+        DirectoryLoader() = default;
+        virtual ~DirectoryLoader() = default;
+        
+        virtual bool isLoadable(const std::string& pPath) const override
+        {
+            bool loadable = false;
+            
+#if defined(__APPLE__) || defined(__linux__)
+            DIR* dir = NULL;
+            if ((dir = opendir(pPath.c_str())) != NULL)
+            {
+                loadable = true;
+                closedir(dir);
+            }
+#endif
+            
+            return loadable;
+        }
+        
+        virtual bool isLoadable(DataReader& pReader) const override
+        {
+            return false;
+        }
+        
+        virtual std::unique_ptr<DataStorageReader> createStorageReader(const std::string& pPath, const std::string& pPrefix = "") const override
+        {
+            return std::unique_ptr<DirectoryReader>(new DirectoryReader(pPath, pPrefix));
+        }
+        
+        virtual std::unique_ptr<DataStorageReader> createStorageReader(DataReader& pReader, const std::string& pPrefix = "") const override
+        {
+            return nullptr;
+        }
+    };
     
     /* DataManager */
     
     DataManager::DataManager()
     {
+        addStorageLoader(std::unique_ptr<DirectoryLoader>(new DirectoryLoader()));
     }
     
     DataManager::~DataManager()
@@ -663,7 +792,7 @@ namespace hms
         
         for (auto it = mStorage.cbegin(); it != mStorage.cend(); it++)
         {
-            reader = (*it)->openFile(pFileName);
+            reader = it->get()->openFile(pFileName);
             if (reader != nullptr)
                 break;
         }
@@ -756,7 +885,7 @@ namespace hms
         
         for (auto it = mStorage.cbegin(); it != mStorage.cend(); it++)
         {
-            reader = (*it)->openFile(pFileName);
+            reader = it->get()->openFile(pFileName);
             if (reader != nullptr)
                 break;
         }
@@ -782,7 +911,7 @@ namespace hms
         
         for (auto it = mStorage.cbegin(); it != mStorage.cend(); it++)
         {
-            reader = (*it)->openFile(pFileName);
+            reader = it->get()->openFile(pFileName);
             if (reader != nullptr)
                 break;
         }
@@ -925,6 +1054,55 @@ namespace hms
     std::unique_ptr<DataWriter> DataManager::getDataWriter(const std::string& pFileName, bool pAppend) const
     {
         return std::unique_ptr<DataWriter>(new DataWriter(mWorkingDirectory + pFileName, pAppend));
+    }
+    
+    void DataManager::addStorageLoader(std::unique_ptr<DataStorageLoader> pLoader)
+    {
+        assert(pLoader != nullptr);
+        
+        mLoader.push_back(std::move(pLoader));
+    }
+    
+    void DataManager::addStorageReader(std::unique_ptr<DataStorageReader> pReader)
+    {
+        assert(pReader != nullptr);
+        
+        mStorage.push_back(std::move(pReader));
+    }
+    
+    bool DataManager::addStorageReader(const std::string& pName, const std::string& pPrefix, bool pRelativeToWorkspace)
+    {
+        bool added = false;
+        
+        const std::string filePath = pRelativeToWorkspace ? mWorkingDirectory + pName : pName;
+        for (auto it = mLoader.cbegin(); it != mLoader.cend(); it++)
+        {
+            if(it->get()->isLoadable(filePath))
+            {
+                added = true;
+                mStorage.push_back(it->get()->createStorageReader(filePath, pPrefix));
+                break;
+            }
+        }
+        
+        return added;
+    }
+    
+    bool DataManager::addStorageReader(DataReader& pReader, const std::string& pPrefix)
+    {
+        bool added = false;
+        
+        for (auto it = mLoader.cbegin(); it != mLoader.cend(); it++)
+        {
+            if(it->get()->isLoadable(pReader))
+            {
+                added = true;
+                mStorage.push_back(it->get()->createStorageReader(pReader, pPrefix));
+                break;
+            }
+        }
+        
+        return added;
     }
     
 }

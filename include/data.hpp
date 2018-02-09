@@ -167,15 +167,29 @@ namespace hms
         
     };
         
-    class DataStorageReader // TODO
+    class DataStorageReader
     {
     public:
-        DataStorageReader(std::unique_ptr<DataReader> pSource, std::string pCallPrefix);
-        
-        std::unique_ptr<DataReader> openFile(const std::string& pName);
+        virtual ~DataStorageReader() = default;
+        virtual std::unique_ptr<DataReader> openFile(const std::string& pName) const = 0;
         
     protected:
-        std::vector<std::string> mName;
+        std::string mPrefix;
+        
+        DataStorageReader(const std::string& pPrefix = "") : mPrefix(pPrefix) {};
+    };
+        
+    class DataStorageLoader
+    {
+    public:
+        virtual ~DataStorageLoader() = default;
+        virtual bool isLoadable(const std::string& pPath) const = 0;
+        virtual bool isLoadable(DataReader& pReader) const = 0;
+        virtual std::unique_ptr<DataStorageReader> createStorageReader(const std::string& pPath, const std::string& pPrefix = "") const = 0;
+        virtual std::unique_ptr<DataStorageReader> createStorageReader(DataReader& pReader, const std::string& pPrefix = "") const = 0;
+        
+    protected:
+        DataStorageLoader() = default;
     };
     
     class DataManager
@@ -219,6 +233,11 @@ namespace hms
         std::unique_ptr<DataReader> getDataReader(const std::string& pFileName) const;
         std::unique_ptr<DataWriter> getDataWriter(const std::string& pFileName, bool pAppend = false) const;
         
+        void addStorageLoader(std::unique_ptr<DataStorageLoader> pLoader);
+        void addStorageReader(std::unique_ptr<DataStorageReader> pReader);
+        bool addStorageReader(const std::string& pName, const std::string& pPrefix = "", bool pRelativeToWorkspace = true);
+        bool addStorageReader(DataReader& pReader, const std::string& pPrefix = "");
+        
     private:
         friend class Hermes;
         
@@ -232,6 +251,7 @@ namespace hms
         
         std::vector<std::shared_ptr<DataShared>> mData;
         std::vector<std::unique_ptr<DataStorageReader>> mStorage;
+        std::vector<std::unique_ptr<DataStorageLoader>> mLoader;
         std::function<void(std::string& lpKey, std::string& lpIV)> mCipher = nullptr;
         std::string mWorkingDirectory;
         bool mInitialized = false;

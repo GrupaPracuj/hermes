@@ -45,7 +45,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		3871E9AD1C3C07D200A2EC70 /* libhermes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = libhermes.a; path = "/Users/patryk.nadrowski/Programowanie/hermes/build/Debug-iphoneos/libhermes.a"; sourceTree = "<absolute>"; };
 		38EC90EF1C3AC999008AE1A3 /* data.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = data.hpp; path = include/data.hpp; sourceTree = "<group>"; };
 		38EC90F01C3AC999008AE1A3 /* logger.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = logger.hpp; path = include/logger.hpp; sourceTree = "<group>"; };
 		38EC90F11C3AC999008AE1A3 /* network.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = network.hpp; path = include/network.hpp; sourceTree = "<group>"; };
@@ -54,15 +53,16 @@
 		38EC90F41C3AC9A6008AE1A3 /* logger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = logger.cpp; path = source/logger.cpp; sourceTree = "<group>"; };
 		38EC90F51C3AC9A6008AE1A3 /* network.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = network.cpp; path = source/network.cpp; sourceTree = "<group>"; };
 		38EC90F61C3AC9A6008AE1A3 /* task.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = task.cpp; path = source/task.cpp; sourceTree = "<group>"; };
-		55465B532028CB8300060DED /* libhmsextmodule.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = libhmsextmodule.a; path = "/Users/patryk.nadrowski/Programowanie/hermes/build/Debug-iphoneos/libhmsextmodule.a"; sourceTree = "<absolute>"; };
-		55465B612028CB8900060DED /* libhmsextmodule.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = libhmsextmodule.a; path = /Users/patryk.nadrowski/Programowanie/hermes/build/Debug/libhmsextmodule.a; sourceTree = "<absolute>"; };
 		55465B632028CC8200060DED /* hmsModule.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hmsModule.cpp; path = ext/hmsModule.cpp; sourceTree = "<group>"; };
 		55465B642028CC8200060DED /* hmsModule.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hmsModule.hpp; path = ext/hmsModule.hpp; sourceTree = "<group>"; };
-		5584A27D1FA1DEC500709CE5 /* libhermes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = libhermes.a; path = /Users/patryk.nadrowski/Programowanie/hermes/build/Debug/libhermes.a; sourceTree = "<absolute>"; };
 		55A5745E1EA780F3003ECB8C /* hermes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hermes.cpp; path = source/hermes.cpp; sourceTree = "<group>"; };
 		55A574601EA78108003ECB8C /* hermes.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hermes.hpp; path = include/hermes.hpp; sourceTree = "<group>"; };
 		9E19506E2007AED500CE339D /* tools.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = tools.cpp; path = source/tools.cpp; sourceTree = "<group>"; };
 		9E1950712007AEF300CE339D /* tools.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = tools.hpp; path = include/tools.hpp; sourceTree = "<group>"; };
+		9E7565A7202DA9C200DFF9A1 /* libhermes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhermes.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E7565A8202DA9C200DFF9A1 /* libhmsextmodule.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhmsextmodule.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E7565A9202DA9C200DFF9A1 /* libhermes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhermes.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E7565AA202DA9C200DFF9A1 /* libhmsextmodule.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhmsextmodule.a; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +103,10 @@
 				38EC90ED1C3AC92E008AE1A3 /* Include */,
 				38EC90EE1C3AC974008AE1A3 /* Source */,
 				55465B622028CC4A00060DED /* Extension */,
+				9E7565A7202DA9C200DFF9A1 /* libhermes.a */,
+				9E7565A8202DA9C200DFF9A1 /* libhmsextmodule.a */,
+				9E7565A9202DA9C200DFF9A1 /* libhermes.a */,
+				9E7565AA202DA9C200DFF9A1 /* libhmsextmodule.a */,
 			);
 			sourceTree = "<group>";
 		};
@@ -175,7 +179,7 @@
 			);
 			name = hermes_ios;
 			productName = hermes;
-			productReference = 3871E9AD1C3C07D200A2EC70 /* libhermes.a */;
+			productReference = 9E7565A7202DA9C200DFF9A1 /* libhermes.a */;
 			productType = "com.apple.product-type.library.static";
 		};
 		55465B462028CB8300060DED /* hmsextmodule_ios */ = {
@@ -192,7 +196,7 @@
 			);
 			name = hmsextmodule_ios;
 			productName = hermes;
-			productReference = 55465B532028CB8300060DED /* libhmsextmodule.a */;
+			productReference = 9E7565A8202DA9C200DFF9A1 /* libhmsextmodule.a */;
 			productType = "com.apple.product-type.library.static";
 		};
 		55465B542028CB8900060DED /* hmsextmodule_macos */ = {
@@ -209,7 +213,7 @@
 			);
 			name = hmsextmodule_macos;
 			productName = hermes_macos;
-			productReference = 55465B612028CB8900060DED /* libhmsextmodule.a */;
+			productReference = 9E7565AA202DA9C200DFF9A1 /* libhmsextmodule.a */;
 			productType = "com.apple.product-type.library.static";
 		};
 		55DD5FEE1F38956600BFA8E5 /* hermes_macos */ = {
@@ -226,7 +230,7 @@
 			);
 			name = hermes_macos;
 			productName = hermes_macos;
-			productReference = 5584A27D1FA1DEC500709CE5 /* libhermes.a */;
+			productReference = 9E7565A9202DA9C200DFF9A1 /* libhermes.a */;
 			productType = "com.apple.product-type.library.static";
 		};
 /* End PBXNativeTarget section */
@@ -439,6 +443,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DSTROOT = "$(SRCROOT)/lib/ios";
+				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
 				PRODUCT_NAME = hermes;
 			};
 			name = Debug;
@@ -447,6 +452,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DSTROOT = "$(SRCROOT)/lib/ios";
+				GCC_PREPROCESSOR_DEFINITIONS = "NDEBUG=1";
 				PRODUCT_NAME = hermes;
 			};
 			name = Release;
