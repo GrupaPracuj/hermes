@@ -113,7 +113,11 @@ def configure(pBuildTarget, pSettings):
         
             if hostDetected:
                 androidApi = os.getenv('HERMES_ANDROID_API')
-                name, separator, version = androidApi.partition('-')
+               
+                name, separator, version = None, None, None
+                
+                if androidApi is not None:
+                    name, separator, version = androidApi.partition('-')
                 
                 if version is not None and len(version) > 0:
                     pSettings.mAndroidApi = version
