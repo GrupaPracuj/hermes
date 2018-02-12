@@ -622,7 +622,7 @@ namespace hms
                 struct dirent *file;
                 while ((file = readdir(dir)) != NULL)
                 {
-                    std::string name{file->d_name, file->d_namlen};
+                    std::string name{file->d_name};
                     if (name != "." && name != "..")
                     {
                         std::string fullPath = mPath + name;
