@@ -10,6 +10,10 @@ EXT_JNI_NAME = libhmsextjni.a
 EXT_JNI_SRCFILES = ext/hmsJNI.cpp
 EXT_JNI_OBJFILES = $(EXT_JNI_SRCFILES:%.cpp=%.o)
 
+EXT_AASSETREADER_NAME = libhmsextaassetreader.a
+EXT_AASSETREADER_SRCFILES = ext/hmsAAssetReader.cpp
+EXT_AASSETREADER_OBJFILES = $(EXT_AASSETREADER_SRCFILES:%.cpp=%.o)
+
 CXXFLAGS += -pipe -std=c++11 -fPIC -fno-strict-aliasing -fstack-protector -Iinclude -Idepend/aes/include -Idepend/curl/include -Idepend/jsoncpp/include
 
 ifndef NDEBUG
@@ -28,15 +32,18 @@ $(EXT_MODULE_NAME): $(EXT_MODULE_OBJFILES)
 
 $(EXT_JNI_NAME): $(EXT_JNI_OBJFILES)
 	$(AR) rs $@ $^
+	
+$(EXT_AASSETREADER_NAME): $(EXT_AASSETREADER_OBJFILES)
+	$(AR) rs $@ $^
 
 %.d:%.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MM -MF $@ $<
 
 clean:
 ifeq ($(OS), Windows_NT)
-	del $(LIB_NAME) $(EXT_MODULE_NAME) $(EXT_JNI_NAME) source\*.o source\*.d ext\*.o ext\*.d >nul 2>&1
+	del $(LIB_NAME) $(EXT_MODULE_NAME) $(EXT_JNI_NAME) $(EXT_AASSETREADER_NAME) source\*.o source\*.d ext\*.o ext\*.d >nul 2>&1
 else
-	$(RM) $(LIB_NAME) $(EXT_MODULE_NAME) $(EXT_JNI_NAME) source/*.o source/*.d ext/*.o ext/*.d
+	$(RM) $(LIB_NAME) $(EXT_MODULE_NAME) $(EXT_JNI_NAME) $(EXT_AASSETREADER_NAME) source/*.o source/*.d ext/*.o ext/*.d
 endif
 
 .PHONY: all clean

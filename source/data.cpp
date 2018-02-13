@@ -195,9 +195,9 @@ namespace hms
         mCryptoMode = pCryptoMode;
     }
     
-    /* DataWriter */
+    /* FileWriter */
     
-    DataWriter::DataWriter(const std::string& pFilePath, bool pAppend)
+    FileWriter::FileWriter(const std::string& pFilePath, bool pAppend)
     {
         std::ios_base::openmode opmode = std::ofstream::out | std::ofstream::binary;
         
@@ -208,35 +208,16 @@ namespace hms
         
         mStream.open(pFilePath, opmode);
         if (mStream.is_open())
-            mPosition = mStream.tellp();
+            mPosition = static_cast<size_t>(mStream.tellp());
     }
     
-    DataWriter::DataWriter(void* pMemory, std::streamsize pSize, bool pDeleteOnClose) : mBuffer(pMemory), mSize(pSize), mDeleteBufferOnClose(pDeleteOnClose)
+    size_t FileWriter::write(const void* pBuffer, size_t pSize)
     {
-    }
-    
-    DataWriter::~DataWriter()
-    {
-        if (mBuffer != nullptr && mDeleteBufferOnClose)
-            delete [] reinterpret_cast<char*>(mBuffer);
-    }
-    
-    std::streamsize DataWriter::write(const void* pBuffer, std::streamsize pSize)
-    {
-        std::streamsize writeCount = 0;
+        size_t writeCount = 0;
         
-        if (mBuffer != nullptr)
+        if (mStream.is_open())
         {
-            writeCount = static_cast<std::streamsize>(mPosition) + pSize > mSize ? mSize - static_cast<std::streamsize>(mPosition) : pSize;
-            if (writeCount > 0)
-            {
-                memcpy(reinterpret_cast<char*>(mBuffer) + static_cast<int32_t>(mPosition), pBuffer, static_cast<size_t>(writeCount));
-                mPosition += writeCount;
-            }
-        }
-        else if (mStream.is_open())
-        {
-            mStream.write(reinterpret_cast<const char*>(pBuffer), pSize);
+            mStream.write(reinterpret_cast<const char*>(pBuffer), static_cast<std::streamsize>(pSize));
             
             auto flag = mStream.rdstate();
             if (flag != std::ofstream::goodbit)
@@ -254,20 +235,11 @@ namespace hms
         return writeCount;
     }
     
-    std::streamsize DataWriter::write(const std::string& pText)
+    size_t FileWriter::write(const std::string& pText)
     {
-        std::streamsize writeCount = 0;
+        size_t writeCount = 0;
         
-        if (mBuffer != nullptr)
-        {
-            writeCount = mPosition + static_cast<std::streamoff>(pText.size()) > mSize ? mSize - static_cast<std::streamsize>(mPosition) : static_cast<std::streamsize>(pText.size());
-            if (writeCount > 0)
-            {
-                memcpy(reinterpret_cast<char*>(mBuffer) + static_cast<int32_t>(mPosition), pText.data(), static_cast<size_t>(writeCount));
-                mPosition += writeCount;
-            }
-        }
-        else if (mStream.is_open())
+        if (mStream.is_open())
         {
             mStream << pText;
             
@@ -279,7 +251,7 @@ namespace hms
             }
             else
             {
-                writeCount = static_cast<std::streamsize>(pText.size());
+                writeCount = pText.size();
                 mPosition += writeCount;
             }
         }
@@ -287,20 +259,11 @@ namespace hms
         return writeCount;
     }
     
-    std::streamsize DataWriter::write(const DataBuffer& pBuffer)
+    size_t FileWriter::write(const DataBuffer& pBuffer)
     {
-        std::streamsize writeCount = 0;
+        size_t writeCount = 0;
         
-        if (mBuffer != nullptr)
-        {
-            writeCount = mPosition + static_cast<std::streamoff>(pBuffer.size()) > mSize ? mSize - static_cast<std::streamsize>(mPosition) : static_cast<std::streamsize>(pBuffer.size());
-            if (writeCount > 0)
-            {
-                memcpy(reinterpret_cast<char*>(mBuffer) + static_cast<int32_t>(mPosition), pBuffer.data(), static_cast<size_t>(writeCount));
-                mPosition += writeCount;
-            }
-        }
-        else if (mStream.is_open())
+        if (mStream.is_open())
         {
             mStream.write(reinterpret_cast<const char*>(pBuffer.data()), static_cast<std::streamsize>(pBuffer.size()));
             
@@ -312,7 +275,7 @@ namespace hms
             }
             else
             {
-                writeCount = static_cast<std::streamsize>(pBuffer.size());
+                writeCount = pBuffer.size();
                 mPosition += writeCount;
             }
         }
@@ -320,16 +283,11 @@ namespace hms
         return writeCount;
     }
     
-    bool DataWriter::seek(std::streamoff pPosition, bool pRelative)
+    bool FileWriter::seek(int64_t pPosition, bool pRelative)
     {
         bool success = false;
         
-        if (mBuffer != nullptr)
-        {
-            mPosition = std::max(static_cast<std::streampos>(0), std::min(pRelative ? mPosition + pPosition : static_cast<std::streampos>(pPosition), static_cast<std::streampos>(mSize)));
-            success = true;
-        }
-        else if (mStream.is_open())
+        if (mStream.is_open())
         {
             mStream.seekp(pPosition, pRelative ? std::ios::cur : std::ios::beg);
             
@@ -341,7 +299,8 @@ namespace hms
             }
             else
             {
-                mPosition = std::max(static_cast<std::streampos>(0), std::min(pRelative ? mPosition + pPosition : static_cast<std::streampos>(pPosition), static_cast<std::streampos>(mSize)));
+                int64_t position = pRelative ? static_cast<int64_t>(mPosition) + pPosition : pPosition;
+                mPosition = std::max(static_cast<size_t>(0), std::min(static_cast<size_t>(position), mSize));
                 success = true;
             }
         }
@@ -349,11 +308,11 @@ namespace hms
         return success;
     }
     
-    bool DataWriter::flush()
+    bool FileWriter::flush()
     {
         bool success = true;
         
-        if (mBuffer == nullptr && mStream.is_open())
+        if (mStream.is_open())
         {
             mStream.flush();
             auto flag = mStream.rdstate();
@@ -369,62 +328,135 @@ namespace hms
         return success;
     }
     
-    std::streampos DataWriter::getPosition() const
+    size_t FileWriter::getPosition() const
     {
         return mPosition;
     }
     
-    bool DataWriter::isOpen() const
+    bool FileWriter::isOpen() const
     {
-        return mBuffer == nullptr ? mStream.is_open() : true;
+        return mStream.is_open();
     }
     
-    /* DataReader */
+    /* MemoryWriter */
     
-    DataReader::DataReader(const std::string& pFilePath)
+    MemoryWriter::MemoryWriter(void* pMemory, size_t pSize, bool pDeleteOnClose) : mBuffer(pMemory), mSize(pSize), mDeleteBufferOnClose(pDeleteOnClose)
+    {
+    }
+    
+    MemoryWriter::~MemoryWriter()
+    {
+        if (mBuffer != nullptr && mDeleteBufferOnClose)
+            delete [] reinterpret_cast<char*>(mBuffer);
+    }
+    
+    size_t MemoryWriter::write(const void* pBuffer, size_t pSize)
+    {
+        size_t writeCount = 0;
+        
+        if (mBuffer != nullptr)
+        {
+            writeCount = mPosition + pSize > mSize ? mSize - mPosition : pSize;
+            if (writeCount > 0)
+            {
+                memcpy(reinterpret_cast<char*>(mBuffer) + mPosition, pBuffer, writeCount);
+                mPosition += writeCount;
+            }
+        }
+        
+        return writeCount;
+    }
+    
+    size_t MemoryWriter::write(const std::string& pText)
+    {
+        size_t writeCount = 0;
+        
+        if (mBuffer != nullptr)
+        {
+            writeCount = mPosition + pText.size() > mSize ? mSize - mPosition : pText.size();
+            if (writeCount > 0)
+            {
+                memcpy(reinterpret_cast<char*>(mBuffer) + mPosition, pText.data(), writeCount);
+                mPosition += writeCount;
+            }
+        }
+        
+        return writeCount;
+    }
+    
+    size_t MemoryWriter::write(const DataBuffer& pBuffer)
+    {
+        size_t writeCount = 0;
+        
+        if (mBuffer != nullptr)
+        {
+            writeCount = mPosition + pBuffer.size() > mSize ? mSize - mPosition : pBuffer.size();
+            if (writeCount > 0)
+            {
+                memcpy(reinterpret_cast<char*>(mBuffer) + mPosition, pBuffer.data(), writeCount);
+                mPosition += writeCount;
+            }
+        }
+        
+        return writeCount;
+    }
+    
+    bool MemoryWriter::seek(int64_t pPosition, bool pRelative)
+    {
+        bool success = false;
+        
+        if (mBuffer != nullptr)
+        {
+            int64_t position = pRelative ? static_cast<int64_t>(mPosition) + pPosition : pPosition;
+            mPosition = std::max(static_cast<size_t>(0), std::min(static_cast<size_t>(position), mSize));
+            success = true;
+        }
+        
+        return success;
+    }
+    
+    bool MemoryWriter::flush()
+    {
+        return mBuffer != nullptr;
+    }
+    
+    size_t MemoryWriter::getPosition() const
+    {
+        return mPosition;
+    }
+    
+    bool MemoryWriter::isOpen() const
+    {
+        return mBuffer != nullptr;
+    }
+    
+    /* FileReader */
+    
+    FileReader::FileReader(const std::string& pFilePath)
     {
         mStream.open(pFilePath, std::ifstream::in | std::ifstream::binary);
         
         if (mStream.is_open())
         {
             mStream.seekg(0, std::ios::end);
-            mSize = static_cast<std::streamsize>(mStream.tellg());
+            mSize = static_cast<size_t>(mStream.tellg());
             mStream.seekg(0, std::ios::beg);
         }
     }
     
-    DataReader::DataReader(const void* pMemory, std::streamsize pSize, bool pDeleteOnClose) : mBuffer(pMemory), mSize(pSize), mDeleteBufferOnClose(pDeleteOnClose)
+    size_t FileReader::read(void* pBuffer)
     {
+        return read(pBuffer, mSize - mPosition);
     }
     
-    DataReader::~DataReader()
+    size_t FileReader::read(void* pBuffer, size_t pSize)
     {
-        if (mBuffer != nullptr && mDeleteBufferOnClose)
-            delete [] reinterpret_cast<const char*>(mBuffer);
-    }
-    
-    std::streamsize DataReader::read(void* pBuffer)
-    {
-        return read(pBuffer, mSize - static_cast<std::streamsize>(mPosition));
-    }
-    
-    std::streamsize DataReader::read(void* pBuffer, std::streamsize pSize)
-    {
-        std::streamsize readCount = 0;
+        size_t readCount = 0;
         
-        if (mBuffer != nullptr)
+        if (mStream.is_open())
         {
-            readCount = static_cast<std::streamsize>(mPosition) + pSize > mSize ? mSize - static_cast<std::streamsize>(mPosition) : pSize;
-            if (readCount > 0)
-            {
-                memcpy(pBuffer, reinterpret_cast<const char*>(mBuffer) + static_cast<int32_t>(mPosition), static_cast<size_t>(readCount));
-                mPosition += readCount;
-            }
-        }
-        else if (mStream.is_open())
-        {
-            mStream.read(reinterpret_cast<char*>(pBuffer), pSize);
-            mPosition += mStream.gcount();
+            mStream.read(reinterpret_cast<char*>(pBuffer), static_cast<std::streamsize>(pSize));
+            mPosition += static_cast<size_t>(mStream.gcount());
             
             auto flag = mStream.rdstate();
             if ((flag & std::ifstream::badbit) == 0 && (flag & std::ifstream::failbit) != 0)
@@ -434,37 +466,26 @@ namespace hms
         return readCount;
     }
     
-    void DataReader::read(std::string& pText)
+    void FileReader::read(std::string& pText)
     {
-        read(pText, mSize - static_cast<std::streamsize>(mPosition));
+        read(pText, mSize - mPosition);
     }
     
-    void DataReader::read(std::string& pText, std::streamsize pSize)
+    void FileReader::read(std::string& pText, size_t pSize)
     {
-        if (mBuffer != nullptr)
+        if (mStream.is_open())
         {
-            size_t readCount = static_cast<size_t>(static_cast<std::streamsize>(mPosition) + pSize > mSize ? mSize - mPosition : pSize);
-            if (readCount > 0)
-            {
-                size_t offset = pText.size();
-                pText.resize(offset + readCount, 0);
-                memcpy(&pText[offset], reinterpret_cast<const char*>(mBuffer) + static_cast<int32_t>(mPosition), readCount);
-                mPosition += static_cast<std::streamoff>(readCount);
-            }
-        }
-        else if (mStream.is_open())
-        {
-            std::streamsize readCount = static_cast<std::streamsize>(mPosition) + pSize > mSize ? mSize - static_cast<std::streamsize>(mPosition) : pSize;
+            size_t readCount = mPosition + pSize > mSize ? mSize - mPosition : pSize;
             size_t offset = pText.size();
             
-            pText.resize(offset + static_cast<size_t>(readCount), 0);
-            mStream.read(&pText[0], readCount);
+            pText.resize(offset + readCount, 0);
+            mStream.read(&pText[0], static_cast<std::streamsize>(readCount));
             
             std::streamsize read = mStream.gcount();
             if (read < readCount)
-                pText.resize(pText.length() - (offset + static_cast<size_t>(read)));
+                pText.resize(offset + static_cast<size_t>(read));
             
-            mPosition += static_cast<std::streamoff>(pText.size() - offset);
+            mPosition += pText.size() - offset;
             
             auto flag = mStream.rdstate();
             if ((flag & std::ifstream::badbit) == 0 && (flag & std::ifstream::failbit) != 0)
@@ -472,41 +493,32 @@ namespace hms
         }
     }
     
-    void DataReader::read(DataBuffer& pBuffer)
+    void FileReader::read(DataBuffer& pBuffer)
     {
-        read(pBuffer, mSize - static_cast<std::streamsize>(mPosition));
+        read(pBuffer, mSize - mPosition);
     }
     
-    void DataReader::read(DataBuffer& pBuffer, std::streamsize pSize)
+    void FileReader::read(DataBuffer& pBuffer, size_t pSize)
     {
-        if (mBuffer != nullptr)
-        {
-            size_t readCount = static_cast<size_t>(static_cast<std::streamsize>(mPosition) + pSize > mSize ? mSize - mPosition : pSize);
-            if (readCount > 0)
-            {
-                pBuffer.push_back(reinterpret_cast<const char*>(mBuffer) + static_cast<int32_t>(mPosition), readCount);
-                mPosition += static_cast<std::streamoff>(readCount);
-            }
-        }
-        else if (mStream.is_open())
+        if (mStream.is_open())
         {
             size_t offset = pBuffer.size();
             
             const size_t readMaxSize = 1024;
             char buff[readMaxSize];
-            std::streamsize read = 0;
+            size_t read = 0;
             do
             {
-                mStream.read(buff, std::min(pSize - read, static_cast<std::streamsize>(readMaxSize)));
+                mStream.read(buff, static_cast<std::streamsize>(std::min(pSize - read, readMaxSize)));
                 pBuffer.push_back(buff, static_cast<size_t>(mStream.gcount()));
-                read += mStream.gcount();
+                read += static_cast<size_t>(mStream.gcount());
                 
                 if (!mStream.good())
                     break;
             }
             while (read < pSize);
             
-            mPosition += static_cast<std::streamoff>(pBuffer.size() - offset);
+            mPosition += pBuffer.size() - offset;
             
             auto flag = mStream.rdstate();
             if ((flag & std::ifstream::badbit) == 0 && (flag & std::ifstream::failbit) != 0)
@@ -514,16 +526,11 @@ namespace hms
         }
     }
     
-    bool DataReader::seek(std::streamoff pPosition, bool pRelative)
+    bool FileReader::seek(int64_t pPosition, bool pRelative)
     {
         bool success = false;
         
-        if (mBuffer != nullptr)
-        {
-            mPosition = std::max(static_cast<std::streampos>(0), std::min(pRelative ? mPosition + pPosition : static_cast<std::streampos>(pPosition), static_cast<std::streampos>(mSize)));
-            success = true;
-        }
-        else if (mStream.is_open())
+        if (mStream.is_open())
         {
             mStream.seekg(pPosition, pRelative ? std::ios::cur : std::ios::beg);
             
@@ -535,7 +542,8 @@ namespace hms
             }
             else
             {
-                mPosition = std::max(static_cast<std::streampos>(0), std::min(pRelative ? mPosition + pPosition : static_cast<std::streampos>(pPosition), static_cast<std::streampos>(mSize)));
+                int64_t position = pRelative ? static_cast<int64_t>(mPosition) + pPosition : pPosition;
+                mPosition = std::max(static_cast<size_t>(0), std::min(static_cast<size_t>(position), mSize));
                 success = true;
             }
         }
@@ -543,19 +551,120 @@ namespace hms
         return success;
     }
     
-    std::streampos DataReader::getPosition() const
+    size_t FileReader::getPosition() const
     {
         return mPosition;
     }
     
-    std::streamsize DataReader::getSize() const
+    size_t FileReader::getSize() const
     {
         return mSize;
     }
     
-    bool DataReader::isOpen() const
+    bool FileReader::isOpen() const
     {
-        return mBuffer == nullptr ? mStream.is_open() : true;
+        return mStream.is_open();
+    }
+    
+    /* MemoryReader */
+    
+    MemoryReader::MemoryReader(const void* pMemory, size_t pSize, bool pDeleteOnClose) : mBuffer(pMemory), mSize(pSize), mDeleteBufferOnClose(pDeleteOnClose)
+    {
+    }
+    
+    MemoryReader::~MemoryReader()
+    {
+        if (mBuffer != nullptr && mDeleteBufferOnClose)
+            delete [] reinterpret_cast<const char*>(mBuffer);
+    }
+    
+    size_t MemoryReader::read(void* pBuffer)
+    {
+        return read(pBuffer, mSize - mPosition);
+    }
+    
+    size_t MemoryReader::read(void* pBuffer, size_t pSize)
+    {
+        size_t readCount = 0;
+        
+        if (mBuffer != nullptr)
+        {
+            readCount = mPosition + pSize > mSize ? mSize - mPosition : pSize;
+            if (readCount > 0)
+            {
+                memcpy(pBuffer, reinterpret_cast<const char*>(mBuffer) + mPosition, readCount);
+                mPosition += readCount;
+            }
+        }
+        
+        return readCount;
+    }
+    
+    void MemoryReader::read(std::string& pText)
+    {
+        read(pText, mSize - mPosition);
+    }
+    
+    void MemoryReader::read(std::string& pText, size_t pSize)
+    {
+        if (mBuffer != nullptr)
+        {
+            size_t readCount = mPosition + pSize > mSize ? mSize - mPosition : pSize;
+            if (readCount > 0)
+            {
+                size_t offset = pText.size();
+                pText.resize(offset + readCount, 0);
+                memcpy(&pText[offset], reinterpret_cast<const char*>(mBuffer) + mPosition, readCount);
+                mPosition += readCount;
+            }
+        }
+    }
+    
+    void MemoryReader::read(DataBuffer& pBuffer)
+    {
+        read(pBuffer, mSize - mPosition);
+    }
+    
+    void MemoryReader::read(DataBuffer& pBuffer, size_t pSize)
+    {
+        if (mBuffer != nullptr)
+        {
+            size_t readCount = mPosition + pSize > mSize ? mSize - mPosition : pSize;
+            if (readCount > 0)
+            {
+                pBuffer.push_back(reinterpret_cast<const char*>(mBuffer) + mPosition, readCount);
+                mPosition += readCount;
+            }
+        }
+    }
+    
+    bool MemoryReader::seek(int64_t pPosition, bool pRelative)
+    {
+        bool success = false;
+        
+        if (mBuffer != nullptr)
+        {
+            int64_t position = pRelative ? static_cast<int64_t>(mPosition) + pPosition : pPosition;
+            mPosition = std::max(static_cast<size_t>(0), std::min(static_cast<size_t>(position), mSize));
+            success = true;
+        }
+        
+        return success;
+    }
+    
+    size_t MemoryReader::getPosition() const
+    {
+        return mPosition;
+    }
+    
+    size_t MemoryReader::getSize() const
+    {
+        return mSize;
+    }
+    
+    bool MemoryReader::isOpen() const
+    {
+        return mBuffer != nullptr;
     }
 
     /* DirectoryReader */
@@ -579,7 +688,7 @@ namespace hms
             {
                 if (mPrefix + name == pName)
                 {
-                    reader = std::unique_ptr<DataReader>(new DataReader(mPath + name));
+                    reader = std::unique_ptr<DataReader>(new FileReader(mPath + name));
                     break;
                 }
             }
@@ -784,7 +893,7 @@ namespace hms
     bool DataManager::readFile(const std::string& pFileName, DataShared* pData, const std::vector<unsigned>& pUserData, EDataSharedType pType)
     {
         using namespace crypto;
-        
+                
         assert(pData != nullptr && pFileName.length() != 0);
 
         bool status = false;
@@ -882,7 +991,7 @@ namespace hms
         
         bool status = false;
         std::unique_ptr<DataReader> reader = nullptr;
-        
+                
         for (auto it = mStorage.cbegin(); it != mStorage.cend(); it++)
         {
             reader = it->get()->openFile(pFileName);
@@ -1048,12 +1157,12 @@ namespace hms
     
     std::unique_ptr<DataReader> DataManager::getDataReader(const std::string& pFileName) const
     {
-        return std::unique_ptr<DataReader>(new DataReader(mWorkingDirectory + pFileName));
+        return std::unique_ptr<DataReader>(new FileReader(mWorkingDirectory + pFileName));
     }
     
     std::unique_ptr<DataWriter> DataManager::getDataWriter(const std::string& pFileName, bool pAppend) const
     {
-        return std::unique_ptr<DataWriter>(new DataWriter(mWorkingDirectory + pFileName, pAppend));
+        return std::unique_ptr<DataWriter>(new FileWriter(mWorkingDirectory + pFileName, pAppend));
     }
     
     void DataManager::addStorageLoader(std::unique_ptr<DataStorageLoader> pLoader)

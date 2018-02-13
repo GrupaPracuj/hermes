@@ -103,68 +103,140 @@ namespace hms
     class DataWriter
     {
     public:
-        DataWriter(const std::string& pFilePath, bool pAppend = false);
-        DataWriter(void* pMemory, std::streamsize pSize, bool pDeleteOnClose = false);
-        DataWriter() = delete;
-        DataWriter(const DataWriter& pOther) = delete;
-        DataWriter(DataWriter&& pOther) = delete;
-        ~DataWriter();
+        virtual ~DataWriter() = default;
         
-        DataWriter& operator=(const DataWriter& pOther) = delete;
-        DataWriter& operator=(DataWriter&& pOther) = delete;
+        virtual size_t write(const void* pBuffer, size_t pSize) = 0;
+        virtual size_t write(const std::string& pText) = 0;
+        virtual size_t write(const DataBuffer& pBuffer) = 0;
         
-        std::streamsize write(const void* pBuffer, std::streamsize pSize);
-        std::streamsize write(const std::string& pText);
-        std::streamsize write(const DataBuffer& pBuffer);
+        virtual bool seek(int64_t pPosition, bool pRelative = false) = 0;
+        virtual bool flush() = 0;
         
-        bool seek(std::streamoff pPosition, bool pRelative = false);
-        bool flush();
+        virtual size_t getPosition() const = 0;
+        virtual bool isOpen() const = 0;
         
-        std::streampos getPosition() const;
-        bool isOpen() const;
+    protected:
+        DataWriter() = default;
+        
+    };
+    
+    class FileWriter : public DataWriter
+    {
+    public:
+        FileWriter(const std::string& pFilePath, bool pAppend = false);
+        virtual ~FileWriter() = default;
+        
+        virtual size_t write(const void* pBuffer, size_t pSize) override;
+        virtual size_t write(const std::string& pText) override;
+        virtual size_t write(const DataBuffer& pBuffer) override;
+        
+        virtual bool seek(int64_t pPosition, bool pRelative = false) override;
+        virtual bool flush() override;
+        
+        virtual size_t getPosition() const override;
+        virtual bool isOpen() const override;
         
     private:
         std::ofstream mStream;
+        size_t mPosition = 0;
+        size_t mSize = 0;
+    };
+        
+    class MemoryWriter : public DataWriter
+    {
+    public:
+        MemoryWriter(void* pBuffer, size_t pSize, bool pDeleteOnClose = false);
+        virtual ~MemoryWriter();
+        
+        virtual size_t write(const void* pBuffer, size_t pSize) override;
+        virtual size_t write(const std::string& pText) override;
+        virtual size_t write(const DataBuffer& pBuffer) override;
+        
+        virtual bool seek(int64_t pPosition, bool pRelative = false) override;
+        virtual bool flush() override;
+        
+        virtual size_t getPosition() const override;
+        virtual bool isOpen() const override;
+        
+    private:
         void* mBuffer = nullptr;
         bool mDeleteBufferOnClose = false;
-        std::streampos mPosition = 0;
-        std::streamsize mSize = 0;
-        
+        size_t mPosition = 0;
+        size_t mSize = 0;
     };
         
     class DataReader
     {
     public:
-        DataReader(const std::string& pFilePath);
-        DataReader(const void* pMemory, std::streamsize pSize, bool pDeleteOnClose = false);
-        DataReader() = delete;
-        DataReader(const DataReader& pOther) = delete;
-        DataReader(DataWriter&& pOther) = delete;
-        ~DataReader();
+        virtual ~DataReader() = default;
         
-        DataReader& operator=(const DataReader& pOther) = delete;
-        DataReader& operator=(DataReader&& pOther) = delete;
+        virtual size_t read(void* pBuffer) = 0;
+        virtual size_t read(void* pBuffer, size_t pSize) = 0;
+        virtual void read(std::string& pText) = 0;
+        virtual void read(std::string& pText, size_t pSize) = 0;
+        virtual void read(DataBuffer& pBuffer) = 0;
+        virtual void read(DataBuffer& pBuffer, size_t pSize) = 0;
         
-        std::streamsize read(void* pBuffer);
-        std::streamsize read(void* pBuffer, std::streamsize pSize);
-        void read(std::string& pText);
-        void read(std::string& pText, std::streamsize pSize);
-        void read(DataBuffer& pBuffer);
-        void read(DataBuffer& pBuffer, std::streamsize pSize);
+        virtual bool seek(int64_t pPosition, bool pRelative = false) = 0;
         
-        bool seek(std::streamoff pPosition, bool pRelative = false);
+        virtual size_t getPosition() const = 0;
+        virtual size_t getSize() const = 0;
+        virtual bool isOpen() const = 0;
         
-        std::streampos getPosition() const;
-        std::streamsize getSize() const;
-        bool isOpen() const;
+    protected:
+        DataReader() = default;
+        
+    };
+        
+    class FileReader : public DataReader
+    {
+    public:
+        FileReader(const std::string& pFilePath);
+        virtual ~FileReader() = default;
+        
+        virtual size_t read(void* pBuffer) override;
+        virtual size_t read(void* pBuffer, size_t pSize) override;
+        virtual void read(std::string& pText) override;
+        virtual void read(std::string& pText, size_t pSize) override;
+        virtual void read(DataBuffer& pBuffer) override;
+        virtual void read(DataBuffer& pBuffer, size_t pSize) override;
+        
+        virtual bool seek(int64_t pPosition, bool pRelative = false) override;
+        
+        virtual size_t getPosition() const override;
+        virtual size_t getSize() const override;
+        virtual bool isOpen() const override;
         
     private:
         std::ifstream mStream;
+        size_t mSize = 0;
+        size_t mPosition = 0;
+    };
+        
+    class MemoryReader : public DataReader
+    {
+    public:
+        MemoryReader(const void* pMemory, size_t pSize, bool pDeleteOnClose = false);
+        virtual ~MemoryReader();
+        
+        virtual size_t read(void* pBuffer) override;
+        virtual size_t read(void* pBuffer, size_t pSize) override;
+        virtual void read(std::string& pText) override;
+        virtual void read(std::string& pText, size_t pSize) override;
+        virtual void read(DataBuffer& pBuffer) override;
+        virtual void read(DataBuffer& pBuffer, size_t pSize) override;
+        
+        virtual bool seek(int64_t pPosition, bool pRelative = false) override;
+        
+        virtual size_t getPosition() const override;
+        virtual size_t getSize() const override;
+        virtual bool isOpen() const override;
+        
+    private:
         const void* mBuffer = nullptr;
         bool mDeleteBufferOnClose = false;
-        std::streamsize mSize = 0;
-        std::streampos mPosition = 0;
-        
+        size_t mSize = 0;
+        size_t mPosition = 0;
     };
         
     class DataStorageReader
