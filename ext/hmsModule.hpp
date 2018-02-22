@@ -1,6 +1,7 @@
 #ifndef _HMS_MODULE_HPP_
 #define _HMS_MODULE_HPP_
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <type_traits>
@@ -28,7 +29,7 @@ namespace ext
         void setOnAttachCallback(std::function<void(std::shared_ptr<ModuleShared>)> pCallback);
         void setOnDetachCallback(std::function<void()> pCallback);
 
-        std::pair<int, int> getIndex() const;
+        std::pair<int32_t, int32_t> getIndex() const;
         
     protected:
         ModuleShared() = default;
@@ -38,7 +39,7 @@ namespace ext
         void detach();
         
         std::weak_ptr<ModuleShared> mThis;
-        std::pair<int, int> mIndex = {-1, -1};
+        std::pair<int32_t, int32_t> mIndex = {-1, -1};
         
     private:
         ModuleShared(const ModuleShared& pOther) = delete;
@@ -60,39 +61,36 @@ namespace ext
     class ModuleHandler
     {
     public:
-        int countPrimary() const;
-        int countSecondary(int pPrimaryIndex) const;
-        
         std::shared_ptr<ModuleShared> getMain() const;
-        
         template <typename T, typename = typename std::enable_if<std::is_base_of<ModuleShared, T>::value>::type>
         std::shared_ptr<T> getMain() const
         {
             return std::static_pointer_cast<T>(getMain());
         }
-
-        void setMain(std::shared_ptr<ModuleShared> pModule);
         
+        void setMain(std::shared_ptr<ModuleShared> pModule);
         template <typename T, typename = typename std::enable_if<std::is_base_of<ModuleShared, T>::value>::type>
         void setMain(std::shared_ptr<T> pModule)
         {
             return setMain(std::static_pointer_cast<ModuleShared>(pModule));
         }
         
-        std::weak_ptr<ModuleShared> get(std::pair<int, int> pIndex) const;
+        int32_t countPrimary() const;
+        int32_t countSecondary(int32_t pPrimaryIndex) const;
         
+        std::weak_ptr<ModuleShared> get(std::pair<int32_t, int32_t> pIndex) const;
         template <typename T, typename = typename std::enable_if<std::is_base_of<ModuleShared, T>::value>::type>
-        std::weak_ptr<T> get(std::pair<int, int> pIndex) const
+        std::weak_ptr<T> get(std::pair<int32_t, int32_t> pIndex) const
         {
             return std::static_pointer_cast<T>(get(pIndex));
         }
         
-        void push(int pPrimaryIndex, std::shared_ptr<ModuleShared> pModule);
-        void pop(int pPrimaryIndex, size_t pCount);
+        void push(int32_t pPrimaryIndex, std::shared_ptr<ModuleShared> pModule);
+        void pop(int32_t pPrimaryIndex, size_t pCount);
         void erase(std::shared_ptr<ModuleShared> pModule, size_t pCount);
         void clear();
         
-        void setOnChangeCallback(std::function<void()> pCallback);
+        void setOnActiveCallback(std::function<void(std::shared_ptr<ModuleShared>)> pCallback);
         
         static ModuleHandler* getInstance();
         
@@ -104,11 +102,11 @@ namespace ext
         
         ModuleHandler& operator=(const ModuleHandler& pOther) = delete;
         ModuleHandler& operator=(ModuleHandler&& pOther) = delete;
-        
+
         std::shared_ptr<ModuleShared> mMainModule;
         std::vector<std::vector<std::shared_ptr<ModuleShared>>> mModule;
         
-        std::function<void()> mOnChangeCallback;
+        std::function<void(std::shared_ptr<ModuleShared>)> mOnActiveCallback;
     };
     
 }

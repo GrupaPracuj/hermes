@@ -19,7 +19,7 @@ namespace ext
         mOnDetach = std::move(pCallback);
     }
     
-    std::pair<int, int> ModuleShared::getIndex() const
+    std::pair<int32_t, int32_t> ModuleShared::getIndex() const
     {
         return mIndex;
     }
@@ -37,19 +37,7 @@ namespace ext
     }
     
     /* ModuleHandler */
-    
-    int ModuleHandler::countPrimary() const
-    {
-        return static_cast<int>(mModule.size());
-    }
-    
-    int ModuleHandler::countSecondary(int pPrimaryIndex) const
-    {
-        assert(pPrimaryIndex >= 0 && static_cast<size_t>(pPrimaryIndex) < mModule.size());
-        
-        return static_cast<int>(mModule[static_cast<size_t>(pPrimaryIndex)].size());
-    }
-    
+
     std::shared_ptr<ModuleShared> ModuleHandler::getMain() const
     {
         return mMainModule;
@@ -60,37 +48,46 @@ namespace ext
         mMainModule = pModule;
     }
     
-    std::weak_ptr<ModuleShared> ModuleHandler::get(std::pair<int, int> pIndex) const
+    int32_t ModuleHandler::countPrimary() const
+    {
+        return static_cast<int32_t>(mModule.size());
+    }
+    
+    int32_t ModuleHandler::countSecondary(int32_t pPrimaryIndex) const
+    {
+        assert(pPrimaryIndex >= 0 && static_cast<size_t>(pPrimaryIndex) < mModule.size());
+        
+        return static_cast<int32_t>(mModule[static_cast<size_t>(pPrimaryIndex)].size());
+    }
+    
+    std::weak_ptr<ModuleShared> ModuleHandler::get(std::pair<int32_t, int32_t> pIndex) const
     {
         assert(pIndex.first >= 0 && static_cast<size_t>(pIndex.first) < mModule.size() && pIndex.second >= 0 && static_cast<size_t>(pIndex.second) < mModule[static_cast<size_t>(pIndex.first)].size());
         
         return mModule[static_cast<size_t>(pIndex.first)][static_cast<size_t>(pIndex.second)];
     }
     
-    void ModuleHandler::push(int pPrimaryIndex, std::shared_ptr<ModuleShared> pModule)
+    void ModuleHandler::push(int32_t pPrimaryIndex, std::shared_ptr<ModuleShared> pModule)
     {
-        assert(pPrimaryIndex >= 0 && pModule != nullptr);
+        assert(pModule != nullptr && pPrimaryIndex >= 0 && (static_cast<size_t>(pPrimaryIndex) >= mModule.size() || mModule[static_cast<size_t>(pPrimaryIndex)].size() < INT32_MAX));
         
         if (static_cast<size_t>(pPrimaryIndex) >= mModule.size())
             mModule.resize(static_cast<size_t>(pPrimaryIndex) + 1);
         
         mModule[static_cast<size_t>(pPrimaryIndex)].push_back(pModule);
-        pModule->mIndex = {pPrimaryIndex, static_cast<int>(mModule[static_cast<size_t>(pPrimaryIndex)].size()) - 1};
+        pModule->mIndex = {pPrimaryIndex, static_cast<int32_t>(mModule[static_cast<size_t>(pPrimaryIndex)].size()) - 1};
         pModule->attach(pModule);
         
-        if (mOnChangeCallback != nullptr)
-            mOnChangeCallback();
+        if (mOnActiveCallback != nullptr)
+            mOnActiveCallback(pModule);
     }
     
-    void ModuleHandler::pop(int pPrimaryIndex, size_t pCount)
+    void ModuleHandler::pop(int32_t pPrimaryIndex, size_t pCount)
     {
-        assert(pPrimaryIndex >= 0 && pPrimaryIndex < static_cast<int>(mModule.size()) && pCount > 0);
+        assert(pPrimaryIndex >= 0 && pPrimaryIndex < static_cast<int32_t>(mModule.size()) && pCount > 0);
         
         const size_t stackSize = mModule[static_cast<size_t>(pPrimaryIndex)].size();
         erase(mModule[static_cast<size_t>(pPrimaryIndex)][stackSize > pCount ? stackSize - pCount : 0], pCount);
-        
-        if (mOnChangeCallback != nullptr)
-            mOnChangeCallback();
     }
     
     void ModuleHandler::erase(std::shared_ptr<ModuleShared> pModule, size_t pCount)
@@ -99,22 +96,25 @@ namespace ext
         
         const auto index = pModule->getIndex();
         auto* primaryStack = &mModule[static_cast<size_t>(index.first)];
-        const int stackSize = static_cast<int>(primaryStack->size());
-        const int eraseBegin = index.second;
-        const int eraseEnd = std::min(eraseBegin + static_cast<int>(pCount), stackSize);
+        const int32_t stackSize = static_cast<int32_t>(primaryStack->size());
+        const int32_t eraseBegin = index.second;
+        const int32_t eraseEnd = std::min(eraseBegin + static_cast<int32_t>(pCount), stackSize);
         
-        for (int i = stackSize - 1; i >= eraseEnd; --i)
-            (*primaryStack)[static_cast<size_t>(i)]->mIndex.second -= static_cast<int>(pCount);
+        for (int32_t i = stackSize - 1; i >= eraseEnd; --i)
+            (*primaryStack)[static_cast<size_t>(i)]->mIndex.second -= static_cast<int32_t>(pCount);
         
-        for (int i = eraseEnd - 1; i >= eraseBegin; --i)
+        for (int32_t i = eraseEnd - 1; i >= eraseBegin; --i)
             (*primaryStack)[static_cast<size_t>(i)]->detach();
+
+        std::shared_ptr<ModuleShared> activeModule = mMainModule;
         
         if (eraseEnd > eraseBegin)
         {
             primaryStack->erase(primaryStack->begin() + eraseBegin, primaryStack->begin() + eraseEnd);
+            const size_t newStackSize = primaryStack->size();
             
-            if (mOnChangeCallback != nullptr)
-                mOnChangeCallback();
+            if (newStackSize > 0)
+                activeModule = (*primaryStack)[newStackSize - 1];
         }
         
         auto eraseIt = mModule.end();
@@ -129,19 +129,25 @@ namespace ext
         
         if (eraseIt != mModule.end())
             mModule.erase(eraseIt, mModule.end());
+        
+        if (eraseEnd > eraseBegin)
+        {
+            if (mOnActiveCallback != nullptr)
+                mOnActiveCallback(activeModule);
+        }
     }
     
     void ModuleHandler::clear()
     {
         mModule.clear();
         
-        if (mOnChangeCallback != nullptr)
-            mOnChangeCallback();
+        if (mOnActiveCallback != nullptr)
+            mOnActiveCallback(mMainModule);
     }
     
-    void ModuleHandler::setOnChangeCallback(std::function<void()> pCallback)
+    void ModuleHandler::setOnActiveCallback(std::function<void(std::shared_ptr<ModuleShared>)> pCallback)
     {
-        mOnChangeCallback = std::move(pCallback);
+        mOnActiveCallback = std::move(pCallback);
     }
     
     ModuleHandler* ModuleHandler::getInstance()
