@@ -21,6 +21,8 @@
 		55DD60001F38980400BFA8E5 /* hermes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55A5745E1EA780F3003ECB8C /* hermes.cpp */; };
 		9E1950702007AED500CE339D /* tools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E19506E2007AED500CE339D /* tools.cpp */; };
 		9E1950732007AF2500CE339D /* tools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E19506E2007AED500CE339D /* tools.cpp */; };
+		9E5C7BAB203C45CF00CCBB8B /* hmsSerializer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E5C7BA9203C45CF00CCBB8B /* hmsSerializer.cpp */; };
+		9E5C7BAC203C45CF00CCBB8B /* hmsSerializer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E5C7BA9203C45CF00CCBB8B /* hmsSerializer.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -34,6 +36,15 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		55465B4F2028CB8300060DED /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E6E7C9F203B01AC004F306B /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -59,6 +70,10 @@
 		55A574601EA78108003ECB8C /* hermes.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hermes.hpp; path = include/hermes.hpp; sourceTree = "<group>"; };
 		9E19506E2007AED500CE339D /* tools.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = tools.cpp; path = source/tools.cpp; sourceTree = "<group>"; };
 		9E1950712007AEF300CE339D /* tools.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = tools.hpp; path = include/tools.hpp; sourceTree = "<group>"; };
+		9E5C7BA9203C45CF00CCBB8B /* hmsSerializer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hmsSerializer.cpp; path = ext/hmsSerializer.cpp; sourceTree = "<group>"; };
+		9E5C7BAA203C45CF00CCBB8B /* hmsSerializer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hmsSerializer.hpp; path = ext/hmsSerializer.hpp; sourceTree = "<group>"; };
+		9E6E7CA3203B01AC004F306B /* libhmsextserializer.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhmsextserializer.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E6E7CAC203B01BF004F306B /* libhmsextserializer.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhmsextserializer.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E7565A7202DA9C200DFF9A1 /* libhermes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhermes.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E7565A8202DA9C200DFF9A1 /* libhmsextmodule.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhmsextmodule.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E7565A9202DA9C200DFF9A1 /* libhermes.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhermes.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -94,6 +109,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		9E6E7C9E203B01AC004F306B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E6E7CA7203B01BF004F306B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -104,9 +133,11 @@
 				38EC90EE1C3AC974008AE1A3 /* Source */,
 				55465B622028CC4A00060DED /* Extension */,
 				9E7565A7202DA9C200DFF9A1 /* libhermes.a */,
+				9E6E7CA3203B01AC004F306B /* libhmsextserializer.a */,
 				9E7565A8202DA9C200DFF9A1 /* libhmsextmodule.a */,
 				9E7565A9202DA9C200DFF9A1 /* libhermes.a */,
 				9E7565AA202DA9C200DFF9A1 /* libhmsextmodule.a */,
+				9E6E7CAC203B01BF004F306B /* libhmsextserializer.a */,
 			);
 			sourceTree = "<group>";
 		};
@@ -139,6 +170,8 @@
 		55465B622028CC4A00060DED /* Extension */ = {
 			isa = PBXGroup;
 			children = (
+				9E5C7BA9203C45CF00CCBB8B /* hmsSerializer.cpp */,
+				9E5C7BAA203C45CF00CCBB8B /* hmsSerializer.hpp */,
 				55465B632028CC8200060DED /* hmsModule.cpp */,
 				55465B642028CC8200060DED /* hmsModule.hpp */,
 			);
@@ -156,6 +189,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		55DD5FED1F38956600BFA8E5 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E6E7CA8203B01BF004F306B /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -233,6 +273,40 @@
 			productReference = 9E7565A9202DA9C200DFF9A1 /* libhermes.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		9E6E7C9B203B01AC004F306B /* hmsextserializer_ios */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9E6E7CA0203B01AC004F306B /* Build configuration list for PBXNativeTarget "hmsextserializer_ios" */;
+			buildPhases = (
+				9E6E7C9C203B01AC004F306B /* Sources */,
+				9E6E7C9E203B01AC004F306B /* Frameworks */,
+				9E6E7C9F203B01AC004F306B /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = hmsextserializer_ios;
+			productName = hermes;
+			productReference = 9E6E7CA3203B01AC004F306B /* libhmsextserializer.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		9E6E7CA4203B01BF004F306B /* hmsextserializer_macos */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9E6E7CA9203B01BF004F306B /* Build configuration list for PBXNativeTarget "hmsextserializer_macos" */;
+			buildPhases = (
+				9E6E7CA5203B01BF004F306B /* Sources */,
+				9E6E7CA7203B01BF004F306B /* Frameworks */,
+				9E6E7CA8203B01BF004F306B /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = hmsextserializer_macos;
+			productName = hermes_macos;
+			productReference = 9E6E7CAC203B01BF004F306B /* libhmsextserializer.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -264,8 +338,10 @@
 			targets = (
 				38EC90CB1C3AC853008AE1A3 /* hermes_ios */,
 				55465B462028CB8300060DED /* hmsextmodule_ios */,
+				9E6E7C9B203B01AC004F306B /* hmsextserializer_ios */,
 				55DD5FEE1F38956600BFA8E5 /* hermes_macos */,
 				55465B542028CB8900060DED /* hmsextmodule_macos */,
+				9E6E7CA4203B01BF004F306B /* hmsextserializer_macos */,
 			);
 		};
 /* End PBXProject section */
@@ -310,6 +386,22 @@
 				55DD5FFF1F38980400BFA8E5 /* task.cpp in Sources */,
 				55DD60001F38980400BFA8E5 /* hermes.cpp in Sources */,
 				9E1950732007AF2500CE339D /* tools.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E6E7C9C203B01AC004F306B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9E5C7BAB203C45CF00CCBB8B /* hmsSerializer.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E6E7CA5203B01BF004F306B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9E5C7BAC203C45CF00CCBB8B /* hmsSerializer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -368,7 +460,6 @@
 					include,
 					depend/aes/include,
 					depend/curl/include,
-					depend/jsoncpp/include,
 				);
 				INSTALL_PATH = /;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
@@ -427,7 +518,6 @@
 					include,
 					depend/aes/include,
 					depend/curl/include,
-					depend/jsoncpp/include,
 				);
 				INSTALL_PATH = /;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
@@ -442,6 +532,7 @@
 		38EC90D61C3AC853008AE1A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/ios";
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
 				PRODUCT_NAME = hermes;
@@ -451,6 +542,7 @@
 		38EC90D71C3AC853008AE1A3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/ios";
 				GCC_PREPROCESSOR_DEFINITIONS = "NDEBUG=1";
 				PRODUCT_NAME = hermes;
@@ -460,6 +552,7 @@
 		55465B512028CB8300060DED /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/ios";
 				PRODUCT_NAME = hmsextmodule;
 			};
@@ -468,6 +561,7 @@
 		55465B522028CB8300060DED /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/ios";
 				PRODUCT_NAME = hmsextmodule;
 			};
@@ -476,6 +570,7 @@
 		55465B5F2028CB8900060DED /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/macos";
 				PRODUCT_NAME = hmsextmodule;
 				SDKROOT = macosx;
@@ -485,6 +580,7 @@
 		55465B602028CB8900060DED /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/macos";
 				PRODUCT_NAME = hmsextmodule;
 				SDKROOT = macosx;
@@ -494,6 +590,7 @@
 		55DD5FF71F38956600BFA8E5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/macos";
 				PRODUCT_NAME = hermes;
 				SDKROOT = macosx;
@@ -503,8 +600,71 @@
 		55DD5FF81F38956600BFA8E5 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/macos";
 				PRODUCT_NAME = hermes;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		9E6E7CA1203B01AC004F306B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				DSTROOT = "$(SRCROOT)/lib/ios";
+				HEADER_SEARCH_PATHS = (
+					include,
+					depend/aes/include,
+					depend/curl/include,
+					depend/jsoncpp/include,
+				);
+				PRODUCT_NAME = hmsextserializer;
+			};
+			name = Debug;
+		};
+		9E6E7CA2203B01AC004F306B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				DSTROOT = "$(SRCROOT)/lib/ios";
+				HEADER_SEARCH_PATHS = (
+					include,
+					depend/aes/include,
+					depend/curl/include,
+					depend/jsoncpp/include,
+				);
+				PRODUCT_NAME = hmsextserializer;
+			};
+			name = Release;
+		};
+		9E6E7CAA203B01BF004F306B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				DSTROOT = "$(SRCROOT)/lib/macos";
+				HEADER_SEARCH_PATHS = (
+					include,
+					depend/aes/include,
+					depend/curl/include,
+					depend/jsoncpp/include,
+				);
+				PRODUCT_NAME = hmsextserializer;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		9E6E7CAB203B01BF004F306B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				DSTROOT = "$(SRCROOT)/lib/macos";
+				HEADER_SEARCH_PATHS = (
+					include,
+					depend/aes/include,
+					depend/curl/include,
+					depend/jsoncpp/include,
+				);
+				PRODUCT_NAME = hmsextserializer;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -553,6 +713,24 @@
 			buildConfigurations = (
 				55DD5FF71F38956600BFA8E5 /* Debug */,
 				55DD5FF81F38956600BFA8E5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9E6E7CA0203B01AC004F306B /* Build configuration list for PBXNativeTarget "hmsextserializer_ios" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9E6E7CA1203B01AC004F306B /* Debug */,
+				9E6E7CA2203B01AC004F306B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9E6E7CA9203B01BF004F306B /* Build configuration list for PBXNativeTarget "hmsextserializer_macos" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9E6E7CAA203B01BF004F306B /* Debug */,
+				9E6E7CAB203B01BF004F306B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

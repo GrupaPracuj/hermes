@@ -3,7 +3,7 @@ LIBRARY_NAME = libjsoncpp.a
 SRCFILES = $(wildcard src/lib_json/*.cpp)
 OBJFILES = $(SRCFILES:%.cpp=%.o)
 
-CXXFLAGS += -pipe -std=c++11 -fPIC -fno-strict-aliasing -fstack-protector -Iinclude
+CXXFLAGS += -pipe -std=c++14 -fPIC -fno-strict-aliasing -fstack-protector -Iinclude
 
 ifndef NDEBUG
 CXXFLAGS += -g -D_DEBUG=1 -DDEBUG=1

@@ -14,7 +14,7 @@ EXT_AASSETREADER_NAME = libhmsextaassetreader.a
 EXT_AASSETREADER_SRCFILES = ext/hmsAAssetReader.cpp
 EXT_AASSETREADER_OBJFILES = $(EXT_AASSETREADER_SRCFILES:%.cpp=%.o)
 
-CXXFLAGS += -pipe -std=c++11 -fPIC -fno-strict-aliasing -fstack-protector -Iinclude -Idepend/aes/include -Idepend/curl/include -Idepend/jsoncpp/include
+CXXFLAGS += -pipe -std=c++14 -fPIC -fno-strict-aliasing -fstack-protector -Iinclude -Idepend/aes/include -Idepend/curl/include -Idepend/jsoncpp/include
 
 ifndef NDEBUG
 CXXFLAGS += -g -D_DEBUG=1 -DDEBUG=1

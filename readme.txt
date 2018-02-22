@@ -53,7 +53,7 @@ QUICK START (iOS):
     Next add libhermes.a, libcurl.a, libjsoncpp.a, libaes.a from Hermes library path and libz.tbd,
     Security.framework from Xcode library set. Make sure that these libraries were added
     to 'Link Binary With Libraries' section in 'Build Phases' project settings). Finally you need
-    to switch 'C++ Language Dialect' to 'C++11 [-std=c++11]' or higher and 'C++ Standard Library'
+    to switch 'C++ Language Dialect' to 'C++14 [-std=c++14]' or higher and 'C++ Standard Library'
     to 'libc++'.
   * Check 'sample.cpp' for use.
   
