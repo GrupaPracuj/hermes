@@ -71,12 +71,6 @@ namespace ext
             return mName;
         }
         
-        template <typename V, typename = std::enable_if_t<std::is_constructible<T, V>::value>>
-        void set(C& pObj, V&& pValue) const
-        {
-            pObj.*mPtr = pValue;
-        }
-        
     private:
         std::string mName;
         T C::* mPtr;
