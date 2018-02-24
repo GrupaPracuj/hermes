@@ -7,5 +7,5 @@ settings = Settings()
 
 if configure('android', settings):
     prepareToolchainAndroid(settings)
-    buildMakeAndroid('', ['hermes', 'hmsextmodule', 'hmsextjni', 'hmsextaassetreader'], settings, '')
+    buildMakeAndroid('', ['hermes', 'hmsextmodule', 'hmsextjni', 'hmsextaassetreader', 'hmsextserializer'], settings, '')
     cleanup(settings)

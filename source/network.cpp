@@ -174,120 +174,89 @@ namespace hms
     
     /* NetworkRecovery */
     
-    NetworkRecovery::NetworkRecovery(size_t pId, const std::string& pName) : mId(pId), mName(pName)
+    NetworkRecovery::NetworkRecovery(size_t pId, std::string pName, Config pConfig) : mId(pId), mName(std::move(pName))
     {
+        assert(pConfig.mCondition != nullptr && pConfig.mCallback != nullptr);
+
+        auto internalData = std::shared_ptr<InternalData>(new InternalData());
+        mInternalData = internalData;
+        mCondition = std::move(pConfig.mCondition);
+
+        auto callback = [lpCallback = std::move(pConfig.mCallback), internalData](NetworkResponse lpResponse) -> void
+        {
+            internalData->mActive = false;
+
+            Hermes::getInstance()->getLogger()->print(ELogLevel::Info, "Recovery: %, code: %, http: %, message: %", (lpResponse.mCode == ENetworkCode::OK) ? "passed" : "failed", static_cast<unsigned>(lpResponse.mCode), lpResponse.mHttpCode, lpResponse.mMessage);
+
+            if (lpCallback != nullptr)
+            {
+                NetworkResponse response;
+                response.mCode = lpResponse.mCode;
+                response.mHttpCode = lpResponse.mHttpCode;
+                response.mHeader = std::move(lpResponse.mHeader);
+                response.mMessage = std::move(lpResponse.mMessage);
+                response.mRawData = std::move(lpResponse.mRawData);
+
+                lpCallback(std::move(response));
+            }
+            
+            while (internalData->mReceiver.size() != 0)
+            {
+                auto receiver = &internalData->mReceiver.front();                
+                auto networkManager = Hermes::getInstance()->getNetworkManager();
+                auto networkAPI = (std::get<0>(*receiver) < networkManager->count()) ? networkManager->get(std::get<0>(*receiver)) : nullptr;
+
+                if (networkAPI != nullptr && lpResponse.mCode == ENetworkCode::OK)
+                {
+                    NetworkRequestParam* param = &std::get<1>(*receiver);
+
+                    auto defaultHeader = networkAPI->getDefaultHeader();
+                    
+                    param->mMethod = networkAPI->getUrl() + param->mMethod;
+                    param->mHeader.insert(param->mHeader.end(), defaultHeader.begin(), defaultHeader.end());
+
+                    Hermes::getInstance()->getLogger()->print(ELogLevel::Info, "Executed method from recovery: %.", param->mMethod);
+
+                    networkManager->request(std::move(*param), std::get<2>(*receiver));
+                }
+                
+                internalData->mReceiver.pop();
+            }
+        };
+
+        mRequestParam.mRequestType = pConfig.mRequestType;
+        mRequestParam.mResponseType = ENetworkResponseType::Message;
+        mRequestParam.mMethod = std::move(pConfig.mUrl);
+        mRequestParam.mParameter = std::move(pConfig.mParameter);
+        mRequestParam.mHeader = std::move(pConfig.mHeader);
+        mRequestParam.mRequestBody = "";
+        mRequestParam.mCallback = std::move(callback);
+        mRequestParam.mProgress = nullptr;
+        mRequestParam.mRepeatCount = pConfig.mRepeatCount;
+        mRequestParam.mAllowRecovery = false;
     }
     
     NetworkRecovery::~NetworkRecovery()
     {
     }
     
-    bool NetworkRecovery::init(std::function<bool(const NetworkResponse& lpResponse, std::string& lpRequestBody, std::vector<std::pair<std::string, std::string>>& lpParameter, std::vector<std::pair<std::string, std::string>>& lpHeader)> pPreCallback, std::function<void(NetworkResponse pResponse)> pPostCallback,
-        ENetworkRequestType pType, std::string pUrl, std::vector<std::pair<std::string, std::string>> pParameter, std::vector<std::pair<std::string, std::string>> pHeader, unsigned pRepeatCount)
-    {
-        assert(pPreCallback != nullptr && pPostCallback != nullptr);
-    
-        uint32_t initialized = 0;
-
-        if (mInitialized.compare_exchange_strong(initialized, 1))
-        {
-            auto callback = std::bind([this](NetworkResponse lpResponse, std::function<void(NetworkResponse pResponse)> lpPostCallback) -> void
-            {
-                unlock();
-
-                Hermes::getInstance()->getLogger()->print(ELogLevel::Info, "Recovery: %, code: %, http: %, message: %", (lpResponse.mCode == ENetworkCode::OK) ? "passed" : "failed", static_cast<unsigned>(lpResponse.mCode), lpResponse.mHttpCode, lpResponse.mMessage);
-
-                if (lpPostCallback != nullptr)
-                {
-                    NetworkResponse response;
-                    response.mCode = lpResponse.mCode;
-                    response.mHttpCode = lpResponse.mHttpCode;
-                    response.mHeader = std::move(lpResponse.mHeader);
-                    response.mMessage = std::move(lpResponse.mMessage);
-                    response.mRawData = std::move(lpResponse.mRawData);
-
-                    lpPostCallback(std::move(response));
-                }
-                
-                while (mReceiver.size() != 0)
-                {
-                    std::tuple<size_t, NetworkRequestParam, std::shared_ptr<NetworkRequestHandle>>& receiver = mReceiver.front();
-                    
-                    auto networkManager = Hermes::getInstance()->getNetworkManager();
-                    auto networkAPI = (std::get<0>(receiver) < networkManager->count()) ? networkManager->get(std::get<0>(receiver)) : nullptr;
-
-                    if (networkAPI != nullptr && lpResponse.mCode == ENetworkCode::OK)
-                    {
-                        NetworkRequestParam* param = &std::get<1>(receiver);
-
-                        auto defaultHeader = networkAPI->getDefaultHeader();
-                        
-                        param->mMethod = networkAPI->getURL() + param->mMethod;
-                        param->mHeader.insert(param->mHeader.end(), defaultHeader.begin(), defaultHeader.end());
-
-                        Hermes::getInstance()->getLogger()->print(ELogLevel::Info, "Executed method from recovery: %.", param->mMethod);
-
-                        networkManager->request(*param, std::get<2>(receiver));
-                    }
-                    
-                    mReceiver.pop();
-                }
-            }, std::placeholders::_1, std::move(pPostCallback));
-
-            mUnsafeLock = false;
-            
-            mPreCallback = std::move(pPreCallback);
-
-            mRequestParam.mRequestType = pType;
-            mRequestParam.mResponseType = ENetworkResponseType::Message;
-            mRequestParam.mMethod = std::move(pUrl);
-            mRequestParam.mParameter = std::move(pParameter);
-            mRequestParam.mHeader = std::move(pHeader);
-            mRequestParam.mRequestBody = "";
-            mRequestParam.mCallback = std::move(callback);
-            mRequestParam.mProgress = nullptr;
-            mRequestParam.mRepeatCount = pRepeatCount;
-            mRequestParam.mAllowRecovery = false;
-            
-            mInitialized.store(2);
-        }
-        else
-        {
-            // Already initialized.
-            assert(false);
-        }
-        
-        return initialized == 0;
-    }
-    
-    bool NetworkRecovery::isInitialized() const
-    {
-        return mInitialized.load() == 2;
-    }
-    
     bool NetworkRecovery::isQueueEmpty() const
     {
-        return mReceiver.empty();
+        return mInternalData->mReceiver.empty();
     }
     
     bool NetworkRecovery::checkCondition(const NetworkResponse& pResponse, std::string& pRequestBody, std::vector<std::pair<std::string, std::string>>& pParameter, std::vector<std::pair<std::string, std::string>>& pHeader) const
     {
-        assert(mInitialized.load() == 2);
-    
-        return mPreCallback != nullptr && mPreCallback(pResponse, pRequestBody, pParameter, pHeader);
+        return mCondition != nullptr && mCondition(pResponse, pRequestBody, pParameter, pHeader);
     }
     
     void NetworkRecovery::pushReceiver(std::tuple<size_t, NetworkRequestParam, std::shared_ptr<NetworkRequestHandle>> pReceiver)
     {
-        assert(mInitialized.load() == 2);
-
-        mReceiver.push(std::move(pReceiver));
+        mInternalData->mReceiver.push(std::move(pReceiver));
     }
     
     void NetworkRecovery::runRequest(std::string pRequestBody, std::vector<std::pair<std::string, std::string>> pParameter, std::vector<std::pair<std::string, std::string>> pHeader)
     {
-        assert(mInitialized.load() == 2);
-        
         int defaultParameterEnd = -1;
         int defaultHeaderEnd = -1;
 
@@ -314,47 +283,17 @@ namespace hms
             mRequestParam.mHeader.erase(mRequestParam.mHeader.cbegin() + defaultHeaderEnd, mRequestParam.mHeader.cend());
     }
     
-    bool NetworkRecovery::isLocked() const
+    bool NetworkRecovery::isActive() const
     {
-        return mUnsafeLock;
+        return mInternalData->mActive;
     }
     
-    bool NetworkRecovery::lock()
+    bool NetworkRecovery::activate()
     {
-        bool status = false;
-        
-        if (!mUnsafeLock)
-        {
-            mUnsafeLock = true;
-            
-            status = true;
-        }
+        bool status = !mInternalData->mActive;
+        mInternalData->mActive = true;            
         
         return status;
-    }
-    
-    bool NetworkRecovery::unlock()
-    {
-        bool status = false;
-        
-        if (mUnsafeLock)
-        {
-            mUnsafeLock = false;
-            
-            status = true;
-        }
-        
-        return status;
-    }
-    
-    size_t NetworkRecovery::getId() const
-    {
-        return mId;
-    }
-    
-    const std::string& NetworkRecovery::getName() const
-    {
-        return mName;
     }
     
     const std::vector<std::pair<std::string, std::string>>& NetworkRecovery::getHeader() const
@@ -376,12 +315,22 @@ namespace hms
     {
         mRequestParam.mParameter = pParameter;
     }
+
+    size_t NetworkRecovery::getId() const
+    {
+        return mId;
+    }
+    
+    const std::string& NetworkRecovery::getName() const
+    {
+        return mName;
+    }
     
     /* NetworkAPI */
     
-    NetworkAPI::NetworkAPI(size_t pId, const std::string& pName, const std::string& pURL) : mId(pId), mName(pName), mURL(pURL)
+    NetworkAPI::NetworkAPI(size_t pId, std::string pName, std::string pUrl) :  mId(pId), mName(std::move(pName)), mUrl(std::move(pUrl))
     {
-        mCallback = decltype(mCallback)(new std::vector<std::tuple<std::function<bool(const NetworkResponse&)>, std::function<void(const NetworkRequestParam&, const NetworkResponse&)>, std::string>>());
+        mCallbackContinious = decltype(mCallbackContinious)(new std::vector<std::pair<std::function<void(const NetworkResponse&)>, std::string>>());
     }
     
     NetworkAPI::~NetworkAPI()
@@ -391,26 +340,17 @@ namespace hms
     std::shared_ptr<NetworkRequestHandle> NetworkAPI::request(NetworkRequestParam pParam)
     {
         std::shared_ptr<NetworkRequestHandle> requestHandle = std::make_shared<NetworkRequestHandle>();
-        auto postRequestCallback = mCallback;
+        auto callbackContinious = mCallbackContinious;
     
-        auto callback = [pParam, postRequestCallback](NetworkResponse lpResponse) -> void
+        pParam.mCallback = [responseCallback = pParam.mCallback, callbackContinious](NetworkResponse lpResponse) -> void
         {
-            for (auto& v : *postRequestCallback)
+            for (const auto& v : *callbackContinious)
             {
-                auto& preCallback = std::get<0>(v);
-                
-                if (preCallback == nullptr || preCallback(lpResponse))
-                {
-                    auto& postCallback = std::get<1>(v);
-                    
-                    if (postCallback != nullptr)
-                    {
-                        postCallback(pParam, lpResponse);
-                    }
-                }
+                if (v.first != nullptr)
+                    v.first(lpResponse);
             }
             
-            if (pParam.mCallback != nullptr)
+            if (responseCallback != nullptr)
             {
                 NetworkResponse response;
                 response.mCode = lpResponse.mCode;
@@ -419,49 +359,39 @@ namespace hms
                 response.mMessage = std::move(lpResponse.mMessage);
                 response.mRawData = std::move(lpResponse.mRawData);
                 
-                pParam.mCallback(std::move(response));
+                responseCallback(std::move(response));
             }
         };
-        
+
+        std::string url = mUrl + pParam.mMethod;
         auto recovery = mRecovery.lock();
-        
-        if (recovery != nullptr && !recovery->isInitialized())
-            recovery = nullptr;
-        
-        size_t identifier = mId;
-        std::string url = mURL + pParam.mMethod;
 
         if (pParam.mAllowRecovery && recovery != nullptr)
         {
-            auto callbackForRecovery = [recovery, identifier, url, pParam, callback, requestHandle](NetworkResponse lpResponse) -> void
+            size_t copyId = mId;
+            pParam.mCallback = [recovery, copyId, url, pParam, requestHandle](NetworkResponse lpResponse) -> void
             {
                 std::string requestBody = "";
                 std::vector<std::pair<std::string, std::string>> parameter;
                 std::vector<std::pair<std::string, std::string>> header;
                 
-                if (recovery->isLocked() || recovery->checkCondition(lpResponse, requestBody, parameter, header))
+                if (recovery->isActive() || recovery->checkCondition(lpResponse, requestBody, parameter, header))
                 {
-                    recovery->pushReceiver(std::make_tuple(identifier, pParam, requestHandle));
+                    recovery->pushReceiver(std::make_tuple(copyId, std::move(pParam), requestHandle));
 
-                    if (recovery->lock())
+                    if (recovery->activate())
                         recovery->runRequest(std::move(requestBody), std::move(parameter), std::move(header));
 
                     Hermes::getInstance()->getLogger()->print(ELogLevel::Info, "Queued method for recovery: %.", url);
                 }
                 else
                 {
-                    callback(std::move(lpResponse));
+                    pParam.mCallback(std::move(lpResponse));
                 }
             };
-            
-            pParam.mCallback = callbackForRecovery;
-        }
-        else
-        {
-            pParam.mCallback = callback;
         }
 
-        if (recovery != nullptr && recovery->isLocked())
+        if (recovery != nullptr && recovery->isActive())
         {
             recovery->pushReceiver(std::make_tuple(mId, pParam, requestHandle));
 
@@ -472,7 +402,7 @@ namespace hms
             pParam.mMethod = std::move(url);
             pParam.mHeader.insert(pParam.mHeader.end(), mDefaultHeader.begin(), mDefaultHeader.end());
         
-            Hermes::getInstance()->getNetworkManager()->request(pParam, requestHandle);
+            Hermes::getInstance()->getNetworkManager()->request(std::move(pParam), requestHandle);
         }
         
         return requestHandle;
@@ -488,40 +418,28 @@ namespace hms
         mDefaultHeader = std::move(pDefaultHeader);
     }
     
-    const std::string& NetworkAPI::getURL() const
+    bool NetworkAPI::registerCallback(std::function<void(const NetworkResponse&)> pCallback, std::string pName, bool pOverwrite)
     {
-        return mURL;
-    }
-    
-    bool NetworkAPI::registerCallback(std::function<void(const NetworkRequestParam& pRequest, const NetworkResponse& pResponse)> pCallback, std::string pName, bool pOverwrite)
-    {
-        return registerAdvancedCallback(nullptr, pCallback, pName, pOverwrite);
-    }
-    
-    bool NetworkAPI::registerAdvancedCallback(std::function<bool(const NetworkResponse& pResponse)> pCondition,
-        std::function<void(const NetworkRequestParam& pRequest, const NetworkResponse& pResponse)> pCallback, std::string pName, bool pOverwrite)
-    {
-        auto checkItem = [pName](const std::tuple<std::function<bool(const NetworkResponse& pResponse)>, std::function<void(const NetworkRequestParam& pRequest, const NetworkResponse& pResponse)>,
-                std::string>& pItem) -> bool
+        auto checkItem = [pName](const std::pair<std::function<void(const NetworkResponse&)>, std::string>& lpElement) -> bool
         {
-            if (std::get<2>(pItem) == pName)
+            if (lpElement.second == pName)
                 return true;
             
             return false;
         };
         
-        auto it = std::find_if(mCallback->begin(), mCallback->end(), checkItem);
+        auto it = std::find_if(mCallbackContinious->begin(), mCallbackContinious->end(), checkItem);
         
         bool status = false;
     
-        if (it == mCallback->end())
+        if (it == mCallbackContinious->end())
         {
-            mCallback->push_back(std::make_tuple(pCondition, pCallback, pName));
+            mCallbackContinious->push_back(std::make_pair(std::move(pCallback), std::move(pName)));
             status = true;
         }
         else if (pOverwrite)
         {
-            *it = std::make_tuple(pCondition, pCallback, pName);
+            *it = std::make_pair(std::move(pCallback), std::move(pName));
             status = true;
         }
         
@@ -532,19 +450,18 @@ namespace hms
     {
         bool status = false;
         
-        auto checkItem = [pName, &status](const std::tuple<std::function<bool(const NetworkResponse& pResponse)>, std::function<void(const NetworkRequestParam& pRequest, const NetworkResponse& pResponse)>,
-                std::string>& pItem) -> bool
+        auto checkItem = [&status, pName](const std::pair<std::function<void(const NetworkResponse&)>, std::string>& lpElement) -> bool
         {
-            if (std::get<2>(pItem) == pName)
+            if (lpElement.second == pName)
             {
                 status = true;
-                return true;
+                return status;
             }
             
             return false;
         };
         
-        mCallback->erase(remove_if(mCallback->begin(), mCallback->end(), checkItem), mCallback->end());
+        mCallbackContinious->erase(remove_if(mCallbackContinious->begin(), mCallbackContinious->end(), checkItem), mCallbackContinious->end());
         
         return status;
     }
@@ -567,6 +484,11 @@ namespace hms
     const std::string& NetworkAPI::getName() const
     {
         return mName;
+    }
+
+    const std::string& NetworkAPI::getUrl() const
+    {
+        return mUrl;
     }
     
     /* NetworkManager */
@@ -700,24 +622,22 @@ namespace hms
         return terminated == 2;
     }
         
-    std::shared_ptr<NetworkAPI> NetworkManager::add(const std::string& pName, const std::string& pURL, size_t pUniqueID)
+    std::shared_ptr<NetworkAPI> NetworkManager::add(size_t pId, std::string pName, std::string pUrl)
     {
         std::shared_ptr<NetworkAPI> result = nullptr;
         mActivityCount++;    
         if (mInitialized.load() == 2)
         {
-            result = std::shared_ptr<NetworkAPI>(new NetworkAPI(pUniqueID, pName, pURL), std::bind(&NetworkManager::deleterNetworkAPI, this, std::placeholders::_1));
+            result = std::shared_ptr<NetworkAPI>(new NetworkAPI(pId, std::move(pName), std::move(pUrl)), std::bind(&NetworkManager::deleterNetworkAPI, this, std::placeholders::_1));
         
             std::lock_guard<std::mutex> lock(mApiMutex);
-            
-            // resize array if required
-            if (pUniqueID >= mApi.size())
-                mApi.resize(pUniqueID + 1);
-            
-            // check if ID is in use
-            assert(mApi[pUniqueID] == nullptr);
 
-            mApi[pUniqueID] = result;
+            if (pId >= mApi.size())
+                mApi.resize(pId + 1);
+
+            assert(mApi[pId] == nullptr);
+
+            mApi[pId] = result;
         }        
         mActivityCount--;
         
@@ -730,38 +650,34 @@ namespace hms
         return mApi.size();
     }
     
-    std::shared_ptr<NetworkAPI> NetworkManager::get(size_t pID) const
+    std::shared_ptr<NetworkAPI> NetworkManager::get(size_t pId) const
     {
         std::lock_guard<std::mutex> lock(mApiMutex);
-    
-        // check if ID has a valid value
-        assert(pID < mApi.size());
+        assert(pId < mApi.size());
 
-        return mApi[pID];
+        return mApi[pId];
     }
     
-    std::shared_ptr<NetworkRecovery> NetworkManager::addRecovery(const std::string& pName, size_t pUniqueID)
+    std::shared_ptr<NetworkRecovery> NetworkManager::addRecovery(size_t pId, std::string pName, NetworkRecovery::Config pConfig)
     {
         std::shared_ptr<NetworkRecovery> result = nullptr;
         mActivityCount++;    
         if (mInitialized.load() == 2)
         {
-            result = std::shared_ptr<NetworkRecovery>(new NetworkRecovery(pUniqueID, pName), std::bind(&NetworkManager::deleterNetworkRecovery, this, std::placeholders::_1));
+            result = std::shared_ptr<NetworkRecovery>(new NetworkRecovery(pId, std::move(pName), std::move(pConfig)), std::bind(&NetworkManager::deleterNetworkRecovery, this, std::placeholders::_1));
         
             std::lock_guard<std::mutex> lock(mRecoveryMutex);
-        
-            // resize array if required
-            if (pUniqueID >= mRecovery.size())
-                mRecovery.resize(pUniqueID + 1);
-            
-            // check if ID is in use
-            assert(mRecovery[pUniqueID] == nullptr);
 
-            mRecovery[pUniqueID] = result;
+            if (pId >= mRecovery.size())
+                mRecovery.resize(pId + 1);
+
+            assert(mRecovery[pId] == nullptr);
+
+            mRecovery[pId] = result;
         }
         mActivityCount--;
         
-        return mRecovery[pUniqueID];
+        return mRecovery[pId];
     }
     
     size_t NetworkManager::countRecovery() const
@@ -770,14 +686,12 @@ namespace hms
         return mRecovery.size();
     }
     
-    std::shared_ptr<NetworkRecovery> NetworkManager::getRecovery(size_t pID) const
+    std::shared_ptr<NetworkRecovery> NetworkManager::getRecovery(size_t pId) const
     {
         std::lock_guard<std::mutex> lock(mRecoveryMutex);
-    
-        // check if ID has a valid value
-        assert(pID < mRecovery.size());
+        assert(pId < mRecovery.size());
 
-        return mRecovery[pID];
+        return mRecovery[pId];
     }
     
     void NetworkManager::request(NetworkRequestParam pParam, std::shared_ptr<NetworkRequestHandle> pRequestHandle)
@@ -929,7 +843,7 @@ namespace hms
                             response.mHeader = std::move(responseHeader);
                             response.mMessage = strlen(errorBuffer) == 0 ? std::move(responseMessage) : errorBuffer;
                             response.mRawData = std::move(responseRawData);
-                            
+
                             if (response.mCode == ENetworkCode::OK && lpParam.mAllowCache)
                                 strongThis->cacheResponse(response, requestUrl, lpParam.mCacheLifetime);
 

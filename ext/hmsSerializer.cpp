@@ -2,6 +2,7 @@
 
 #include "tools.hpp"
 
+#include <memory>
 #include <sstream>
 
 namespace hms

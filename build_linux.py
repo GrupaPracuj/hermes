@@ -6,6 +6,6 @@ exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, 
 settings = Settings()
 
 if configure('linux', settings):
-    buildMakeLinux('', ['hermes', 'hmsextmodule'], settings, '')
+    buildMakeLinux('', ['hermes', 'hmsextmodule', 'hmsextserializer'], settings, '')
     cleanup(settings)
     

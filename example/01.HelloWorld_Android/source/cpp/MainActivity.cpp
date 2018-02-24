@@ -1,13 +1,8 @@
 #include <jni.h>
 #include <string>
 #include "hermes.hpp"
-
-struct JNIHandler {
-    JNIEnv* mEnv = nullptr;
-    jobject mActivity;
-};
-
-JNIHandler gJNIHandler;
+#include "ext/hmsJNI.hpp"
+#include "ext/hmsSerializer.hpp"
 
 enum class EDataType : size_t
 {
@@ -49,19 +44,19 @@ public:
         bool status = false;
         Json::Value root;
 
-        if (hms::Hermes::getInstance()->getDataManager()->convertJSON(pData, root))
+        if (hms::ext::json::convert(pData, root))
         {
             status = true;
 
-            status &= safeAs<int>(root, mId, "id");
-            status &= safeAs<std::string>(root, mName, "name");
+            status &= hms::ext::json::safeAs<int>(root, mId, "id");
+            status &= hms::ext::json::safeAs<std::string>(root, mName, "name");
 
             const Json::Value& address = root["address"];
-            status &= safeAs<std::string>(address, mCity, "city");
+            status &= hms::ext::json::safeAs<std::string>(address, mCity, "city");
         }
 
         if (!status)
-            hms::Hermes::getInstance()->getLogger()->print(hms::ELogLevel::Error, "VersionData::unpack failed. Data:\n%", pData);
+            hms::Hermes::getInstance()->getLogger()->print(hms::ELogLevel::Error, "JphData::unpack failed. Data:\n%", pData);
 
         return status;
     }
@@ -74,7 +69,7 @@ public:
 class HelloWorld
 {
 public:
-    HelloWorld()
+    HelloWorld(std::string pCertificatePath)
     {
         auto logger = hms::Hermes::getInstance()->getLogger();
         logger->initialize(hms::ELogLevel::Info, nullptr);
@@ -93,8 +88,10 @@ public:
         const long timeout = 15;
         networkManager->initialize(timeout, threadInfo.first, {200, 299});
 
-        auto jphNetwork = networkManager->add("JsonPlaceholder", "https://jsonplaceholder.typicode.com/", static_cast<size_t>(ENetworkAPI::JPH));
+        auto jphNetwork = networkManager->add(static_cast<size_t>(ENetworkAPI::JPH), "JsonPlaceholder", "https://jsonplaceholder.typicode.com/");
         jphNetwork->setDefaultHeader({{"Content-Type", "application/json; charset=utf-8"}});
+
+        hms::Hermes::getInstance()->getNetworkManager()->setCACertificatePath(std::move(pCertificatePath));
     }
 
     ~HelloWorld()
@@ -105,14 +102,13 @@ public:
         hms::Hermes::getInstance()->getLogger()->terminate();
     }
 
-    void execute()
+    void execute(std::function<void(std::string)> pCallback)
     {
-        auto callback = [](hms::NetworkResponse lpResponse) -> void
+        auto responseCallback = [pCallback = std::move(pCallback)](hms::NetworkResponse lpResponse) -> void
         {
             if (lpResponse.mCode == hms::ENetworkCode::OK)
             {
                 auto jphData = hms::Hermes::getInstance()->getDataManager()->get<JphData>(static_cast<size_t>(EDataType::JPH));
-
                 if (jphData->unpack(lpResponse.mMessage, {}))
                 {
                     std::string outputText = "ID: ";
@@ -124,16 +120,11 @@ public:
 
                     hms::Hermes::getInstance()->getLogger()->print(hms::ELogLevel::Info, outputText);
 
-                    if (gJNIHandler.mEnv != NULL && gJNIHandler.mActivity != NULL)
-                    {
-                        jclass jClassMainActivity = gJNIHandler.mEnv->GetObjectClass(gJNIHandler.mActivity);
-                        jmethodID jMethodAddText = gJNIHandler.mEnv->GetMethodID(jClassMainActivity, "addText", "(Ljava/lang/String;)V");
-                        jstring jParamText = gJNIHandler.mEnv->NewStringUTF(outputText.c_str());
-                        gJNIHandler.mEnv->CallVoidMethod(gJNIHandler.mActivity, jMethodAddText, jParamText);
-                    }
+                    if (pCallback != nullptr)
+                        pCallback(std::move(outputText));
                 }
             }
-            else
+            else if (lpResponse.mCode != hms::ENetworkCode::Cancel)
             {
                 hms::Hermes::getInstance()->getLogger()->print(hms::ELogLevel::Info, "Connection problem: %", lpResponse.mMessage);
             }
@@ -142,59 +133,45 @@ public:
         hms::NetworkRequestParam requestParam;
         requestParam.mRequestType = hms::ENetworkRequestType::Get;
         requestParam.mMethod = "users/1";
-        requestParam.mCallback = callback;
+        requestParam.mCallback = std::move(responseCallback);
 
         hms::Hermes::getInstance()->getNetworkManager()->get(static_cast<size_t>(ENetworkAPI::JPH))->request(std::move(requestParam));
     }
-
-    void setCertificatePath(std::string pPath)
-    {
-        hms::Hermes::getInstance()->getNetworkManager()->setCACertificatePath(pPath);
-    }
 };
 
-HelloWorld* gHelloWorld = nullptr;
+typedef hms::ext::jni::ObjectHandle<std::shared_ptr<HelloWorld>> NativeHandle;
 
-jint JNI_OnLoad(JavaVM* pVM, void* pReserved)
+extern "C" JNIEXPORT jlong JNICALL Java_pl_grupapracuj_hermes_helloworld_MainActivity_createNative(JNIEnv* pEnvironment, jobject pObject, jstring pCertificatePath)
 {
-    if (pVM->GetEnv(reinterpret_cast<void**>(&gJNIHandler.mEnv), JNI_VERSION_1_6) != JNI_OK)
-    {
-        hms::Hermes::getInstance()->getLogger()->print(hms::ELogLevel::Error, "Failed to get JNI environment.");
-        return -1;
-    }
+    auto helloWorld = std::make_shared<HelloWorld>(hms::ext::jni::Utility::string(pCertificatePath, pEnvironment));
 
-    return JNI_VERSION_1_6;
+    return reinterpret_cast<jlong>(new NativeHandle(nullptr, nullptr, nullptr, helloWorld));
 }
 
-extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_helloworld_MainActivity_createHelloWorld(JNIEnv* pEnvironment, jobject pObject, jstring pCertificatePath)
+extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_helloworld_MainActivity_destroyNative(JNIEnv* pEnvironment, jobject pObject)
 {
-    std::string certificatePath;
+    delete NativeHandle::get(pEnvironment, pObject, "nativeHandle");
+}
 
-    if (gJNIHandler.mEnv != NULL)
+extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_helloworld_MainActivity_executeNative(JNIEnv* pEnvironment, jobject pObject)
+{
+    auto helloWorld = NativeHandle::get(pEnvironment, pObject, "nativeHandle")->get();
+
+    auto objectWeakRef = std::make_shared<hms::ext::jni::SmartWeakRef>(pObject, pEnvironment);
+    auto callback = [objectWeakRef](std::string lpOutputText) -> void
     {
-        const char *tmp = gJNIHandler.mEnv->GetStringUTFChars(pCertificatePath, NULL);
-
-        if (tmp)
+        JNIEnv* environment = objectWeakRef->getEnvironment();
+        jobject strongObject = environment->NewGlobalRef(objectWeakRef->getWeakObject());
+        if (strongObject != nullptr)
         {
-            const jsize length = gJNIHandler.mEnv->GetStringUTFLength(pCertificatePath);
-            certificatePath = std::string(tmp, length);
-            gJNIHandler.mEnv->ReleaseStringUTFChars(pCertificatePath, tmp);
+            jclass jClass = environment->GetObjectClass(strongObject);
+            jmethodID jMethod = environment->GetMethodID(jClass,"addText", "(Ljava/lang/String;)V");
+            jstring jOutputText = environment->NewStringUTF(lpOutputText.c_str());
+            environment->CallVoidMethod(strongObject, jMethod, jOutputText);
+            environment->DeleteLocalRef(jOutputText);
+            environment->DeleteGlobalRef(strongObject);
         }
-    }
+    };
 
-    gJNIHandler.mActivity = pEnvironment->NewGlobalRef(pObject);
-    gHelloWorld = new HelloWorld();
-    gHelloWorld->setCertificatePath(certificatePath);
-}
-
-extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_helloworld_MainActivity_destroyHelloWorld(JNIEnv* pEnvironment, jobject pObject)
-{
-    gJNIHandler.mEnv->DeleteGlobalRef(gJNIHandler.mActivity);
-    delete gHelloWorld;
-}
-
-extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_helloworld_MainActivity_executeHelloWorld(JNIEnv* pEnvironment, jobject pObject)
-{
-    if (gHelloWorld != nullptr)
-        gHelloWorld->execute();
+    helloWorld->execute(std::move(callback));
 }

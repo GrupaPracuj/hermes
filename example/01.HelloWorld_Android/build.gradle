@@ -4,7 +4,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.0'
+        classpath 'com.android.tools.build:gradle:3.0.1'
     }
 }
 
@@ -15,6 +15,63 @@ allprojects {
     }
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 27
+    buildToolsVersion "27.0.3"
+    defaultConfig {
+        applicationId "pl.grupapracuj.hermes.helloworld"
+        minSdkVersion 21
+        targetSdkVersion 27
+        versionCode 1
+        versionName "1.0"
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_STL=c++_static"
+                abiFilters.addAll(["armeabi-v7a", "arm64-v8a", "x86", "x86_64"])
+                cppFlags.addAll(["-std=c++14", "-frtti", "-fexceptions", "-I${System.env.HERMES_HOME}", "-I${System.env.HERMES_HOME}/include", "-I${System.env.HERMES_HOME}/depend/jsoncpp/include"])
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            externalNativeBuild {
+                cmake.cppFlags '-g -DDEBUG=1 -DDEBUG_API=1'
+            }
+        }
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            externalNativeBuild {
+                cmake.cppFlags '-g0 -O2 -DNDEBUG=1'
+            }
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+    sourceSets {
+        main {
+            manifest.srcFile 'resource/AndroidManifest.xml'
+            java.srcDirs = ['source/java']
+            jni.srcDirs = ['source/cpp']
+            resources.srcDirs = ['resource/res']
+            res.srcDirs = ['resource/res']
+            assets.srcDirs = ['resource/assets']
+        }
+    }
+}
+
+ext {
+    supportLibrary = '27.0.1'
+    constraintLibrary = '1.0.2'
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile "com.android.support:appcompat-v7:${supportLibrary}"
+    compile "com.android.support.constraint:constraint-layout:${constraintLibrary}"
 }

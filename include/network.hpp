@@ -25,7 +25,6 @@ struct curl_slist;
 
 namespace hms
 {
-    
     namespace tools
     {
         class URLTool;
@@ -86,7 +85,7 @@ namespace hms
         DisableSSLVerifyPeer,
         Count
     };
-    
+
     struct NetworkResponse
     {
         ENetworkCode mCode = ENetworkCode::Unknown;
@@ -104,8 +103,8 @@ namespace hms
         std::vector<std::pair<std::string, std::string>> mParameter = {};
         std::vector<std::pair<std::string, std::string>> mHeader = {};
         std::string mRequestBody;
-        std::function<void(NetworkResponse pResponse)> mCallback = nullptr;
-        std::function<void(const long long& pDN, const long long& pDT, const long long& pUN, const long long& pUT)> mProgress = nullptr;
+        std::function<void(NetworkResponse)> mCallback;
+        std::function<void(const long long&, const long long&, const long long&, const long long&)> mProgress;
         unsigned mRepeatCount = 0;
         bool mAllowRecovery = true;        
         bool mAllowCache = false;
@@ -143,51 +142,59 @@ namespace hms
     class NetworkRecovery
     {
     public:
-        bool init(std::function<bool(const NetworkResponse& lpResponse, std::string& lpRequestBody, std::vector<std::pair<std::string, std::string>>& lpParameter, std::vector<std::pair<std::string, std::string>>& lpHeader)> pPreCallback, std::function<void(NetworkResponse pResponse)> pPostCallback,
-            ENetworkRequestType pType, std::string pUrl, std::vector<std::pair<std::string, std::string>> pParameter, std::vector<std::pair<std::string, std::string>> pHeader,
-            unsigned pRepeatCount = 0);
-            
-        bool isInitialized() const;
+        struct Config
+        {
+            std::function<bool(const NetworkResponse& lpResponse, std::string&, std::vector<std::pair<std::string, std::string>>&, std::vector<std::pair<std::string, std::string>>&)> mCondition;
+            ENetworkRequestType mRequestType = ENetworkRequestType::Post;
+            std::string mUrl;
+            std::vector<std::pair<std::string, std::string>> mParameter;
+            std::vector<std::pair<std::string, std::string>> mHeader;
+            std::function<void(NetworkResponse)> mCallback;
+            uint32_t mRepeatCount = 0;
+        };
+
         bool isQueueEmpty() const;
             
         bool checkCondition(const NetworkResponse& pResponse, std::string& pRequestBody, std::vector<std::pair<std::string, std::string>>& pParameter, std::vector<std::pair<std::string, std::string>>& pHeader) const;
         void pushReceiver(std::tuple<size_t, NetworkRequestParam, std::shared_ptr<NetworkRequestHandle>> pReceiver);
         void runRequest(std::string pRequestBody, std::vector<std::pair<std::string, std::string>> pParameter, std::vector<std::pair<std::string, std::string>> pHeader);
         
-        bool isLocked() const;
-        bool lock();
-        bool unlock();
-        
-        size_t getId() const;
-        const std::string& getName() const;
-        
+        bool isActive() const;
+        bool activate();
+
         const std::vector<std::pair<std::string, std::string>>& getHeader() const;
         void setHeader(const std::vector<std::pair<std::string, std::string>>& pHeader);
         
         const std::vector<std::pair<std::string, std::string>>& getParameter() const;
         void setParameter(const std::vector<std::pair<std::string, std::string>>& pParameter);
+
+        size_t getId() const;
+        const std::string& getName() const;
         
     private:
         friend class NetworkManager;
         
-        NetworkRecovery(size_t pId, const std::string& pName);
+        class InternalData
+        {
+        public:
+            std::queue<std::tuple<size_t, NetworkRequestParam, std::shared_ptr<NetworkRequestHandle>>> mReceiver;
+            bool mActive = false;
+        };
+        
+        NetworkRecovery(size_t pId, std::string pName, Config pConfig);
         NetworkRecovery(const NetworkRecovery& pOther) = delete;
         NetworkRecovery(NetworkRecovery&& pOther) = delete;
         ~NetworkRecovery();
         
         NetworkRecovery& operator=(const NetworkRecovery& pOther) = delete;
         NetworkRecovery& operator=(NetworkRecovery&& pOther) = delete;
-        
-        std::function<bool(const NetworkResponse& lpResponse, std::string& lpRequestBody, std::vector<std::pair<std::string, std::string>>& lpParameter, std::vector<std::pair<std::string, std::string>>& lpHeader)> mPreCallback = nullptr;
-        NetworkRequestParam mRequestParam;
-        std::queue<std::tuple<size_t, NetworkRequestParam, std::shared_ptr<NetworkRequestHandle>>> mReceiver;
-            
-        bool mUnsafeLock = false;
-        
+
         size_t mId = 0;
         std::string mName;
-        
-        std::atomic<uint32_t> mInitialized {0};
+
+        NetworkRequestParam mRequestParam;
+        std::function<bool(const NetworkResponse& lpResponse, std::string&, std::vector<std::pair<std::string, std::string>>&, std::vector<std::pair<std::string, std::string>>&)> mCondition;
+        std::shared_ptr<InternalData> mInternalData;
     };
         
     //! Network API.
@@ -203,9 +210,12 @@ namespace hms
         /** This is an alternative method for a HTTP request.
          \param pRequestType Type of the request.
          \param pMethod Endpoint of the request.
-         \param pRequestBody The request body.
+         \param pRequestBody The request body.    const std::string& NetworkAPI::getURL() const
+    {
+        return mURL;
+    }
          \param pCallback Callback with a response from the server. */
-        std::shared_ptr<NetworkRequestHandle> request(ENetworkRequestType pRequestType, std::string pMethod, std::string pRequestBody, std::function<void(NetworkResponse pResponse)> pCallback)
+        std::shared_ptr<NetworkRequestHandle> request(ENetworkRequestType pRequestType, std::string pMethod, std::string pRequestBody, std::function<void(NetworkResponse)> pCallback)
         {
             NetworkRequestParam param;
             
@@ -227,28 +237,13 @@ namespace hms
          \param pDefaultHeader List of headers, simple element may look like this: "{"Content-Type", "application/json; charset=UTF-8"}". */
         void setDefaultHeader(std::vector<std::pair<std::string, std::string>> pDefaultHeader);
         
-        //! Get a global URL of this API.
-        /** This method returns URL provided for this API at initialization process.
-         \return The URL. */
-        const std::string& getURL() const;
-        
         //! Register a post request callback.
         /** This feature is useful when you want to do some cyclic operation after a request call.
          \param pCallback Method which will be executed after a request.
          \param pName Identificator of this callback.
          \param pOverwrite If set to True and a callback with requested identificator already existing an old callback will be overwritten.
          \return True if callback with requested identificator was registered properly otherwise False. */
-        bool registerCallback(std::function<void(const NetworkRequestParam& pRequest, const NetworkResponse& pResponse)> pCallback, std::string pName, bool pOverwrite);
-        
-        //! Register a post request advanced callback.
-        /** This feature is useful when you want to do some cyclic operation after a request call.
-         \param pCondition condition which must pass to execute a callback.
-         \param pCallback Method which will be executed after a request.
-         \param pName Identificator of this callback.
-         \param pOverwrite If set to True and a callback with requested identificator already existing an old callback will be overwritten.
-         \return True if callback with requested identificator was registered properly otherwise False. */
-        bool registerAdvancedCallback(std::function<bool(const NetworkResponse& pResponse)> pCondition,
-            std::function<void(const NetworkRequestParam& pRequest, const NetworkResponse& pResponse)> pCallback, std::string pName, bool pOverwrite);
+        bool registerCallback(std::function<void(const NetworkResponse&)> pCallback, std::string pName, bool pOverwrite);
         
         //! Unregister a post request callback.
         /** Use this method if you want to unregister previously registered callback.
@@ -263,19 +258,24 @@ namespace hms
         //! Set the recovery for the Network API.
         /** \param pRecovery The pointer to a NetworkRecovery object. */
         void setRecovery(std::weak_ptr<NetworkRecovery> pRecovery);
-        
+
         //! Get the Id of the Network API.
         /** \return The Id. */
         size_t getId() const;
-        
+
         //! Get the Name of the Network API.
         /** \return The Name. */
         const std::string& getName() const;
+
+        //! Get a global URL of this API.
+        /** This method returns URL provided for this API at initialization process.
+         \return The URL. */
+        const std::string& getUrl() const;
         
     private:
         friend class NetworkManager;
 
-        NetworkAPI(size_t pId, const std::string& pName, const std::string& pURL);
+        NetworkAPI(size_t pId, std::string pName, std::string pUrl);
         NetworkAPI(const NetworkAPI& pOther) = delete;
         NetworkAPI(NetworkAPI&& pOther) = delete;
         ~NetworkAPI();
@@ -285,10 +285,10 @@ namespace hms
         
         size_t mId = 0;
         std::string mName;
-        std::string mURL;
-        
+        std::string mUrl;
+
         std::vector<std::pair<std::string, std::string>> mDefaultHeader;
-        std::shared_ptr<std::vector<std::tuple<std::function<bool(const NetworkResponse&)>, std::function<void(const NetworkRequestParam&, const NetworkResponse&)>, std::string>>> mCallback;
+        std::shared_ptr<std::vector<std::pair<std::function<void(const NetworkResponse&)>, std::string>>> mCallbackContinious;
 
         std::weak_ptr<NetworkRecovery> mRecovery;
     };
@@ -306,13 +306,13 @@ namespace hms
         bool initialize(long pTimeout, int pThreadPoolID, std::pair<int, int> pHttpCodeSuccess = {200, 299});
         bool terminate();
         
-        std::shared_ptr<NetworkAPI> add(const std::string& pName, const std::string& pURL, size_t pUniqueID);
+        std::shared_ptr<NetworkAPI> add(size_t pId, std::string pName, std::string pUrl);
         size_t count() const;
-        std::shared_ptr<NetworkAPI> get(size_t pID) const;
+        std::shared_ptr<NetworkAPI> get(size_t pId) const;
         
-        std::shared_ptr<NetworkRecovery> addRecovery(const std::string& pName, size_t pUniqueID);
+        std::shared_ptr<NetworkRecovery> addRecovery(size_t pId, std::string pName, NetworkRecovery::Config pConfig);
         size_t countRecovery() const;
-        std::shared_ptr<NetworkRecovery> getRecovery(size_t pID) const;
+        std::shared_ptr<NetworkRecovery> getRecovery(size_t pId) const;
 
         void request(NetworkRequestParam pParam, std::shared_ptr<NetworkRequestHandle> pRequestHandle = nullptr);
         void request(std::vector<NetworkRequestParam> pParam, std::vector<std::shared_ptr<NetworkRequestHandle>> pRequestHandle = {});
@@ -455,7 +455,6 @@ namespace hms
         RequestSettings mRequestSettings;
         mutable std::mutex mRequestSettingsMutex;
     };
-
 }
 
 #endif

@@ -18,17 +18,21 @@ import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
     static {
-        System.loadLibrary("main");
+        System.loadLibrary("mainactivity");
     }
 
     Button mButtonExecuteJNI = null;
     Button mButtonClear = null;
     TextView mTextOutput = null;
     String mCertificateFilename = "certificate.pem";
+    public long nativeHandle = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        String certificatePath = copyData(mCertificateFilename);
+        nativeHandle = createNative(certificatePath);
 
         setContentView(R.layout.activity_main);
 
@@ -47,19 +51,15 @@ public class MainActivity extends AppCompatActivity {
         mButtonExecuteJNI.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                executeHelloWorld();
+                executeNative();
             }
         });
-
         mTextOutput.setMovementMethod(new ScrollingMovementMethod());
-
-        String certificatePath = copyData(mCertificateFilename);
-        createHelloWorld(certificatePath);
     }
 
     @Override
     protected void onDestroy() {
-        destroyHelloWorld();
+        destroyNative();
         super.onDestroy();
     }
 
@@ -77,10 +77,6 @@ public class MainActivity extends AppCompatActivity {
 
         mTextOutput.setText(sb.toString());
     }
-
-    public native void createHelloWorld(String pCertificatePath);
-    public native void destroyHelloWorld();
-    public native void executeHelloWorld();
 
     private String copyData(String pFilename)
     {
@@ -144,4 +140,8 @@ public class MainActivity extends AppCompatActivity {
 
         return result;
     }
+
+    private native long createNative(String pCertificatePath);
+    private native void destroyNative();
+    private native void executeNative();
 }
