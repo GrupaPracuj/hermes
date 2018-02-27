@@ -1,7 +1,5 @@
 #include "hmsSerializer.hpp"
 
-#include "tools.hpp"
-
 #include <memory>
 #include <sstream>
 

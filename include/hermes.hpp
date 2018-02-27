@@ -5,11 +5,11 @@
 #ifndef _HERMES_HPP_
 #define _HERMES_HPP_
 
-#include "data.hpp"
-#include "network.hpp"
-#include "task.hpp"
-#include "logger.hpp"
-#include "tools.hpp"
+#include "hmsData.hpp"
+#include "hmsNetwork.hpp"
+#include "hmsTask.hpp"
+#include "hmsLogger.hpp"
+#include "hmsTools.hpp"
 
 #include <array>
 #include <memory>

@@ -1,7 +1,7 @@
 #ifndef _HMS_AASSET_READER_HPP_
 #define _HMS_AASSET_READER_HPP_
 
-#include "data.hpp"
+#include "hmsData.hpp"
 #include <android/asset_manager_jni.h>
 
 namespace hms

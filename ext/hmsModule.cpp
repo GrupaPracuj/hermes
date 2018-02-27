@@ -78,8 +78,8 @@ namespace ext
         pModule->mIndex = {pPrimaryIndex, static_cast<int32_t>(mModule[static_cast<size_t>(pPrimaryIndex)].size()) - 1};
         pModule->attach(pModule);
         
-        if (mOnActiveCallback != nullptr)
-            mOnActiveCallback(pModule);
+        if (mOnActive != nullptr)
+            mOnActive(pModule);
     }
     
     void ModuleHandler::pop(int32_t pPrimaryIndex, size_t pCount)
@@ -132,8 +132,8 @@ namespace ext
         
         if (eraseEnd > eraseBegin)
         {
-            if (mOnActiveCallback != nullptr)
-                mOnActiveCallback(activeModule);
+            if (mOnActive != nullptr)
+                mOnActive(activeModule);
         }
     }
     
@@ -141,13 +141,13 @@ namespace ext
     {
         mModule.clear();
         
-        if (mOnActiveCallback != nullptr)
-            mOnActiveCallback(mMainModule);
+        if (mOnActive != nullptr)
+            mOnActive(mMainModule);
     }
     
     void ModuleHandler::setOnActiveCallback(std::function<void(std::shared_ptr<ModuleShared>)> pCallback)
     {
-        mOnActiveCallback = std::move(pCallback);
+        mOnActive = std::move(pCallback);
     }
     
     ModuleHandler* ModuleHandler::getInstance()

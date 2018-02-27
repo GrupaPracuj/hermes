@@ -5,7 +5,7 @@
 #ifndef _NETWORK_HPP_
 #define _NETWORK_HPP_
 
-#include "data.hpp"
+#include "hmsData.hpp"
 
 #include <array>
 #include <atomic>

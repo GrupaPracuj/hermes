@@ -106,7 +106,7 @@ namespace ext
         std::shared_ptr<ModuleShared> mMainModule;
         std::vector<std::vector<std::shared_ptr<ModuleShared>>> mModule;
         
-        std::function<void(std::shared_ptr<ModuleShared>)> mOnActiveCallback;
+        std::function<void(std::shared_ptr<ModuleShared>)> mOnActive;
     };
     
 }

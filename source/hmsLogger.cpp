@@ -2,7 +2,7 @@
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
-#include "logger.hpp"
+#include "hmsLogger.hpp"
 
 #include <iostream>
 #if defined(ANDROID) || defined(__ANDROID__)

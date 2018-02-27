@@ -2,7 +2,7 @@
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
-#include "task.hpp"
+#include "hmsTask.hpp"
 
 #if defined(__APPLE__)
 #import <Foundation/Foundation.h>

@@ -2,10 +2,9 @@
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
-#include "network.hpp"
+#include "hmsNetwork.hpp"
 
 #include "hermes.hpp"
-#include "tools.hpp"
 #include "curl/curl.h"
 
 #include <cassert>

@@ -7,20 +7,20 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		38EC90F71C3AC9A6008AE1A3 /* data.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F31C3AC9A6008AE1A3 /* data.cpp */; };
-		38EC90F81C3AC9A6008AE1A3 /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F41C3AC9A6008AE1A3 /* logger.cpp */; };
-		38EC90F91C3AC9A6008AE1A3 /* network.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F51C3AC9A6008AE1A3 /* network.cpp */; };
-		38EC90FA1C3AC9A6008AE1A3 /* task.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F61C3AC9A6008AE1A3 /* task.cpp */; };
+		38EC90F71C3AC9A6008AE1A3 /* hmsData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F31C3AC9A6008AE1A3 /* hmsData.cpp */; };
+		38EC90F81C3AC9A6008AE1A3 /* hmsLogger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F41C3AC9A6008AE1A3 /* hmsLogger.cpp */; };
+		38EC90F91C3AC9A6008AE1A3 /* hmsNetwork.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F51C3AC9A6008AE1A3 /* hmsNetwork.cpp */; };
+		38EC90FA1C3AC9A6008AE1A3 /* hmsTask.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F61C3AC9A6008AE1A3 /* hmsTask.cpp */; };
 		55465B662028CCA300060DED /* hmsModule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55465B632028CC8200060DED /* hmsModule.cpp */; };
 		55465B672028CCA400060DED /* hmsModule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55465B632028CC8200060DED /* hmsModule.cpp */; };
 		55A5745F1EA780F3003ECB8C /* hermes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55A5745E1EA780F3003ECB8C /* hermes.cpp */; };
-		55DD5FFC1F38980400BFA8E5 /* data.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F31C3AC9A6008AE1A3 /* data.cpp */; };
-		55DD5FFD1F38980400BFA8E5 /* logger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F41C3AC9A6008AE1A3 /* logger.cpp */; };
-		55DD5FFE1F38980400BFA8E5 /* network.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F51C3AC9A6008AE1A3 /* network.cpp */; };
-		55DD5FFF1F38980400BFA8E5 /* task.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F61C3AC9A6008AE1A3 /* task.cpp */; };
+		55DD5FFC1F38980400BFA8E5 /* hmsData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F31C3AC9A6008AE1A3 /* hmsData.cpp */; };
+		55DD5FFD1F38980400BFA8E5 /* hmsLogger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F41C3AC9A6008AE1A3 /* hmsLogger.cpp */; };
+		55DD5FFE1F38980400BFA8E5 /* hmsNetwork.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F51C3AC9A6008AE1A3 /* hmsNetwork.cpp */; };
+		55DD5FFF1F38980400BFA8E5 /* hmsTask.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 38EC90F61C3AC9A6008AE1A3 /* hmsTask.cpp */; };
 		55DD60001F38980400BFA8E5 /* hermes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55A5745E1EA780F3003ECB8C /* hermes.cpp */; };
-		9E1950702007AED500CE339D /* tools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E19506E2007AED500CE339D /* tools.cpp */; };
-		9E1950732007AF2500CE339D /* tools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E19506E2007AED500CE339D /* tools.cpp */; };
+		9E1950702007AED500CE339D /* hmsTools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E19506E2007AED500CE339D /* hmsTools.cpp */; };
+		9E1950732007AF2500CE339D /* hmsTools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E19506E2007AED500CE339D /* hmsTools.cpp */; };
 		9E5C7BAB203C45CF00CCBB8B /* hmsSerializer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E5C7BA9203C45CF00CCBB8B /* hmsSerializer.cpp */; };
 		9E5C7BAC203C45CF00CCBB8B /* hmsSerializer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E5C7BA9203C45CF00CCBB8B /* hmsSerializer.cpp */; };
 /* End PBXBuildFile section */
@@ -56,20 +56,20 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		38EC90EF1C3AC999008AE1A3 /* data.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = data.hpp; path = include/data.hpp; sourceTree = "<group>"; };
-		38EC90F01C3AC999008AE1A3 /* logger.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = logger.hpp; path = include/logger.hpp; sourceTree = "<group>"; };
-		38EC90F11C3AC999008AE1A3 /* network.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = network.hpp; path = include/network.hpp; sourceTree = "<group>"; };
-		38EC90F21C3AC999008AE1A3 /* task.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = task.hpp; path = include/task.hpp; sourceTree = "<group>"; };
-		38EC90F31C3AC9A6008AE1A3 /* data.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = data.cpp; path = source/data.cpp; sourceTree = "<group>"; };
-		38EC90F41C3AC9A6008AE1A3 /* logger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = logger.cpp; path = source/logger.cpp; sourceTree = "<group>"; };
-		38EC90F51C3AC9A6008AE1A3 /* network.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = network.cpp; path = source/network.cpp; sourceTree = "<group>"; };
-		38EC90F61C3AC9A6008AE1A3 /* task.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = task.cpp; path = source/task.cpp; sourceTree = "<group>"; };
+		38EC90EF1C3AC999008AE1A3 /* hmsData.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hmsData.hpp; path = include/hmsData.hpp; sourceTree = "<group>"; };
+		38EC90F01C3AC999008AE1A3 /* hmsLogger.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hmsLogger.hpp; path = include/hmsLogger.hpp; sourceTree = "<group>"; };
+		38EC90F11C3AC999008AE1A3 /* hmsNetwork.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hmsNetwork.hpp; path = include/hmsNetwork.hpp; sourceTree = "<group>"; };
+		38EC90F21C3AC999008AE1A3 /* hmsTask.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hmsTask.hpp; path = include/hmsTask.hpp; sourceTree = "<group>"; };
+		38EC90F31C3AC9A6008AE1A3 /* hmsData.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hmsData.cpp; path = source/hmsData.cpp; sourceTree = "<group>"; };
+		38EC90F41C3AC9A6008AE1A3 /* hmsLogger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hmsLogger.cpp; path = source/hmsLogger.cpp; sourceTree = "<group>"; };
+		38EC90F51C3AC9A6008AE1A3 /* hmsNetwork.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hmsNetwork.cpp; path = source/hmsNetwork.cpp; sourceTree = "<group>"; };
+		38EC90F61C3AC9A6008AE1A3 /* hmsTask.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = hmsTask.cpp; path = source/hmsTask.cpp; sourceTree = "<group>"; };
 		55465B632028CC8200060DED /* hmsModule.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hmsModule.cpp; path = ext/hmsModule.cpp; sourceTree = "<group>"; };
 		55465B642028CC8200060DED /* hmsModule.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hmsModule.hpp; path = ext/hmsModule.hpp; sourceTree = "<group>"; };
 		55A5745E1EA780F3003ECB8C /* hermes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hermes.cpp; path = source/hermes.cpp; sourceTree = "<group>"; };
 		55A574601EA78108003ECB8C /* hermes.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hermes.hpp; path = include/hermes.hpp; sourceTree = "<group>"; };
-		9E19506E2007AED500CE339D /* tools.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = tools.cpp; path = source/tools.cpp; sourceTree = "<group>"; };
-		9E1950712007AEF300CE339D /* tools.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = tools.hpp; path = include/tools.hpp; sourceTree = "<group>"; };
+		9E19506E2007AED500CE339D /* hmsTools.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = hmsTools.cpp; path = source/hmsTools.cpp; sourceTree = "<group>"; };
+		9E1950712007AEF300CE339D /* hmsTools.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hmsTools.hpp; path = include/hmsTools.hpp; sourceTree = "<group>"; };
 		9E5C7BA9203C45CF00CCBB8B /* hmsSerializer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hmsSerializer.cpp; path = ext/hmsSerializer.cpp; sourceTree = "<group>"; };
 		9E5C7BAA203C45CF00CCBB8B /* hmsSerializer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hmsSerializer.hpp; path = ext/hmsSerializer.hpp; sourceTree = "<group>"; };
 		9E6E7CA3203B01AC004F306B /* libhmsextserializer.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhmsextserializer.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -144,11 +144,11 @@
 		38EC90ED1C3AC92E008AE1A3 /* Include */ = {
 			isa = PBXGroup;
 			children = (
-				38EC90EF1C3AC999008AE1A3 /* data.hpp */,
-				38EC90F01C3AC999008AE1A3 /* logger.hpp */,
-				38EC90F11C3AC999008AE1A3 /* network.hpp */,
-				38EC90F21C3AC999008AE1A3 /* task.hpp */,
-				9E1950712007AEF300CE339D /* tools.hpp */,
+				38EC90EF1C3AC999008AE1A3 /* hmsData.hpp */,
+				38EC90F01C3AC999008AE1A3 /* hmsLogger.hpp */,
+				38EC90F11C3AC999008AE1A3 /* hmsNetwork.hpp */,
+				38EC90F21C3AC999008AE1A3 /* hmsTask.hpp */,
+				9E1950712007AEF300CE339D /* hmsTools.hpp */,
 				55A574601EA78108003ECB8C /* hermes.hpp */,
 			);
 			name = Include;
@@ -157,11 +157,11 @@
 		38EC90EE1C3AC974008AE1A3 /* Source */ = {
 			isa = PBXGroup;
 			children = (
-				38EC90F31C3AC9A6008AE1A3 /* data.cpp */,
-				38EC90F41C3AC9A6008AE1A3 /* logger.cpp */,
-				38EC90F51C3AC9A6008AE1A3 /* network.cpp */,
-				38EC90F61C3AC9A6008AE1A3 /* task.cpp */,
-				9E19506E2007AED500CE339D /* tools.cpp */,
+				38EC90F31C3AC9A6008AE1A3 /* hmsData.cpp */,
+				38EC90F41C3AC9A6008AE1A3 /* hmsLogger.cpp */,
+				38EC90F51C3AC9A6008AE1A3 /* hmsNetwork.cpp */,
+				38EC90F61C3AC9A6008AE1A3 /* hmsTask.cpp */,
+				9E19506E2007AED500CE339D /* hmsTools.cpp */,
 				55A5745E1EA780F3003ECB8C /* hermes.cpp */,
 			);
 			name = Source;
@@ -351,12 +351,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				38EC90FA1C3AC9A6008AE1A3 /* task.cpp in Sources */,
+				38EC90FA1C3AC9A6008AE1A3 /* hmsTask.cpp in Sources */,
 				55A5745F1EA780F3003ECB8C /* hermes.cpp in Sources */,
-				38EC90F71C3AC9A6008AE1A3 /* data.cpp in Sources */,
-				38EC90F91C3AC9A6008AE1A3 /* network.cpp in Sources */,
-				38EC90F81C3AC9A6008AE1A3 /* logger.cpp in Sources */,
-				9E1950702007AED500CE339D /* tools.cpp in Sources */,
+				38EC90F71C3AC9A6008AE1A3 /* hmsData.cpp in Sources */,
+				38EC90F91C3AC9A6008AE1A3 /* hmsNetwork.cpp in Sources */,
+				38EC90F81C3AC9A6008AE1A3 /* hmsLogger.cpp in Sources */,
+				9E1950702007AED500CE339D /* hmsTools.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -380,12 +380,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				55DD5FFC1F38980400BFA8E5 /* data.cpp in Sources */,
-				55DD5FFD1F38980400BFA8E5 /* logger.cpp in Sources */,
-				55DD5FFE1F38980400BFA8E5 /* network.cpp in Sources */,
-				55DD5FFF1F38980400BFA8E5 /* task.cpp in Sources */,
+				55DD5FFC1F38980400BFA8E5 /* hmsData.cpp in Sources */,
+				55DD5FFD1F38980400BFA8E5 /* hmsLogger.cpp in Sources */,
+				55DD5FFE1F38980400BFA8E5 /* hmsNetwork.cpp in Sources */,
+				55DD5FFF1F38980400BFA8E5 /* hmsTask.cpp in Sources */,
 				55DD60001F38980400BFA8E5 /* hermes.cpp in Sources */,
-				9E1950732007AF2500CE339D /* tools.cpp in Sources */,
+				9E1950732007AF2500CE339D /* hmsTools.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

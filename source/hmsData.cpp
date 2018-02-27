@@ -2,10 +2,9 @@
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
-#include "data.hpp"
+#include "hmsData.hpp"
 
 #include "hermes.hpp"
-#include "tools.hpp"
 
 #if defined(__APPLE__) || defined(__linux__)
 #include <dirent.h>
