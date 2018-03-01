@@ -16,7 +16,7 @@ namespace ext
     {
         Serialize = 1,
         Deserialize = 1 << 1,
-        Both = Serialize | Deserialize
+        All = Serialize | Deserialize
     };
     
     template <class T>
@@ -61,7 +61,7 @@ namespace ext
     public:
         using property_type = T;
         
-        Property(std::string pName, T C::* pPtr, ESerializerMode pMode = ESerializerMode::Both) : mName(std::move(pName)), mPtr(pPtr), mMode(pMode) {}
+        Property(std::string pName, T C::* pPtr, ESerializerMode pMode = ESerializerMode::All) : mName(std::move(pName)), mPtr(pPtr), mMode(pMode) {}
 
         T& get(C& pObj) const
         {
@@ -248,7 +248,7 @@ namespace ext
             Json::Value& dest = pName.length() != 0 || pDestination.type() == Json::arrayValue ? value : pDestination;
             executeOnAllProperties<C>([&dest, &pSource](auto& lpProperty) -> void
             {
-                if ((lpProperty.getMode() & ESerializerMode::Serialize) == ESerializerMode::Serialize)
+                if ((static_cast<uint32_t>(lpProperty.getMode()) & static_cast<uint32_t>(ESerializerMode::Serialize)) == static_cast<uint32_t>(ESerializerMode::Serialize))
                     serialize<typename std::decay_t<decltype(lpProperty)>::property_type>(dest, lpProperty.get(pSource), lpProperty.getName());
             });
             
@@ -284,7 +284,7 @@ namespace ext
                 size_t offset = pDestination.size();
                 pDestination.resize(offset + value.size(), typename C::value_type{});
                 
-                for (int i = 0; i < value.size(); i++)
+                for (int i = 0; static_cast<Json::ArrayIndex>(i) < value.size(); i++)
                     deserialize<typename C::value_type>(pDestination[offset + i], value[i]);
             }
         }
@@ -301,7 +301,7 @@ namespace ext
             const Json::Value& source = pName.length() == 0 ? pSource : pSource[pName];
             executeOnAllProperties<C>([&source, &pDestination](auto& lpProperty) -> void
             {
-                if ((lpProperty.getMode() & ESerializerMode::Deserialize) == ESerializerMode::Deserialize)
+                if ((static_cast<uint32_t>(lpProperty.getMode()) & static_cast<uint32_t>(ESerializerMode::Deserialize)) == static_cast<uint32_t>(ESerializerMode::Deserialize))
                     deserialize<typename std::decay_t<decltype(lpProperty)>::property_type>(lpProperty.get(pDestination), source, lpProperty.getName());
             });
         }
