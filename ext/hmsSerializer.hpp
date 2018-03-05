@@ -278,14 +278,17 @@ namespace ext
         template <typename C, typename, typename, typename, typename> // vector
         void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName)
         {
-            const Json::Value& value = pName.length() == 0 ? pSource : pSource[pName];
+            Json::Value empty;
+            const Json::Value& value = pName.length() == 0 ? pSource :
+                                       pSource.isObject() ? pSource[pName] :
+                                       empty;
             if (value.isArray())
             {
                 size_t offset = pDestination.size();
                 pDestination.resize(offset + value.size(), typename C::value_type{});
                 
                 for (int i = 0; static_cast<Json::ArrayIndex>(i) < value.size(); i++)
-                    deserialize<typename C::value_type>(pDestination[offset + i], value[i]);
+                    deserialize<typename C::value_type>(pDestination[offset + static_cast<size_t>(i)], value[i]);
             }
         }
         

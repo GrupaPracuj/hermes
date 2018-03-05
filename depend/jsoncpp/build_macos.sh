@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # User configuration
-LIBRARY_VERSION="1.8.3"
+LIBRARY_VERSION="1.8.4"
 
 # Check software and detect CPU cores
 CPU_CORE=1

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # User configuration
-LIBRARY_VERSION="1.8.3"
+LIBRARY_VERSION="1.8.4"
 IOS_DEPLOYMENT_TARGET="8.0"
 
 # Check settings
