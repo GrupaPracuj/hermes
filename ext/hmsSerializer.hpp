@@ -61,7 +61,7 @@ namespace ext
     public:
         using property_type = T;
         
-        Property(std::string pName, T C::* pPtr, ESerializerMode pMode = ESerializerMode::All) : mName(std::move(pName)), mPtr(pPtr), mMode(pMode) {}
+        Property(std::string pName, T C::* pPtr, ESerializerMode pMode = ESerializerMode::All, std::function<bool(const C&, const T&)> pSerializeCondition = nullptr) : mName(std::move(pName)), mPtr(pPtr), mMode(pMode), mSerializeCondition(std::move(pSerializeCondition)) {}
 
         T& get(C& pObj) const
         {
@@ -83,9 +83,15 @@ namespace ext
             return mMode;
         }
         
+        bool shouldSerialize(const C& pObj) const
+        {
+            return mSerializeCondition == nullptr ? true : mSerializeCondition(pObj, get(pObj));
+        }
+        
     private:
         ESerializerMode mMode;
         std::string mName;
+        std::function<bool(const C&, const T&)> mSerializeCondition;
         T C::* mPtr;
     };
     
@@ -248,7 +254,7 @@ namespace ext
             Json::Value& dest = pName.length() != 0 || pDestination.type() == Json::arrayValue ? value : pDestination;
             executeOnAllProperties<C>([&dest, &pSource](auto& lpProperty) -> void
             {
-                if ((static_cast<uint32_t>(lpProperty.getMode()) & static_cast<uint32_t>(ESerializerMode::Serialize)) == static_cast<uint32_t>(ESerializerMode::Serialize))
+                if ((static_cast<uint32_t>(lpProperty.getMode()) & static_cast<uint32_t>(ESerializerMode::Serialize)) == static_cast<uint32_t>(ESerializerMode::Serialize) && lpProperty.shouldSerialize(pSource))
                     serialize<typename std::decay_t<decltype(lpProperty)>::property_type>(dest, lpProperty.get(pSource), lpProperty.getName());
             });
             
@@ -267,7 +273,10 @@ namespace ext
         template <typename C, typename, typename, typename> // array
         void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName)
         {
-            const Json::Value& value = pName.length() == 0 ? pSource : pSource[pName];
+            Json::Value empty;
+            const Json::Value& value = pName.length() == 0 ? pSource :
+                                       pSource.isObject() ? pSource[pName] :
+                                       empty;
             if (value.isArray() && value.size() == pDestination.size())
             {
                 for (size_t i = 0; i < static_cast<size_t>(value.size()); i++)
