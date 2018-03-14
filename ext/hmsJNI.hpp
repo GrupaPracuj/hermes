@@ -2,8 +2,6 @@
 #define _HMS_JNI_HPP_
 
 #include <jni.h>
-#include <memory>
-#include <list>
 #include <string>
 
 namespace hms
@@ -60,6 +58,29 @@ namespace jni
     private:
         T mNativeObject;
     };
+
+    class SmartEnvironment
+    {
+        friend class SmartRef;
+        friend class SmartWeakRef;
+    public:
+        SmartEnvironment() = default;
+        SmartEnvironment(JavaVM* pJavaVM);
+        SmartEnvironment(SmartEnvironment&& pOther) = delete;
+        SmartEnvironment(const SmartEnvironment& pOther) = delete;
+        ~SmartEnvironment();
+
+        SmartEnvironment& operator=(const SmartEnvironment& pOther) = delete;
+
+        JNIEnv* getJNIEnv() const;
+
+    private:        
+        SmartEnvironment& operator=(SmartEnvironment&& pOther);
+
+        JavaVM* mJavaVM = nullptr;
+        JNIEnv* mEnvironment = nullptr;
+        bool mDetachCurrentThread = false;
+    };
     
     class SmartRef
     {
@@ -68,7 +89,7 @@ namespace jni
         ~SmartRef();
         
         jobject getObject() const;
-        JNIEnv* getEnvironment() const;
+        void getEnvironment(SmartEnvironment& pSmartEnvironment) const;
         
     private:
         jobject mObject = nullptr;
@@ -82,34 +103,11 @@ namespace jni
         ~SmartWeakRef();
         
         jobject getWeakObject() const;
-        JNIEnv* getEnvironment() const;
+        void getEnvironment(SmartEnvironment& pSmartEnvironment) const;
         
     private:
         jobject mObject = nullptr;
         JavaVM* mJavaVM = nullptr;
-    };
-    
-    class SmartRefHandler
-    {
-    public:
-        void flush();
-        
-        void push(std::shared_ptr<SmartRef> pSmartRef);
-        void push(std::shared_ptr<SmartWeakRef> pSmartWeakRef);
-        
-        static SmartRefHandler* getInstance();
-        
-    private:
-        SmartRefHandler() = default;
-        ~SmartRefHandler();
-        SmartRefHandler(const SmartRefHandler& pOther) = delete;
-        SmartRefHandler(SmartRefHandler&& pOther) = delete;
-        
-        SmartRefHandler& operator=(const SmartRefHandler& pOther) = delete;
-        SmartRefHandler& operator=(SmartRefHandler&& pOther) = delete;
-        
-        std::list<std::shared_ptr<SmartRef>> mSmartRef;
-        std::list<std::shared_ptr<SmartWeakRef>> mSmartWeakRef;
     };
     
     class Utility

@@ -160,7 +160,9 @@ extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_helloworld_MainActi
     auto objectWeakRef = std::make_shared<hms::ext::jni::SmartWeakRef>(pObject, pEnvironment);
     auto callback = [objectWeakRef](std::string lpOutputText) -> void
     {
-        JNIEnv* environment = objectWeakRef->getEnvironment();
+        hms::ext::jni::SmartEnvironment smartEnvironment;
+        objectWeakRef->getEnvironment(smartEnvironment);
+        JNIEnv* environment = smartEnvironment.getJNIEnv();
         jobject strongObject = environment->NewGlobalRef(objectWeakRef->getWeakObject());
         if (strongObject != nullptr)
         {

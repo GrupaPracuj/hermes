@@ -8,6 +8,44 @@ namespace ext
 {
 namespace jni
 {
+
+    /* SmartEnvironment */
+
+    SmartEnvironment::SmartEnvironment(JavaVM* pJavaVM) : mJavaVM(pJavaVM)
+    {
+        assert(mJavaVM != nullptr);
+
+        if (mJavaVM->GetEnv((void**)&mEnvironment, JNI_VERSION_1_6) == JNI_EDETACHED && mJavaVM->AttachCurrentThread(&mEnvironment, nullptr) == JNI_OK)
+            mDetachCurrentThread = true;
+    }
+
+    SmartEnvironment::~SmartEnvironment()
+    {
+        if (mDetachCurrentThread)
+            mJavaVM->DetachCurrentThread();
+
+    }
+
+    SmartEnvironment& SmartEnvironment::operator=(SmartEnvironment&& pOther)
+    {
+        if (&pOther == this)
+            return *this;
+
+        mJavaVM = pOther.mJavaVM;
+        mEnvironment = pOther.mEnvironment;
+        mDetachCurrentThread = pOther.mDetachCurrentThread;
+
+        pOther.mJavaVM = nullptr;
+        pOther.mEnvironment = nullptr;
+        pOther.mDetachCurrentThread = false;
+        
+        return *this;
+    }
+
+    JNIEnv* SmartEnvironment::getJNIEnv() const
+    {
+        return mEnvironment;
+    }
     
     /* SmartRef */
     
@@ -24,7 +62,9 @@ namespace jni
     {
         if (mObject != nullptr)
         {
-            JNIEnv* environment = getEnvironment();
+            SmartEnvironment smartEnvironment;
+            smartEnvironment = SmartEnvironment(mJavaVM);
+            JNIEnv* environment = smartEnvironment.getJNIEnv();
             if (environment != nullptr)
                 environment->DeleteGlobalRef(mObject);
         }
@@ -35,13 +75,9 @@ namespace jni
         return mObject;
     }
 
-    JNIEnv* SmartRef::getEnvironment() const
+    void SmartRef::getEnvironment(SmartEnvironment& pSmartEnvironment) const
     {
-        JNIEnv* environment = nullptr;
-        if (mJavaVM != nullptr)
-            mJavaVM->GetEnv((void**)&environment, JNI_VERSION_1_6);
-
-        return environment;
+        pSmartEnvironment = SmartEnvironment(mJavaVM);
     }
     
     /* SmartWeakRef */
@@ -59,7 +95,9 @@ namespace jni
     {
         if (mObject != nullptr)
         {
-            JNIEnv* environment = getEnvironment();
+            SmartEnvironment smartEnvironment;
+            smartEnvironment = SmartEnvironment(mJavaVM);
+            JNIEnv* environment = smartEnvironment.getJNIEnv();
             if (environment != nullptr)
                 environment->DeleteWeakGlobalRef(mObject);
         }
@@ -70,64 +108,9 @@ namespace jni
         return mObject;
     }
 
-    JNIEnv* SmartWeakRef::getEnvironment() const
+    void SmartWeakRef::getEnvironment(SmartEnvironment& pSmartEnvironment) const
     {
-        JNIEnv* environment = nullptr;
-        if (mJavaVM != nullptr)
-            mJavaVM->GetEnv((void**)&environment, JNI_VERSION_1_6);
-
-        return environment;
-    }
-    
-    /* SmartRefHandler */
-
-    SmartRefHandler::~SmartRefHandler()
-    {
-        flush();
-    }
-
-    void SmartRefHandler::flush()
-    {
-        {
-            auto it = mSmartRef.begin();
-
-            while (it != mSmartRef.end())
-            {
-                if (it->use_count() == 1)
-                    it = mSmartRef.erase(it);
-                else
-                    ++it;
-            }
-        }
-
-        {
-            auto it = mSmartWeakRef.begin();
-
-            while (it != mSmartWeakRef.end())
-            {
-                if (it->use_count() == 1)
-                    it = mSmartWeakRef.erase(it);
-                else
-                    ++it;
-            }
-        }
-    }
-
-    void SmartRefHandler::push(std::shared_ptr<SmartRef> pSmartRef)
-    {
-        mSmartRef.push_back(std::move(pSmartRef));
-    }
-
-    void SmartRefHandler::push(std::shared_ptr<SmartWeakRef> pSmartWeakRef)
-    {
-        mSmartWeakRef.push_back(std::move(pSmartWeakRef));
-    }
-
-    SmartRefHandler* SmartRefHandler::getInstance()
-    {
-        static SmartRefHandler instance;
-
-        return &instance;
+        pSmartEnvironment = SmartEnvironment(mJavaVM);
     }
     
     /* Utility */
