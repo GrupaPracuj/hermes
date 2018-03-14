@@ -2,12 +2,64 @@
 
 #include <cassert>
 
+extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_ext_jni_NativeObject_nativeDestroy(JNIEnv* pEnvironment, jobject pObject, jlong pPointer)
+{
+    if (pPointer > 0)
+        delete reinterpret_cast<hms::ext::jni::NativeObject::ContainerGeneric*>(pPointer);
+}
+
 namespace hms
 {
 namespace ext
 {
 namespace jni
 {
+
+    /* NativeObject */
+
+    jobject NativeObject::createObject(jlong pPointer, JNIEnv* pEnvironment, jclass pClass)
+    {
+        assert(pPointer > 0 && pEnvironment != nullptr);
+
+        bool deleteLocalRef = false;
+        jclass jClassNativeObject = pClass;
+        if (jClassNativeObject == nullptr)
+        {
+            jClassNativeObject = pEnvironment->FindClass("pl/grupapracuj/hermes/ext/jni/NativeObject");
+            deleteLocalRef = true;
+        }
+        assert(jClassNativeObject != nullptr);
+
+        jmethodID jMethodNativeObjectInit = pEnvironment->GetMethodID(jClassNativeObject, "<init>", "()V");
+        assert(jMethodNativeObjectInit != nullptr);
+
+        jfieldID jFieldPointer = pEnvironment->GetFieldID(jClassNativeObject, "mPointer", "J");
+        assert(jFieldPointer != nullptr);
+
+        jobject jObjectNativeObject = pEnvironment->NewObject(jClassNativeObject, jMethodNativeObjectInit);
+        pEnvironment->SetLongField(jObjectNativeObject, jFieldPointer, pPointer);
+
+        if (deleteLocalRef)
+            pEnvironment->DeleteLocalRef(jClassNativeObject);
+
+        return jObjectNativeObject;
+    }
+
+    jlong NativeObject::getPointer(jobject pObject, JNIEnv* pEnvironment)
+    {
+        assert(pObject != nullptr && pEnvironment != nullptr);
+
+        jclass jClassNativeObject = pEnvironment->GetObjectClass(pObject);
+        assert(jClassNativeObject != nullptr);
+
+        jfieldID jFieldPointer = pEnvironment->GetFieldID(jClassNativeObject, "mPointer", "J");
+        assert(jFieldPointer != nullptr);
+
+        jlong pointer = pEnvironment->GetLongField(pObject, jFieldPointer);
+        pEnvironment->DeleteLocalRef(jClassNativeObject);
+
+        return pointer;
+    }
 
     /* SmartEnvironment */
 

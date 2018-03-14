@@ -4,60 +4,14 @@
 #include <jni.h>
 #include <string>
 
+extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_ext_jni_NativeObject_nativeDestroy(JNIEnv* pEnvironment, jobject pObject, jlong pPointer);
+
 namespace hms
 {
 namespace ext
 {
 namespace jni
 {
-
-    template<typename T>
-    class ObjectHandle
-    {
-    public:
-        ObjectHandle(JNIEnv* pEnvironment, jobject pObject, const char* pFieldName, T pNativeObject)
-        {
-            mNativeObject = pNativeObject;
-
-            if (pEnvironment != nullptr && pObject != nullptr && pFieldName != nullptr)
-                set(pEnvironment, pObject, pFieldName, this);
-        }
-
-        virtual ~ObjectHandle() noexcept
-        {
-        }
-
-        T get() const
-        {
-            return mNativeObject;
-        }
-
-        static ObjectHandle* get(JNIEnv* pEnvironment, jobject pObject, const char* pFieldName)
-        {
-            jclass jClass = pEnvironment->GetObjectClass(pObject);
-            jfieldID jField = pEnvironment->GetFieldID(jClass, pFieldName, "J");
-            jlong handle = pEnvironment->GetLongField(pObject, jField);
-            return reinterpret_cast<ObjectHandle*>(handle);
-        }
-
-        static void set(JNIEnv* pEnvironment, jobject pObject, const char* pFieldName, ObjectHandle* pNativeObject)
-        {
-            jclass jClass = pEnvironment->GetObjectClass(pObject);
-            jfieldID jField = pEnvironment->GetFieldID(jClass, pFieldName, "J");
-            jlong handle = reinterpret_cast<jlong>(pNativeObject);
-            pEnvironment->SetLongField(pObject, jField, handle);
-        }
-
-        static void destroy(JNIEnv* pEnvironment, jobject pObject, const char* pFieldName)
-        {
-            auto handle = get(pEnvironment, pObject, pFieldName);
-            set(pEnvironment, pObject, pFieldName, nullptr);
-            delete handle;
-        }
-
-    private:
-        T mNativeObject;
-    };
 
     class SmartEnvironment
     {
@@ -108,6 +62,61 @@ namespace jni
     private:
         jobject mObject = nullptr;
         JavaVM* mJavaVM = nullptr;
+    };
+
+    class NativeObject
+    {
+    public:
+        NativeObject() = delete;
+        NativeObject(const NativeObject& pOther) = delete;
+        NativeObject(NativeObject&& pOther) = delete;
+
+        NativeObject& operator=(const NativeObject& pOther) = delete;
+        NativeObject& operator=(NativeObject&& pOther) = delete;
+
+        template<typename T>
+        static jobject create(T&& pObject, JNIEnv* pEnvironment, jclass pClass = nullptr)
+        {
+            auto container = new Container<T>();
+            container->mObject = pObject;
+
+            return createObject(reinterpret_cast<jlong>(container), pEnvironment, pClass);
+        }
+
+        template<typename T>
+        static const T& get(jobject pObject, JNIEnv* pEnvironment)
+        {
+            return get<T>(getPointer(pObject, pEnvironment));
+        }
+
+        template<typename T>
+        static const T& get(jlong pPointer)
+        {
+            assert(pPointer > 0);
+
+            auto container = reinterpret_cast<Container<T>*>(pPointer);
+            return container->mObject;
+        }
+
+    private:
+        friend void ::Java_pl_grupapracuj_hermes_ext_jni_NativeObject_nativeDestroy(JNIEnv* pEnvironment, jobject pObject, jlong pPointer);
+
+        class ContainerGeneric
+        {
+        public:
+            ContainerGeneric() = default;
+            virtual ~ContainerGeneric() = default;
+        };
+
+        template<typename T>
+        class Container : public ContainerGeneric
+        {
+        public:
+            T mObject;
+        };
+
+        static jobject createObject(jlong pPointer, JNIEnv* pEnvironment, jclass pClass);
+        static jlong getPointer(jobject pObject, JNIEnv* pEnvironment);
     };
     
     class Utility
