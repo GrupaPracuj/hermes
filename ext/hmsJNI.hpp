@@ -75,6 +75,15 @@ namespace jni
         NativeObject& operator=(NativeObject&& pOther) = delete;
 
         template<typename T>
+        static jobject create(const T& pObject, JNIEnv* pEnvironment, jclass pClass = nullptr)
+        {
+            auto container = new Container<T>();
+            container->mObject = pObject;
+
+            return createObject(reinterpret_cast<jlong>(container), pEnvironment, pClass);
+        }
+
+        template<typename T>
         static jobject create(T&& pObject, JNIEnv* pEnvironment, jclass pClass = nullptr)
         {
             auto container = new Container<T>();
@@ -84,13 +93,13 @@ namespace jni
         }
 
         template<typename T>
-        static const T& get(jobject pObject, JNIEnv* pEnvironment)
+        static T& get(jobject pObject, JNIEnv* pEnvironment)
         {
             return get<T>(getPointer(pObject, pEnvironment));
         }
 
         template<typename T>
-        static const T& get(jlong pPointer)
+        static T& get(jlong pPointer)
         {
             assert(pPointer > 0);
 
