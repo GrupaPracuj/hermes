@@ -35,17 +35,9 @@ android {
         }
     }
     buildTypes {
-        debug {
-            externalNativeBuild {
-                cmake.cppFlags '-g -DDEBUG=1 -DDEBUG_API=1'
-            }
-        }
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            externalNativeBuild {
-                cmake.cppFlags '-g0 -O2 -DNDEBUG=1'
-            }
         }
     }
     externalNativeBuild {
@@ -75,3 +67,11 @@ dependencies {
     compile "com.android.support:appcompat-v7:${supportLibrary}"
     compile "com.android.support.constraint:constraint-layout:${constraintLibrary}"
 }
+
+task copyJavaHermesExt << {
+    copy {
+        from "../../ext/java/"
+        into "source/java/"
+    }
+}
+preBuild.dependsOn copyJavaHermesExt

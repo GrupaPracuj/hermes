@@ -16,23 +16,25 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
+import pl.grupapracuj.hermes.ext.jni.NativeObject;
+
 public class MainActivity extends AppCompatActivity {
     static {
         System.loadLibrary("mainactivity");
     }
 
-    Button mButtonExecuteJNI = null;
-    Button mButtonClear = null;
-    TextView mTextOutput = null;
-    String mCertificateFilename = "certificate.pem";
-    public long nativeHandle = 0;
+    private Button mButtonExecuteJNI = null;
+    private Button mButtonClear = null;
+    private TextView mTextOutput = null;
+    private String mCertificateFilename = "certificate.pem";
+    private NativeObject mHelloWorld;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         String certificatePath = copyData(mCertificateFilename);
-        nativeHandle = createNative(certificatePath);
+        mHelloWorld = createNative(certificatePath);
 
         setContentView(R.layout.activity_main);
 
@@ -51,7 +53,8 @@ public class MainActivity extends AppCompatActivity {
         mButtonExecuteJNI.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                executeNative();
+                if (mHelloWorld != null)
+                    executeNative(mHelloWorld.getPointer());
             }
         });
         mTextOutput.setMovementMethod(new ScrollingMovementMethod());
@@ -59,7 +62,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        destroyNative();
+        if (mHelloWorld != null)
+            mHelloWorld.destroy();
+
         super.onDestroy();
     }
 
@@ -141,7 +146,6 @@ public class MainActivity extends AppCompatActivity {
         return result;
     }
 
-    private native long createNative(String pCertificatePath);
-    private native void destroyNative();
-    private native void executeNative();
+    private native NativeObject createNative(String pCertificatePath);
+    private native void executeNative(long pHelloWorldPointer);
 }

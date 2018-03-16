@@ -1,5 +1,5 @@
-#include <jni.h>
 #include <string>
+#include <unordered_map>
 #include "hermes.hpp"
 #include "ext/hmsJNI.hpp"
 #include "ext/hmsSerializer.hpp"
@@ -139,23 +139,18 @@ public:
     }
 };
 
-typedef hms::ext::jni::ObjectHandle<std::shared_ptr<HelloWorld>> NativeHandle;
+std::unordered_map<std::string, jclass> gClassLoader;
 
-extern "C" JNIEXPORT jlong JNICALL Java_pl_grupapracuj_hermes_helloworld_MainActivity_createNative(JNIEnv* pEnvironment, jobject pObject, jstring pCertificatePath)
+extern "C" JNIEXPORT jobject JNICALL Java_pl_grupapracuj_hermes_helloworld_MainActivity_createNative(JNIEnv* pEnvironment, jobject pObject, jstring pCertificatePath)
 {
     auto helloWorld = std::make_shared<HelloWorld>(hms::ext::jni::Utility::string(pCertificatePath, pEnvironment));
 
-    return reinterpret_cast<jlong>(new NativeHandle(nullptr, nullptr, nullptr, helloWorld));
+    return hms::ext::jni::NativeObject::create<std::shared_ptr<HelloWorld>>(helloWorld, pEnvironment, gClassLoader["pl/grupapracuj/hermes/ext/jni/NativeObject"]);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_helloworld_MainActivity_destroyNative(JNIEnv* pEnvironment, jobject pObject)
+extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_helloworld_MainActivity_executeNative(JNIEnv* pEnvironment, jobject pObject, jlong pHelloWorldPointer)
 {
-    delete NativeHandle::get(pEnvironment, pObject, "nativeHandle");
-}
-
-extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_helloworld_MainActivity_executeNative(JNIEnv* pEnvironment, jobject pObject)
-{
-    auto helloWorld = NativeHandle::get(pEnvironment, pObject, "nativeHandle")->get();
+    auto helloWorld = hms::ext::jni::NativeObject::get<std::shared_ptr<HelloWorld>>(pHelloWorldPointer);
 
     auto objectWeakRef = std::make_shared<hms::ext::jni::SmartWeakRef>(pObject, pEnvironment);
     auto callback = [objectWeakRef](std::string lpOutputText) -> void
@@ -176,4 +171,26 @@ extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_helloworld_MainActi
     };
 
     helloWorld->execute(std::move(callback));
+}
+
+jint JNI_OnLoad(JavaVM* pVM, void* pReserved)
+{
+    JNIEnv* environment = nullptr;
+    if (pVM->GetEnv(reinterpret_cast<void**>(&environment), JNI_VERSION_1_6) != JNI_OK)
+    {
+        return -1;
+    }
+
+    std::array<std::string, 1> classNames = {
+        "pl/grupapracuj/hermes/ext/jni/NativeObject"
+    };
+
+    for (const auto& v : classNames)
+    {
+        jclass classWeakRef = environment->FindClass(v.c_str());
+        gClassLoader[v] = static_cast<jclass>(environment->NewGlobalRef(classWeakRef));
+        environment->DeleteLocalRef(classWeakRef);
+    }
+
+    return JNI_VERSION_1_6;
 }

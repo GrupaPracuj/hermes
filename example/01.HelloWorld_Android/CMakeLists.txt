@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.4.1)
 
+SET(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG=1")
+SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O2 -DNDEBUG=1")
+
 set(HERMES_LIBRARY_PATH $ENV{HERMES_HOME}/lib/android/${ANDROID_ABI})
 
 add_library(libaes STATIC IMPORTED )
