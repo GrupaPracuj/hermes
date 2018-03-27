@@ -25,7 +25,7 @@ namespace json
     
     bool convert(const std::string& pSource, Json::Value& pDestination)
     {
-        bool status = false;
+        bool status = pSource.length() == 0;
         
         if (pSource.size() > 0)
         {

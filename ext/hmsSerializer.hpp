@@ -62,8 +62,6 @@ namespace ext
         using property_type = T;
         
         Property(std::string pName, T C::* pPtr, ESerializerMode pMode = ESerializerMode::All, std::function<bool(const C&, const T&)> pSerializeCondition = nullptr, std::function<void(C&, T&)> pDidDeserialize = nullptr) : mName(std::move(pName)), mPtr(pPtr), mMode(pMode), mSerializeCondition(std::move(pSerializeCondition)), mDidDeserialize(std::move(pDidDeserialize)) {}
-        Property(std::string pName, T C::* pPtr, std::function<bool(const C&, const T&)> pSerializeCondition, ESerializerMode pMode = ESerializerMode::Serialize) : mName(std::move(pName)), mPtr(pPtr), mMode(pMode), mSerializeCondition(std::move(pSerializeCondition)), mDidDeserialize(nullptr) {}
-        Property(std::string pName, T C::* pPtr, std::function<void(C&, T&)> pDidDeserialize, ESerializerMode pMode = ESerializerMode::Deserialize) : mName(std::move(pName)), mPtr(pPtr), mMode(pMode), mSerializeCondition(nullptr), mDidDeserialize(std::move(pDidDeserialize)) {}
 
         T& get(C& pObj) const
         {

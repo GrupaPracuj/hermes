@@ -2,7 +2,7 @@
 
 # User configuration
 LIBRARY_VERSION="1.8.4"
-IOS_DEPLOYMENT_TARGET="8.0"
+IOS_DEPLOYMENT_TARGET="9.3"
 
 # Check settings
 if [ -z "${XCODE_ROOT}" ] || [ ! -d "${XCODE_ROOT}" ]; then

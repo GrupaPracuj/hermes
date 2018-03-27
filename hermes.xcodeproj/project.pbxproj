@@ -537,6 +537,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/ios";
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
 				PRODUCT_NAME = hermes;
 			};
 			name = Debug;
@@ -547,6 +548,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/ios";
 				GCC_PREPROCESSOR_DEFINITIONS = "NDEBUG=1";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
 				PRODUCT_NAME = hermes;
 			};
 			name = Release;
@@ -556,6 +558,7 @@
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/ios";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
 				PRODUCT_NAME = hmsextmodule;
 			};
 			name = Debug;
@@ -565,6 +568,7 @@
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/ios";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
 				PRODUCT_NAME = hmsextmodule;
 			};
 			name = Release;
@@ -620,6 +624,7 @@
 					depend/curl/include,
 					depend/jsoncpp/include,
 				);
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
 				PRODUCT_NAME = hmsextserializer;
 			};
 			name = Debug;
@@ -635,6 +640,7 @@
 					depend/curl/include,
 					depend/jsoncpp/include,
 				);
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
 				PRODUCT_NAME = hmsextserializer;
 			};
 			name = Release;
