@@ -2,7 +2,7 @@
 
 # Check settings
 if [ -z "${HERMES_IOS_DEPLOYMENT_TARGET}" ]; then
-    IOS_DEPLOYMENT_TARGET="9.3"
+    IOS_DEPLOYMENT_TARGET="8.0"
 else
     IOS_DEPLOYMENT_TARGET=${HERMES_IOS_DEPLOYMENT_TARGET}
 fi
@@ -52,7 +52,7 @@ export STRIP=${TOOLCHAIN_DIR}/usr/bin/strip
 for ((i=0; i<${#ARCH[@]}; i++)); do
 	export SYSROOT=${XCODE_ROOT}/Platforms/${TARGET[$i]}.platform/Developer/SDKs/${TARGET[$i]}.sdk
 	export CROSS_SYSROOT=${SYSROOT}
-	export CFLAGS="-arch ${ARCH[$i]} -isysroot ${SYSROOT} -O2 -fPIC -fno-strict-aliasing -fstack-protector -pipe -gdwarf-2 -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET} -fembed-bitcode"
+	export CFLAGS="-arch ${ARCH[$i]} -isysroot ${SYSROOT} -O2 -fPIC -fno-strict-aliasing -fstack-protector -pipe -gdwarf-2 -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}"
 	export LDFLAGS="-arch ${ARCH[$i]} -isysroot ${SYSROOT}"
 	
 	if [ "${TARGET[$i]}" = "iPhoneSimulator" ]; then

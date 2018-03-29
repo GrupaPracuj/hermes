@@ -2,7 +2,7 @@
 
 # User configuration
 LIBRARY_VERSION="1.8.4"
-IOS_DEPLOYMENT_TARGET="9.3"
+IOS_DEPLOYMENT_TARGET="8.0"
 
 # Check settings
 if [ -z "${XCODE_ROOT}" ] || [ ! -d "${XCODE_ROOT}" ]; then
@@ -62,7 +62,7 @@ export STRIP=${TOOLCHAIN_DIR}/usr/bin/strip
 for ((i=0; i<${#ARCH[@]}; i++)); do
 	export SYSROOT=${XCODE_ROOT}/Platforms/${TARGET[$i]}.platform/Developer/SDKs/${TARGET[$i]}.sdk
 	export CROSS_SYSROOT=${SYSROOT}
-	export CXXFLAGS="-arch ${ARCH[$i]} -isysroot ${SYSROOT} -O2 -fPIC -fno-strict-aliasing -fstack-protector -pipe -gdwarf-2 -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET} -fembed-bitcode"
+	export CXXFLAGS="-arch ${ARCH[$i]} -isysroot ${SYSROOT} -O2 -fPIC -fno-strict-aliasing -fstack-protector -pipe -gdwarf-2 -miphoneos-version-min=${IOS_DEPLOYMENT_TARGET}"
 	export LDFLAGS="-arch ${ARCH[$i]} -isysroot ${SYSROOT}"
 	
 	if [ "${TARGET[$i]}" = "iPhoneSimulator" ]; then
