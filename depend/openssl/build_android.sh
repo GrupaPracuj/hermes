@@ -71,12 +71,6 @@ else
 	mkdir -p ${WORKING_DIR}/include/openssl
 fi
 
-if [ -d "${WORKING_DIR}/include/openssl/android" ]; then
-	rm ${WORKING_DIR}/include/openssl/android/*
-else
-	mkdir -p ${WORKING_DIR}/include/openssl/android
-fi
-
 # Build for all architectures and copy data
 cd ${LIBRARY_NAME}
 
@@ -113,7 +107,6 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
             make install_sw
 
             cp ${TMP_DIR}/include/openssl/* ${WORKING_DIR}/include/openssl/
-            cp ${WORKING_DIR}/include/openssl/opensslconf.h ${WORKING_DIR}/include/openssl/android/opensslconf-${ARCH_NAME[$i]}.h
             cp ${TMP_DIR}/lib/libcrypto.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
             cp ${TMP_DIR}/lib/libssl.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
         fi
@@ -122,7 +115,7 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
     fi
 done
 
-cp ${WORKING_DIR}/opensslconf_shared.h.in ${WORKING_DIR}/include/openssl/opensslconf.h
+cp ${WORKING_DIR}/opensslconf.h.in ${WORKING_DIR}/include/openssl/opensslconf.h
 
 # Cleanup
 rm -rf ${TMP_DIR}

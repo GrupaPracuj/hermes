@@ -1,8 +1,2 @@
-*
-!.gitignore
-!build_android.*
-!build_ios.*
-!build_linux.*
-!build_macos.*
-!opensslconf_shared.h.in
-!readme.txt
+openssl-
+toolchain

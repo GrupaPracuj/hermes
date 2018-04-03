@@ -1,9 +1,10 @@
 #ifndef _HMS_SERIALIZER_HPP_
 #define _HMS_SERIALIZER_HPP_
 
+#include <functional>
+#include <string>
 #include <tuple>
 #include <utility>
-#include <string>
 #include <vector>
 
 #include "json/json.h"

@@ -1,2 +1,4 @@
 *
 !.gitignore
+!libcrypto.a
+!libssl.a

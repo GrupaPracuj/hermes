@@ -13,7 +13,7 @@ if configure('linux', settings):
     if downloadAndExtract('https://curl.haxx.se/download/' + libraryName + '.zip', '', libraryName + '.zip', ''):
         remove('include')
         shutil.copy2('Makefile.in', os.path.join(libraryName, 'Makefile'))
-        openSSL = ('CURL_OPENSSL=1' if os.path.isdir(os.path.join('..', 'openssl', 'include', 'openssl', 'linux')) else '')
+        openSSL = ('CURL_OPENSSL=1' if os.path.isdir(os.path.join('..', 'openssl', 'include', 'openssl')) else '')
         os.chdir(libraryName)
         if buildMakeLinux(os.path.join('..', '..', '..'), ['curl'], settings, openSSL):
             includePath = os.path.join('include', 'curl')

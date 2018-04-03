@@ -14,7 +14,7 @@ if configure('android', settings):
         prepareToolchainAndroid(settings)
         remove('include')
         shutil.copy2('Makefile.in', os.path.join(libraryName, 'Makefile'))
-        openSSL = ('CURL_OPENSSL=1' if os.path.isdir(os.path.join('..', 'openssl', 'include', 'openssl', 'android')) else '')
+        openSSL = ('CURL_OPENSSL=1' if os.path.isdir(os.path.join('..', 'openssl', 'include', 'openssl')) else '')
         os.chdir(libraryName)
         if buildMakeAndroid(os.path.join('..', '..', '..'), ['curl'], settings, openSSL):
             includePath = os.path.join('include', 'curl')
