@@ -21,54 +21,54 @@ extern "C" {
 #undef OPENSSL_EXPORT_VAR_AS_FUNCTION
 
 #if __APPLE__
-	#include <TargetConditionals.h>
-	#error "Not supported Apple platform"
+    #include <TargetConditionals.h>
+    #error "Not supported Apple platform"
 #elif defined(ANDROID) || defined(__ANDROID__)
-	#if defined(__arm__)
-		#define BN_LLONG
+    #if defined(__arm__)
+        #define BN_LLONG
         #undef SIXTY_FOUR_BIT_LONG
         #undef SIXTY_FOUR_BIT
         #define THIRTY_TWO_BIT
         #define RC4_INT unsigned char
-	#elif defined(__aarch64__)
-		#undef BN_LLONG
+    #elif defined(__aarch64__)
+        #undef BN_LLONG
         #define SIXTY_FOUR_BIT_LONG
         #undef SIXTY_FOUR_BIT
         #undef THIRTY_TWO_BIT
         #define RC4_INT unsigned char
-	#elif defined(__i386__)
-		#define BN_LLONG
+    #elif defined(__i386__)
+        #define BN_LLONG
         #undef SIXTY_FOUR_BIT_LONG
         #undef SIXTY_FOUR_BIT
         #define THIRTY_TWO_BIT
         #define RC4_INT unsigned int
-	#elif defined(__x86_64__)
-		#undef BN_LLONG
+    #elif defined(__x86_64__)
+        #undef BN_LLONG
         #define SIXTY_FOUR_BIT_LONG
         #undef SIXTY_FOUR_BIT
         #undef THIRTY_TWO_BIT
         #define RC4_INT unsigned int
-	#else
-		#error "Not supported Android platform"
-	#endif
+    #else
+        #error "Not supported Android platform"
+    #endif
 #elif __linux__
-	#if defined(__LP64__) && __LP64__
-		#undef BN_LLONG
+    #if defined(__LP64__) && __LP64__
+        #undef BN_LLONG
         #define SIXTY_FOUR_BIT_LONG
         #undef SIXTY_FOUR_BIT
         #undef THIRTY_TWO_BIT
         #define RC4_INT unsigned int
-	#elif defined(__i386__)
-	    #define BN_LLONG
+    #elif defined(__i386__)
+        #define BN_LLONG
         #undef SIXTY_FOUR_BIT_LONG
         #undef SIXTY_FOUR_BIT
         #define THIRTY_TWO_BIT
         #define RC4_INT unsigned int
-	#else
-		#error "Not supported Linux platform"
-	#endif
+    #else
+        #error "Not supported Linux platform"
+    #endif
 #else
-	#error "Not supported platform"
+    #error "Not supported platform"
 #endif
 
 #ifdef  __cplusplus
@@ -76,4 +76,3 @@ extern "C" {
 #endif
 
 #endif
-

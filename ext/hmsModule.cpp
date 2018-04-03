@@ -106,7 +106,7 @@ namespace ext
         for (int32_t i = eraseEnd - 1; i >= eraseBegin; --i)
             (*primaryStack)[static_cast<size_t>(i)]->detach();
 
-        std::shared_ptr<ModuleShared> activeModule = mMainModule;
+        std::shared_ptr<ModuleShared> activeModule = nullptr;
         
         if (eraseEnd > eraseBegin)
         {
@@ -142,7 +142,7 @@ namespace ext
         mModule.clear();
         
         if (mOnActive != nullptr)
-            mOnActive(mMainModule);
+            mOnActive(nullptr);
     }
     
     void ModuleHandler::setOnActiveCallback(std::function<void(std::shared_ptr<ModuleShared>)> pCallback)

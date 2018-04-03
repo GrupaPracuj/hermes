@@ -9,13 +9,13 @@ exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, 
 
 settings = Settings()
 
-if configure('android', settings):
+if configure(settings):
     if downloadAndExtract('https://github.com/open-source-parsers/jsoncpp/archive/' + libraryVersion + '.zip', '', libraryName + '.zip', ''):
-        prepareToolchainAndroid(settings)
+        prepareToolchain(settings)
         remove('include')
         shutil.copy2('Makefile.in', os.path.join(libraryName, 'Makefile'))
         os.chdir(libraryName)
-        if buildMakeAndroid(os.path.join('..', '..', '..'), ['jsoncpp'], settings, ''):
+        if buildMake(os.path.join('..', '..', '..'), ['jsoncpp'], settings, ''):
             shutil.copytree(os.path.join('include', 'json'), os.path.join('..', 'include', 'json'))
         os.chdir('..')
         remove(libraryName)

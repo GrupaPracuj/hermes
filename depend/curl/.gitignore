@@ -1,8 +1,7 @@
 *
 !.gitignore
-!build_android.*
+!build.py
 !build_ios.*
-!build_linux.*
 !build_macos.*
 !Makefile.in
 !readme.txt

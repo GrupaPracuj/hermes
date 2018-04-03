@@ -9,13 +9,19 @@ exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, 
 
 settings = Settings()
 
-if configure('linux', settings):
+if configure(settings):
     if downloadAndExtract('https://curl.haxx.se/download/' + libraryName + '.zip', '', libraryName + '.zip', ''):
+        prepareToolchain(settings)
         remove('include')
         shutil.copy2('Makefile.in', os.path.join(libraryName, 'Makefile'))
-        openSSL = ('CURL_OPENSSL=1' if os.path.isdir(os.path.join('..', 'openssl', 'include', 'openssl')) else '')
+        openSSL = os.path.isdir(os.path.join('..', 'openssl', 'include', 'openssl'))
+        if openSSL:
+            for i in range(0, len(settings.mArchName)):
+                if os.path.isdir(os.path.join(settings.mToolchainDir, settings.mToolchainArch[i], 'bin')):
+                    libraryPath = os.path.join('..', '..', 'lib', settings.mBuildTarget, settings.mArchName[i])
+                    openSSL &= os.path.isfile(os.path.join(libraryPath, 'libcrypto.a')) and os.path.isfile(os.path.join(libraryPath, 'libssl.a'))
         os.chdir(libraryName)
-        if buildMakeLinux(os.path.join('..', '..', '..'), ['curl'], settings, openSSL):
+        if buildMake(os.path.join('..', '..', '..'), ['curl'], settings, 'CURL_OPENSSL=1' if openSSL else ''):
             includePath = os.path.join('include', 'curl')
             shutil.copytree(includePath, os.path.join('..', includePath))
             remove(os.path.join('..', includePath, 'Makefile.am'))
@@ -23,4 +29,3 @@ if configure('linux', settings):
         os.chdir('..')
         remove(libraryName)
         cleanup(settings)
-        

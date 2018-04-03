@@ -6,6 +6,7 @@ import sys
 
 class Settings:
     def __init__(self):
+        self.mBuildTarget = ''
         self.mHostName = ''
         self.mAndroidApi = ''
         self.mAndroidNdkDir = ''
@@ -77,109 +78,109 @@ def prepareMake(pDestinationDir):
 
     return os.path.isfile(destinationMakePath) and os.path.isfile(destinationIconvPath) and os.path.isfile(destinationIntlPath)
         
-def configure(pBuildTarget, pSettings):
+def configure(pSettings):
     import multiprocessing
-    
+
     print('Configuring...')
 
     if sys.version_info < (3, 0):
         print('Error: This script requires Python 3.0 or higher. Please use "python3" command instead of "python".')
         return False
-       
+    
+    if len(sys.argv) < 1 or sys.argv[1] is None or (sys.argv[1] != 'android' and sys.argv[1] != 'linux'):
+        print('Error: Missing or wrong build target. Following targets are supported: "android", "linux".')
+        return False
+
     workingDir = os.getcwd()
+    pSettings.mBuildTarget = sys.argv[1]
     pSettings.mHostName = platform.system()
     pSettings.mBuildDir = os.path.join(workingDir, 'build')
+
+    if pSettings.mBuildTarget == 'android':
+        hostDetected = False
+        
+        if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
+            hostDetected = True
+            
+            if os.path.isfile('/usr/bin/make'):
+                pSettings.mMake = '/usr/bin/make'
+            else:
+                print('Error: /usr/bin/make not found.')
+                return False
+        elif pSettings.mHostName == 'Windows':
+            hostDetected = True
+            
+            if prepareMake(pSettings.mBuildDir):
+                pSettings.mMake = os.path.join(pSettings.mBuildDir, 'make.exe')
+            else:
+                print('Error: make.exe not found.')
+                return False
     
-    if pBuildTarget is not None:
-        if pBuildTarget == 'android':
-            hostDetected = False
+        if hostDetected:
+            androidApi = os.getenv('HERMES_ANDROID_API')
+           
+            name, separator, version = None, None, None
             
-            if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
-                hostDetected = True
-                
-                if os.path.isfile('/usr/bin/make'):
-                    pSettings.mMake = '/usr/bin/make'
-                else:    
-                    print('Error: /usr/bin/make not found.')
-                    return False
-            elif pSettings.mHostName == 'Windows':
-                hostDetected = True
-                
-                if prepareMake(pSettings.mBuildDir):
-                    pSettings.mMake = os.path.join(pSettings.mBuildDir, 'make.exe')
-                else:    
-                    print('Error: make.exe not found.')
-                    return False
-        
-            if hostDetected:
-                androidApi = os.getenv('HERMES_ANDROID_API')
-               
-                name, separator, version = None, None, None
-                
-                if androidApi is not None:
-                    name, separator, version = androidApi.partition('-')
-                
-                if version is not None and len(version) > 0:
-                    pSettings.mAndroidApi = version
-                else:
-                    pSettings.mAndroidApi = name;
-                
-                pSettings.mAndroidNdkDir = os.getenv('ANDROID_NDK_ROOT')
+            if androidApi is not None:
+                name, separator, version = androidApi.partition('-')
+            
+            if version is not None and len(version) > 0:
+                pSettings.mAndroidApi = version
+            else:
+                pSettings.mAndroidApi = name;
+            
+            pSettings.mAndroidNdkDir = os.getenv('ANDROID_NDK_ROOT')
 
-                if pSettings.mAndroidApi is None:
-                    pSettings.mAndroidApi = '21'
+            if pSettings.mAndroidApi is None:
+                pSettings.mAndroidApi = '21'
 
-                if pSettings.mAndroidNdkDir is None or not os.path.isdir(pSettings.mAndroidNdkDir):
-                    androidHome = os.getenv('ANDROID_HOME')
+            if pSettings.mAndroidNdkDir is None or not os.path.isdir(pSettings.mAndroidNdkDir):
+                androidHome = os.getenv('ANDROID_HOME')
+                
+                if androidHome is not None and os.path.isdir(androidHome):
+                    pSettings.mAndroidNdkDir = os.path.join(androidHome, 'ndk-bundle')
                     
-                    if androidHome is not None and os.path.isdir(androidHome):
-                        pSettings.mAndroidNdkDir = os.path.join(androidHome, 'ndk-bundle')
-                        
-                        if not os.path.isdir(pSettings.mAndroidNdkDir):
-                            print('Error: ' + pSettings.mAndroidNdkDir + ' is not a valid path.')
-                            return False
-                    else:
-                        print('Error: Occurred problem related to ANDROID_HOME environment variable.')
+                    if not os.path.isdir(pSettings.mAndroidNdkDir):
+                        print('Error: ' + pSettings.mAndroidNdkDir + ' is not a valid path.')
                         return False
-                        
-                pSettings.mToolchainDir = os.path.join(workingDir, 'toolchain')
-                pSettings.mToolchainArch = ['arm', 'arm64', 'x86', 'x86_64']
-                pSettings.mToolchainName = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
-                pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
-                pSettings.mArchFlag = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
-                pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
-                pSettings.mMakeFlag = ['', 'ARCH64=1', '', 'ARCH64=1']
-
-                print('Android API: "' + pSettings.mAndroidApi + '"')
-                print('Android NDK path: "' + pSettings.mAndroidNdkDir + '"')
-            else:
-                print('Error: Not supported host platform: ' + pSettings.mHostName + '.')
-                return False                  
-        elif pBuildTarget == 'linux':
-            hostDetected = False
-            
-            if pSettings.mHostName == 'Linux':
-                hostDetected = True
-                
-                if os.path.isfile('/usr/bin/make'):
-                    pSettings.mMake = '/usr/bin/make'
-                else:    
-                    print('Error: /usr/bin/make not found.')
+                else:
+                    print('Error: Occurred problem related to ANDROID_HOME environment variable.')
                     return False
-        
-            if hostDetected:      
-                pSettings.mArchFlag = ['-m32', '-m64']
-                pSettings.mArchName = ['x86', 'x86_64']
-                pSettings.mMakeFlag = ['', '']
-                pSettings.mMakeFlag = ['', 'ARCH64=1']
-            else:
-                print('Error: Not supported host platform: ' + pSettings.mHostName + '.')
-                return False 
+            
+            pSettings.mToolchainDir = os.path.join(workingDir, 'toolchain')
+            pSettings.mToolchainArch = ['arm', 'arm64', 'x86', 'x86_64']
+            pSettings.mToolchainName = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
+            pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
+            pSettings.mArchFlag = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
+            pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
+            pSettings.mMakeFlag = ['', 'ARCH64=1', '', 'ARCH64=1']
+
+            print('Android API: "' + pSettings.mAndroidApi + '"')
+            print('Android NDK path: "' + pSettings.mAndroidNdkDir + '"')
         else:
-            print('Error: Not supported build target.')
+            print('Error: Not supported host platform: ' + pSettings.mHostName + '.')
+            return False
+    elif pSettings.mBuildTarget == 'linux':
+        hostDetected = False
+        
+        if pSettings.mHostName == 'Linux':
+            hostDetected = True
+            
+            if os.path.isfile('/usr/bin/make'):
+                pSettings.mMake = '/usr/bin/make'
+            else:
+                print('Error: /usr/bin/make not found.')
+                return False
+
+        if hostDetected:
+            pSettings.mArchFlag = ['-m32', '-m64']
+            pSettings.mArchName = ['x86', 'x86_64']
+            pSettings.mMakeFlag = ['', '']
+            pSettings.mMakeFlag = ['', 'ARCH64=1']
+        else:
+            print('Error: Not supported host platform: ' + pSettings.mHostName + '.')
             return False
     else:
-        print('Error: Missing build target.')
         return False
         
     pSettings.mCoreCount = str(multiprocessing.cpu_count())
@@ -188,18 +189,17 @@ def configure(pBuildTarget, pSettings):
     
     return True
          
-def prepareToolchainAndroid(pSettings):
-    print('Preparing toolchains...')
+def prepareToolchain(pSettings):
+    if pSettings.mBuildTarget == 'android':
+        print('Preparing toolchains...')
 
-    for i in range(0, len(pSettings.mArch)):
-        destinationPath = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i])
-        
-        if not os.path.isdir(destinationPath):
-            os.system(os.path.join(pSettings.mAndroidNdkDir, 'build', 'tools', 'make_standalone_toolchain.py') + ' --arch ' + pSettings.mToolchainArch[i] + ' --api ' + pSettings.mAndroidApi + ' --stl libc++ --install-dir ' + destinationPath)
-            
-    pSettings.mToolchainRemovable = True
-            
-    return
+        for i in range(0, len(pSettings.mArch)):
+            destinationPath = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i])
+            if not os.path.isdir(destinationPath):
+                os.system(os.path.join(pSettings.mAndroidNdkDir, 'build', 'tools', 'make_standalone_toolchain.py') + ' --arch ' + pSettings.mToolchainArch[i] + ' --api ' + pSettings.mAndroidApi + ' --stl libc++ --install-dir ' + destinationPath)
+
+        pSettings.mToolchainRemovable = True
+        return
 
 def executeShellCommand(pCommandLine):
     process = subprocess.Popen(pCommandLine, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)        
@@ -241,6 +241,14 @@ def cleanup(pSettings):
         remove(pSettings.mToolchainDir)
         
     return
+
+def buildMake(pRootDir, pLibraryName, pSettings, pMakeFlag):
+    status = True
+    if pSettings.mBuildTarget == 'android':
+        status = buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag)
+    elif pSettings.mBuildTarget == 'linux':
+        status = buildMakeLinux(pRootDir, pLibraryName, pSettings, pMakeFlag)
+    return status
     
 def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
     print('Building...')
@@ -294,7 +302,7 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
             if pMakeFlag is not None and len(pMakeFlag) > 0:
                 makeCommand += ' ' + pMakeFlag
                 
-            for j in range(1, len(sys.argv)):
+            for j in range(2, len(sys.argv)):
                 makeCommand += ' ' + sys.argv[j]
                 
             buildSuccess = False
@@ -358,7 +366,7 @@ def buildMakeLinux(pRootDir, pLibraryName, pSettings, pMakeFlag):
         if pMakeFlag is not None and len(pMakeFlag) > 0:
             makeCommand += ' ' + pMakeFlag
             
-        for j in range(1, len(sys.argv)):
+        for j in range(2, len(sys.argv)):
             makeCommand += ' ' + sys.argv[j]
             
         buildSuccess = executeShellCommand(makeCommand) == 0
