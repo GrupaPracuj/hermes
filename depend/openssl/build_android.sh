@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # User configuration
-LIBRARY_NAME="openssl-1.1.0f"
+LIBRARY_NAME="openssl-1.1.0h"
 
 # Check settings
 if [ -z "${HERMES_ANDROID_API}" ]; then
@@ -51,9 +51,9 @@ ARCH_NAME=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
 
 # Prepare toolchains
 for ((i=0; i<${#TOOLCHAIN_ARCH[@]}; i++)); do
-	if [ ! -d ${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]} ]; then
+  if [ ! -d ${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]} ]; then
         python ${ANDROID_NDK_ROOT}/build/tools/make_standalone_toolchain.py --arch ${TOOLCHAIN_ARCH[$i]} --api ${ANDROID_API} --stl libc++ --install-dir ${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}
-	fi
+  fi
 done
 
 # Download and extract library
@@ -66,35 +66,41 @@ sed -i -e 's/-mandroid//g' ${LIBRARY_NAME}/Configurations/10-main.conf
 
 # Clean include directory
 if [ -d "${WORKING_DIR}/include/openssl" ]; then
-	rm ${WORKING_DIR}/include/openssl/*
+  rm ${WORKING_DIR}/include/openssl/*
 else
-	mkdir -p ${WORKING_DIR}/include/openssl
+  mkdir -p ${WORKING_DIR}/include/openssl
+fi
+
+if [ -d "${WORKING_DIR}/include/openssl/android" ]; then
+  rm ${WORKING_DIR}/include/openssl/android/*
+else
+  mkdir -p ${WORKING_DIR}/include/openssl/android
 fi
 
 # Build for all architectures and copy data
 cd ${LIBRARY_NAME}
 
 for ((i=0; i<${#ARCH[@]}; i++)); do
-	if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then
-		mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
-	else
-		rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcrypto.a
-		rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libssl.a
-	fi
-	
-	rm -rf ${TMP_DIR}
+  if [ ! -d ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]} ]; then
+    mkdir -p ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}
+  else
+    rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libcrypto.a
+    rm -f ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/libssl.a
+  fi
+  
+  rm -rf ${TMP_DIR}
 
-	TOOLCHAIN_BIN_PATH=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/bin/${TOOLCHAIN_NAME[$i]}
-	export CC=${TOOLCHAIN_BIN_PATH}-clang
-	export LD=${TOOLCHAIN_BIN_PATH}-ld
-	export AR=${TOOLCHAIN_BIN_PATH}-ar
-	export RANLIB=${TOOLCHAIN_BIN_PATH}-ranlib
-	export STRIP=${TOOLCHAIN_BIN_PATH}-strip
-	export SYSROOT=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/sysroot
-	export CROSS_SYSROOT=${SYSROOT}
-	export CFLAGS="${ARCH_FLAG[$i]} -O2 -pipe -fPIC -fno-strict-aliasing -fstack-protector"
-	
-	if [ -e ${CC} ]; then
+  TOOLCHAIN_BIN_PATH=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/bin/${TOOLCHAIN_NAME[$i]}
+  export CC=${TOOLCHAIN_BIN_PATH}-clang
+  export LD=${TOOLCHAIN_BIN_PATH}-ld
+  export AR=${TOOLCHAIN_BIN_PATH}-ar
+  export RANLIB=${TOOLCHAIN_BIN_PATH}-ranlib
+  export STRIP=${TOOLCHAIN_BIN_PATH}-strip
+  export SYSROOT=${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}/sysroot
+  export CROSS_SYSROOT=${SYSROOT}
+  export CFLAGS="${ARCH_FLAG[$i]} -O2 -pipe -fPIC -fno-strict-aliasing -fstack-protector"
+  
+  if [ -e ${CC} ]; then
         ./Configure ${ARCH[$i]} --prefix=${TMP_DIR} \
             --with-zlib-include=${SYSROOT}/usr/include \
             --with-zlib-lib=${SYSROOT}/usr/lib \
@@ -107,6 +113,7 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
             make install_sw
 
             cp ${TMP_DIR}/include/openssl/* ${WORKING_DIR}/include/openssl/
+            cp ${WORKING_DIR}/include/openssl/opensslconf.h ${WORKING_DIR}/include/openssl/android/opensslconf-${ARCH_NAME[$i]}.h
             cp ${TMP_DIR}/lib/libcrypto.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
             cp ${TMP_DIR}/lib/libssl.a ${WORKING_DIR}/../../lib/android/${ARCH_NAME[$i]}/
         fi
@@ -115,7 +122,7 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
     fi
 done
 
-cp ${WORKING_DIR}/opensslconf.h.in ${WORKING_DIR}/include/openssl/opensslconf.h
+cp ${WORKING_DIR}/opensslconf_shared.h.in ${WORKING_DIR}/include/openssl/opensslconf.h
 
 # Cleanup
 rm -rf ${TMP_DIR}
