@@ -256,30 +256,22 @@ namespace hms
     
     void NetworkRecovery::runRequest(std::string pRequestBody, std::vector<std::pair<std::string, std::string>> pParameter, std::vector<std::pair<std::string, std::string>> pHeader)
     {
-        int defaultParameterEnd = -1;
-        int defaultHeaderEnd = -1;
-
         mRequestParam.mRequestBody = std::move(pRequestBody);
-        
-        if (pParameter.size() != 0)
-        {
-            defaultParameterEnd = static_cast<int>(mRequestParam.mParameter.size());
-            mRequestParam.mParameter.insert(mRequestParam.mParameter.cend(), pParameter.cbegin(), pParameter.cend());
-        }
-        
-        if (pHeader.size() != 0)
-        {
-            defaultHeaderEnd = static_cast<int>(mRequestParam.mHeader.size());
-            mRequestParam.mHeader.insert(mRequestParam.mHeader.cend(), pHeader.cbegin(), pHeader.cend());
-        }
-        
+
+        auto cpParameter = std::move(mRequestParam.mParameter);
+        mRequestParam.mParameter = std::move(pParameter);
+        mRequestParam.mParameter.reserve(mRequestParam.mParameter.size() + cpParameter.size());
+        mRequestParam.mParameter.insert(mRequestParam.mParameter.end(), cpParameter.begin(), cpParameter.end());
+
+        auto cpHeader = std::move(mRequestParam.mHeader);
+        mRequestParam.mHeader = std::move(pHeader);
+        mRequestParam.mHeader.reserve(mRequestParam.mHeader.size() + cpHeader.size());
+        mRequestParam.mHeader.insert(mRequestParam.mHeader.end(), cpHeader.begin(), cpHeader.end());
+
         Hermes::getInstance()->getNetworkManager()->request(mRequestParam);
-        
-        if (defaultParameterEnd >= 0)
-            mRequestParam.mParameter.erase(mRequestParam.mParameter.cbegin() + defaultParameterEnd, mRequestParam.mParameter.cend());
-        
-        if (defaultHeaderEnd >= 0)
-            mRequestParam.mHeader.erase(mRequestParam.mHeader.cbegin() + defaultHeaderEnd, mRequestParam.mHeader.cend());
+
+        mRequestParam.mParameter = std::move(cpParameter);
+        mRequestParam.mHeader = std::move(cpHeader);
     }
     
     bool NetworkRecovery::isActive() const
@@ -1306,25 +1298,24 @@ namespace hms
     {
         std::vector<std::pair<std::string, std::string>> header;
             
-        for (auto v = pHeader.rbegin(); v != pHeader.rend(); ++v)
+        for (auto it = pHeader.begin(); it != pHeader.end(); it++)
         {
-            std::string headerType = v->first;
+            std::string headerType = it->first;
             std::transform(headerType.begin(), headerType.end(), headerType.begin(), ::tolower);
             
             bool isUnique = true;
             
-            for (auto x = header.begin(); x != header.end(); ++x)
+            for (auto itB = header.begin(); itB != header.end(); itB++)
             {
-                if (headerType.size() == x->first.size() && headerType == x->first)
+                if (headerType.size() == itB->first.size() && headerType == itB->first)
                 {
-                    isUnique = false;
-                    
+                    isUnique = false;                    
                     break;
                 }
             }
             
             if (isUnique)
-                header.push_back({headerType, v->second});
+                header.push_back({headerType, it->second});
         }
         
         return header;
