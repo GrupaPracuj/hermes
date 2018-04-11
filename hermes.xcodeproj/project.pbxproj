@@ -313,7 +313,7 @@
 		38EC90C41C3AC853008AE1A3 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0900;
+				LastUpgradeCheck = 0930;
 				TargetAttributes = {
 					38EC90CB1C3AC853008AE1A3 = {
 						CreatedOnToolsVersion = 7.2;
@@ -412,7 +412,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -420,6 +420,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
@@ -427,6 +428,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
@@ -477,7 +479,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -485,6 +487,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
@@ -492,6 +495,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
@@ -536,11 +540,7 @@
 		38EC90D61C3AC853008AE1A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/ios";
-				GCC_OPTIMIZATION_LEVEL = s;
-				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				PRODUCT_NAME = hermes;
 			};
 			name = Debug;
@@ -548,10 +548,7 @@
 		38EC90D71C3AC853008AE1A3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/ios";
-				GCC_PREPROCESSOR_DEFINITIONS = "NDEBUG=1";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				PRODUCT_NAME = hermes;
 			};
 			name = Release;
@@ -559,10 +556,7 @@
 		55465B512028CB8300060DED /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/ios";
-				GCC_OPTIMIZATION_LEVEL = s;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				PRODUCT_NAME = hmsextmodule;
 			};
 			name = Debug;
@@ -570,9 +564,7 @@
 		55465B522028CB8300060DED /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/ios";
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				PRODUCT_NAME = hmsextmodule;
 			};
 			name = Release;
@@ -580,7 +572,6 @@
 		55465B5F2028CB8900060DED /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/macos";
 				PRODUCT_NAME = hmsextmodule;
 				SDKROOT = macosx;
@@ -590,7 +581,6 @@
 		55465B602028CB8900060DED /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/macos";
 				PRODUCT_NAME = hmsextmodule;
 				SDKROOT = macosx;
@@ -600,7 +590,6 @@
 		55DD5FF71F38956600BFA8E5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/macos";
 				PRODUCT_NAME = hermes;
 				SDKROOT = macosx;
@@ -610,7 +599,6 @@
 		55DD5FF81F38956600BFA8E5 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/macos";
 				PRODUCT_NAME = hermes;
 				SDKROOT = macosx;
@@ -620,16 +608,13 @@
 		9E6E7CA1203B01AC004F306B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/ios";
-				GCC_OPTIMIZATION_LEVEL = s;
 				HEADER_SEARCH_PATHS = (
 					include,
 					depend/aes/include,
 					depend/curl/include,
 					depend/jsoncpp/include,
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				PRODUCT_NAME = hmsextserializer;
 			};
 			name = Debug;
@@ -637,7 +622,6 @@
 		9E6E7CA2203B01AC004F306B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/ios";
 				HEADER_SEARCH_PATHS = (
 					include,
@@ -645,7 +629,6 @@
 					depend/curl/include,
 					depend/jsoncpp/include,
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				PRODUCT_NAME = hmsextserializer;
 			};
 			name = Release;
@@ -653,7 +636,6 @@
 		9E6E7CAA203B01BF004F306B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/macos";
 				HEADER_SEARCH_PATHS = (
 					include,
@@ -669,7 +651,6 @@
 		9E6E7CAB203B01BF004F306B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				DSTROOT = "$(SRCROOT)/lib/macos";
 				HEADER_SEARCH_PATHS = (
 					include,

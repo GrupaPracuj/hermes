@@ -204,16 +204,13 @@ namespace hms
         //! Call a request.
         /** This method is used to send a HTTP request.
          \param pParam Parameters of the request. */
-        std::shared_ptr<NetworkRequestHandle> request(NetworkRequestParam pParam);
+        virtual std::shared_ptr<NetworkRequestHandle> request(NetworkRequestParam pParam);
         
         //! Call a request.
         /** This is an alternative method for a HTTP request.
          \param pRequestType Type of the request.
          \param pMethod Endpoint of the request.
-         \param pRequestBody The request body.    const std::string& NetworkAPI::getURL() const
-    {
-        return mURL;
-    }
+         \param pRequestBody The request body.
          \param pCallback Callback with a response from the server. */
         std::shared_ptr<NetworkRequestHandle> request(ENetworkRequestType pRequestType, std::string pMethod, std::string pRequestBody, std::function<void(NetworkResponse)> pCallback)
         {
@@ -272,17 +269,18 @@ namespace hms
          \return The URL. */
         const std::string& getUrl() const;
         
-    private:
-        friend class NetworkManager;
-
+    protected:
         NetworkAPI(size_t pId, std::string pName, std::string pUrl);
         NetworkAPI(const NetworkAPI& pOther) = delete;
         NetworkAPI(NetworkAPI&& pOther) = delete;
-        ~NetworkAPI();
+        virtual ~NetworkAPI();
         
         NetworkAPI& operator=(const NetworkAPI& pOther) = delete;
         NetworkAPI& operator=(NetworkAPI&& pOther) = delete;
         
+    private:
+        friend class NetworkManager;
+
         size_t mId = 0;
         std::string mName;
         std::string mUrl;
@@ -305,8 +303,28 @@ namespace hms
     
         bool initialize(long pTimeout, int pThreadPoolID, std::pair<int, int> pHttpCodeSuccess = {200, 299});
         bool terminate();
-        
+
         std::shared_ptr<NetworkAPI> add(size_t pId, std::string pName, std::string pUrl);
+        template <typename T, typename = typename std::enable_if<std::is_base_of<NetworkAPI, T>::value>::type, typename... U>
+        std::shared_ptr<T> add(size_t pId, std::string pName, std::string pUrl, U&&... pArgument)
+        {
+            std::shared_ptr<NetworkAPI> result = nullptr;
+            mActivityCount++;
+            if (mInitialized.load() == 2)
+            {
+                result = std::shared_ptr<NetworkAPI>(new T(pId, std::move(pName), std::move(pUrl), std::forward<U>(pArgument)...), std::bind(&NetworkManager::deleterNetworkAPI, std::placeholders::_1));
+            
+                std::lock_guard<std::mutex> lock(mApiMutex);
+                if (pId >= mApi.size())
+                    mApi.resize(pId + 1);
+
+                assert(mApi[pId] == nullptr);
+                mApi[pId] = result;
+            }
+            mActivityCount--;
+            
+            return result;
+        }
         size_t count() const;
         std::shared_ptr<NetworkAPI> get(size_t pId) const;
         
@@ -397,8 +415,8 @@ namespace hms
         NetworkManager& operator=(const NetworkManager& pOther) = delete;
         NetworkManager& operator=(NetworkManager&& pOther) = delete;
         
-        void deleterNetworkAPI(NetworkAPI* pObject);
-        void deleterNetworkRecovery(NetworkRecovery* pObject);
+        static void deleterNetworkAPI(NetworkAPI* pObject);
+        static void deleterNetworkRecovery(NetworkRecovery* pObject);
         
         std::vector<std::pair<std::string, std::string>> createUniqueHeader(const std::vector<std::pair<std::string, std::string>>& pHeader) const;
 

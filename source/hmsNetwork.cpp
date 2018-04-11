@@ -615,24 +615,7 @@ namespace hms
         
     std::shared_ptr<NetworkAPI> NetworkManager::add(size_t pId, std::string pName, std::string pUrl)
     {
-        std::shared_ptr<NetworkAPI> result = nullptr;
-        mActivityCount++;    
-        if (mInitialized.load() == 2)
-        {
-            result = std::shared_ptr<NetworkAPI>(new NetworkAPI(pId, std::move(pName), std::move(pUrl)), std::bind(&NetworkManager::deleterNetworkAPI, this, std::placeholders::_1));
-        
-            std::lock_guard<std::mutex> lock(mApiMutex);
-
-            if (pId >= mApi.size())
-                mApi.resize(pId + 1);
-
-            assert(mApi[pId] == nullptr);
-
-            mApi[pId] = result;
-        }        
-        mActivityCount--;
-        
-        return result;
+        return add<NetworkAPI>(pId, std::move(pName), std::move(pUrl));
     }
     
     size_t NetworkManager::count() const
@@ -655,15 +638,13 @@ namespace hms
         mActivityCount++;    
         if (mInitialized.load() == 2)
         {
-            result = std::shared_ptr<NetworkRecovery>(new NetworkRecovery(pId, std::move(pName), std::move(pConfig)), std::bind(&NetworkManager::deleterNetworkRecovery, this, std::placeholders::_1));
+            result = std::shared_ptr<NetworkRecovery>(new NetworkRecovery(pId, std::move(pName), std::move(pConfig)), std::bind(&NetworkManager::deleterNetworkRecovery, std::placeholders::_1));
         
             std::lock_guard<std::mutex> lock(mRecoveryMutex);
-
             if (pId >= mRecovery.size())
                 mRecovery.resize(pId + 1);
 
             assert(mRecovery[pId] == nullptr);
-
             mRecovery[pId] = result;
         }
         mActivityCount--;
