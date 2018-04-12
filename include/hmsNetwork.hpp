@@ -308,11 +308,11 @@ namespace hms
         template <typename T, typename = typename std::enable_if<std::is_base_of<NetworkAPI, T>::value>::type, typename... U>
         std::shared_ptr<T> add(size_t pId, std::string pName, std::string pUrl, U&&... pArgument)
         {
-            std::shared_ptr<NetworkAPI> result = nullptr;
+            std::shared_ptr<T> result = nullptr;
             mActivityCount++;
             if (mInitialized.load() == 2)
             {
-                result = std::shared_ptr<NetworkAPI>(new T(pId, std::move(pName), std::move(pUrl), std::forward<U>(pArgument)...), std::bind(&NetworkManager::deleterNetworkAPI, std::placeholders::_1));
+                result = std::shared_ptr<T>(new T(pId, std::move(pName), std::move(pUrl), std::forward<U>(pArgument)...), std::bind(&NetworkManager::deleterNetworkAPI, std::placeholders::_1));
             
                 std::lock_guard<std::mutex> lock(mApiMutex);
                 if (pId >= mApi.size())
