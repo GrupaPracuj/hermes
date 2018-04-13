@@ -80,6 +80,7 @@ for ((i=0; i<${#ARCH[@]}; i++)); do
 	./configure --prefix=${TMP_DIR} \
 		--host=${TOOLCHAIN_NAME[$i]} \
         --with-darwinssl \
+        --without-libidn2 \
         --enable-ipv6 \
         --enable-static \
         --enable-threaded-resolver \
