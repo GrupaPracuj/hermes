@@ -243,10 +243,12 @@ namespace ext
             for (auto& v : pSource)
                 serialize<typename C::value_type>(value, v);
             
-            if (pName.length() == 0)
-                pDestination.append(value);
+            if (pName.length() != 0)
+                pDestination[pName] = std::move(value);
+            else if (!pDestination.isArray())
+                pDestination = std::move(value);
             else
-                pDestination[pName] = value;
+                pDestination.append(std::move(value));
         }
         
         template <typename C, typename, typename>
@@ -267,9 +269,9 @@ namespace ext
             });
             
             if (pName.length() != 0)
-                pDestination[pName] = value;
+                pDestination[pName] = std::move(value);
             else if (pDestination.type() == Json::arrayValue)
-                pDestination.append(value);
+                pDestination.append(std::move(value));
         }
         
         template <typename C, typename, typename>
