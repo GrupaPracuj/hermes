@@ -86,8 +86,8 @@ namespace ext
         }
         
         void push(int32_t pPrimaryIndex, std::shared_ptr<ModuleShared> pModule);
-        void pop(int32_t pPrimaryIndex, size_t pCount);
-        void erase(std::shared_ptr<ModuleShared> pModule, size_t pCount);
+        void pop(int32_t pPrimaryIndex, size_t pCount = 1);
+        void erase(int32_t pPrimaryIndex, int32_t pSecondaryIndex, size_t pCount = 1);
         void clear();
         
         void setOnActiveCallback(std::function<void(std::shared_ptr<ModuleShared>)> pCallback);

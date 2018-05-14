@@ -45,6 +45,7 @@ namespace ext
     
     void ModuleHandler::setMain(std::shared_ptr<ModuleShared> pModule)
     {
+        assert(pModule == nullptr || pModule->getIndex() == std::make_pair(-1, -1));
         mMainModule = pModule;
     }
     
@@ -69,11 +70,12 @@ namespace ext
     
     void ModuleHandler::push(int32_t pPrimaryIndex, std::shared_ptr<ModuleShared> pModule)
     {
-        assert(pModule != nullptr && pPrimaryIndex >= 0 && (static_cast<size_t>(pPrimaryIndex) >= mModule.size() || mModule[static_cast<size_t>(pPrimaryIndex)].size() < INT32_MAX));
+        assert(pModule != nullptr && pModule.get() != mMainModule.get() && pPrimaryIndex >= 0 && pPrimaryIndex < INT32_MAX);
         
         if (static_cast<size_t>(pPrimaryIndex) >= mModule.size())
             mModule.resize(static_cast<size_t>(pPrimaryIndex) + 1);
         
+        assert(mModule[static_cast<size_t>(pPrimaryIndex)].size() < INT32_MAX);
         mModule[static_cast<size_t>(pPrimaryIndex)].push_back(pModule);
         pModule->mIndex = {pPrimaryIndex, static_cast<int32_t>(mModule[static_cast<size_t>(pPrimaryIndex)].size()) - 1};
         pModule->attach(pModule);
@@ -84,41 +86,31 @@ namespace ext
     
     void ModuleHandler::pop(int32_t pPrimaryIndex, size_t pCount)
     {
-        assert(pPrimaryIndex >= 0 && pPrimaryIndex < static_cast<int32_t>(mModule.size()) && pCount > 0);
-        
-        const size_t stackSize = mModule[static_cast<size_t>(pPrimaryIndex)].size();
-        erase(mModule[static_cast<size_t>(pPrimaryIndex)][stackSize > pCount ? stackSize - pCount : 0], pCount);
+        assert(pPrimaryIndex >= 0 && static_cast<size_t>(pPrimaryIndex) < mModule.size() && pCount > 0);
+        erase(pPrimaryIndex, std::max(0, static_cast<int32_t>(mModule[static_cast<size_t>(pPrimaryIndex)].size()) - 1), pCount);
     }
     
-    void ModuleHandler::erase(std::shared_ptr<ModuleShared> pModule, size_t pCount)
+    void ModuleHandler::erase(int32_t pPrimaryIndex, int32_t pSecondaryIndex, size_t pCount)
     {
-        assert(pModule != nullptr && pModule->getIndex().first >= 0 &&  pModule->getIndex().second >= 0 && pCount > 0);
-        
-        const auto index = pModule->getIndex();
-        auto* primaryStack = &mModule[static_cast<size_t>(index.first)];
+        assert(pPrimaryIndex >= 0 && static_cast<size_t>(pPrimaryIndex) < mModule.size() && pSecondaryIndex >= 0 && pSecondaryIndex < mModule[static_cast<size_t>(pPrimaryIndex)].size() && pCount > 0);
+        auto* primaryStack = &mModule[static_cast<size_t>(pPrimaryIndex)];
         const int32_t stackSize = static_cast<int32_t>(primaryStack->size());
-        const int32_t eraseBegin = index.second;
-        const int32_t eraseEnd = std::min(eraseBegin + static_cast<int32_t>(pCount), stackSize);
+        const int32_t eraseEnd = std::min(pSecondaryIndex + static_cast<int32_t>(pCount), stackSize);
+        const int32_t eraseCount = std::max(0, eraseEnd - pSecondaryIndex);
         
         for (int32_t i = stackSize - 1; i >= eraseEnd; --i)
-            (*primaryStack)[static_cast<size_t>(i)]->mIndex.second -= static_cast<int32_t>(pCount);
+            (*primaryStack)[static_cast<size_t>(i)]->mIndex.second -= eraseCount;
         
-        for (int32_t i = eraseEnd - 1; i >= eraseBegin; --i)
-            (*primaryStack)[static_cast<size_t>(i)]->detach();
-
-        std::shared_ptr<ModuleShared> activeModule = nullptr;
-        
-        if (eraseEnd > eraseBegin)
+        for (int32_t i = eraseEnd - 1; i >= pSecondaryIndex; --i)
         {
-            primaryStack->erase(primaryStack->begin() + eraseBegin, primaryStack->begin() + eraseEnd);
-            const size_t newStackSize = primaryStack->size();
-            
-            if (newStackSize > 0)
-                activeModule = (*primaryStack)[newStackSize - 1];
+            (*primaryStack)[static_cast<size_t>(i)]->mIndex = {-1, -1};
+            (*primaryStack)[static_cast<size_t>(i)]->detach();
         }
+
+        if (eraseEnd > pSecondaryIndex)
+            primaryStack->erase(primaryStack->begin() + pSecondaryIndex, primaryStack->begin() + eraseEnd);
         
-        auto eraseIt = mModule.end();
-        
+        auto eraseIt = mModule.end();        
         for (auto it = mModule.rbegin(); it != mModule.rend(); ++it)
         {
             if (it->size() == 0)
@@ -126,19 +118,24 @@ namespace ext
             else
                 break;
         }
-        
         if (eraseIt != mModule.end())
             mModule.erase(eraseIt, mModule.end());
-        
-        if (eraseEnd > eraseBegin)
-        {
-            if (mOnActive != nullptr)
-                mOnActive(activeModule);
-        }
+
+        if (eraseEnd > pSecondaryIndex && mOnActive != nullptr)
+            mOnActive(primaryStack->size() > 0 ? primaryStack->back() : nullptr);
     }
     
     void ModuleHandler::clear()
     {
+        for (size_t i = mModule.size(); i > 0; --i)
+        {
+            const size_t primaryIndex = i - 1;
+            for (size_t j = mModule[primaryIndex].size(); j > 0; --j)
+            {
+                mModule[primaryIndex][j - 1]->mIndex = {-1, -1};
+                mModule[primaryIndex][j - 1]->detach();
+            }
+        }
         mModule.clear();
         
         if (mOnActive != nullptr)
