@@ -1359,7 +1359,7 @@ namespace hms
         curl_easy_setopt(pHandle, CURLOPT_HTTPHEADER, pHeader);
         curl_easy_setopt(pHandle, CURLOPT_URL, pRequestUrl.c_str());
         curl_easy_setopt(pHandle, CURLOPT_ERRORBUFFER, pErrorBuffer);
-        curl_easy_setopt(pHandle, CURLOPT_SSL_VERIFYPEER, pFlag[static_cast<size_t>(ENetworkFlag::DisableSSLVerifyPeer)] ? 1L : 0L);
+        curl_easy_setopt(pHandle, CURLOPT_SSL_VERIFYPEER, !pFlag[static_cast<size_t>(ENetworkFlag::DisableSSLVerifyPeer)] ? 1L : 0L);
 
         if (pCACertificatePath.size() > 0)
             curl_easy_setopt(pHandle, CURLOPT_CAINFO, pCACertificatePath.c_str());
@@ -1836,7 +1836,7 @@ namespace hms
                             
                             curl_easy_setopt(strongThis->mSimpleSocketCURL, CURLOPT_URL, url.getHttpURL().c_str());
                             curl_easy_setopt(strongThis->mSimpleSocketCURL, CURLOPT_CONNECT_ONLY, 1L);
-                            curl_easy_setopt(strongThis->mSimpleSocketCURL, CURLOPT_SSL_VERIFYPEER, lpRequestSettings.mFlag[static_cast<size_t>(ENetworkFlag::DisableSSLVerifyPeer)] ? 1L : 0L);
+                            curl_easy_setopt(strongThis->mSimpleSocketCURL, CURLOPT_SSL_VERIFYPEER, !lpRequestSettings.mFlag[static_cast<size_t>(ENetworkFlag::DisableSSLVerifyPeer)] ? 1L : 0L);
 
                             if (lpRequestSettings.mCACertificatePath.size() > 0)
                                 curl_easy_setopt(strongThis->mSimpleSocketCURL, CURLOPT_CAINFO, lpRequestSettings.mCACertificatePath.c_str());
