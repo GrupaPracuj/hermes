@@ -107,9 +107,14 @@ namespace ext
             (*primaryStack)[static_cast<size_t>(i)]->detach();
         }
 
+        std::shared_ptr<ModuleShared> activeModule = nullptr;
         if (eraseEnd > pSecondaryIndex)
+        {
             primaryStack->erase(primaryStack->begin() + pSecondaryIndex, primaryStack->begin() + eraseEnd);
-        
+            if (primaryStack->size() > 0)
+                activeModule = primaryStack->back();
+        }
+
         auto eraseIt = mModule.end();        
         for (auto it = mModule.rbegin(); it != mModule.rend(); ++it)
         {
@@ -121,8 +126,8 @@ namespace ext
         if (eraseIt != mModule.end())
             mModule.erase(eraseIt, mModule.end());
 
-        if (eraseEnd > pSecondaryIndex && mOnActive != nullptr)
-            mOnActive(primaryStack->size() > 0 ? primaryStack->back() : nullptr);
+        if (mOnActive != nullptr)
+            mOnActive(activeModule);
     }
     
     void ModuleHandler::clear()
