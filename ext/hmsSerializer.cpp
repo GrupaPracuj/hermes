@@ -1,5 +1,7 @@
 #include "hmsSerializer.hpp"
 
+#include "hermes.hpp"
+
 #include <memory>
 #include <sstream>
 
@@ -36,6 +38,9 @@ namespace json
             const char* source = pSource.c_str();
             std::string errors;
             status = reader->parse(source, source + pSource.size(), &pDestination, &errors);
+            
+            if (!status)
+                hms::Hermes::getInstance()->getLogger()->print(hms::ELogLevel::Error, "String to json convert fail: %; Source: '%'", errors, pSource);
         }
         
         return status;
