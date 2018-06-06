@@ -29,76 +29,82 @@ namespace hms
     private:
         std::atomic_flag mFlag = ATOMIC_FLAG_INIT;
     };
+    
+    class TaskManager;
 
     class ThreadPool
     {
-        friend class TaskManager;
-        
     public:
         ThreadPool(const ThreadPool& pSource) = delete;
     
-        bool push(std::function<void()>& pTask);
-        bool hasTask();
-        void start();
-        void stop();
-        size_t threadCount();
+        void push(std::pair<std::function<int32_t()>, std::function<void()>> pTask);
+        bool hasTask() const;
+        void flush();
         void performTaskIfExists();
-        void clearTask();
         
     private:
-        ThreadPool(int pID, size_t pThreadCount);
+        friend TaskManager;
+    
+        ThreadPool(int32_t pId, size_t pThreadCount, TaskManager* pTaskManager);
         ~ThreadPool();
         
-        void update(size_t pID);
+        void update(size_t pId);
                    
         size_t mThreadCount = 0;
         std::thread** mThread = nullptr;
                    
         std::condition_variable mTaskCondition;
-        std::mutex mTaskMutex;
-        std::queue<std::function<void()>> mTask;
+        mutable std::mutex mTaskMutex;
+        std::queue<std::pair<std::function<int32_t()>, std::function<void()>>> mTask;
         std::atomic<uint32_t> mProcessingTaskCount {0};
-
-        std::atomic<uint32_t> mForceFinish {0};
-        std::atomic<uint32_t> mIsActive {1};
-        int mId;
+        std::atomic<uint32_t> mTerminate {0};
+        int32_t mId;
+        
+        TaskManager* mTaskManager;
     };
     
     class TaskManager
     {
     public:
-        bool initialize(const std::vector<std::pair<int, size_t>> pThreadPool, std::function<void(std::function<void()>)> pMainThreadHandler = nullptr);
+        bool initialize(const std::vector<std::pair<int32_t, size_t>> pThreadPool, std::function<void(std::function<void()>)> pMainThreadHandler = nullptr);
         bool terminate();
 
-        void flush(int pThreadPoolID);
-        size_t threadCountForPool(int pThreadPoolID);
-        bool canContinueTask(int pThreadPoolID);
-        void performTaskIfExists(int pThreadPoolID);
-        void clearTask(int pThreadPoolID);
+        bool hasTask(int32_t pThreadPoolId) const;
+        void flush(int32_t pThreadPoolId);
+        size_t threadCountForPool(int32_t pThreadPoolId) const;
+        bool canContinueTask(int32_t pThreadPoolId) const;
+        void performTaskIfExists(int32_t pThreadPoolId) const;
         
         template<typename M, typename... P>
-        void execute(int pThreadPoolID, M&& pMethod, P&&... pParameter)
+        void execute(int32_t pThreadPoolId, M&& pMethod, P&&... pParameter)
+        {
+            executeDelayed(pThreadPoolId, 0, pMethod, pParameter...);
+        }
+        
+        template<typename M, typename... P>
+        void executeDelayed(int32_t pThreadPoolId, uint64_t pDelayMs, M&& pMethod, P&&... pParameter)
         {
             if (!mInitialized)
                 return;
             
+            std::function<int32_t()> condition = createCondition(pThreadPoolId, pDelayMs);
             std::function<void()> task = std::bind(std::forward<M>(pMethod), std::forward<P>(pParameter)...);
-            
-            if (pThreadPoolID < 0)
+
+            if (pThreadPoolId < 0)
             {
                 enqueueMainThreadTask(std::move(task));
             }
             else
             {
-                assert(mThreadPool.find(pThreadPoolID) != mThreadPool.end());
-            
-                ThreadPool* threadPool = mThreadPool[pThreadPoolID];
-                threadPool->push(task);
+                auto threadPool = mThreadPool.find(pThreadPoolId);
+                assert(threadPool != mThreadPool.cend());
+                threadPool->second->push(std::make_pair(std::move(condition), std::move(task)));
             }
         }
 
     private:
         friend class Hermes;
+        friend class ThreadPool;
     
         TaskManager();
         TaskManager(const TaskManager& pOther) = delete;
@@ -110,15 +116,16 @@ namespace hms
 
         void enqueueMainThreadTask(std::function<void()> pTask);
         void dequeueMainThreadTask();
+        std::function<int32_t()> createCondition(int32_t& pThreadPoolId, uint64_t pDelayMs) const;
 
 #if defined(ANDROID) || defined(__ANDROID__)
         static int messageHandlerAndroid(int pFd, int pEvent, void* pData);
 #endif
 
-        std::unordered_map<int, ThreadPool*> mThreadPool;
+        std::unordered_map<int32_t, ThreadPool*> mThreadPool;
 
         std::queue<std::function<void()>> mMainThreadTask;
-        std::mutex mMainThreadMutex;
+        mutable std::mutex mMainThreadMutex;
 
 #if defined(ANDROID) || defined(__ANDROID__)
         int mMessagePipeAndroid[2] = {0, 0};

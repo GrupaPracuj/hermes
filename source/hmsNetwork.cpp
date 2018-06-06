@@ -538,14 +538,12 @@ namespace hms
 
         if (mInitialized.compare_exchange_strong(terminated, 1))
         {
-            // finish all network operations
-            
             mTerminateAbort.store(1);
+            auto taskManager = Hermes::getInstance()->getTaskManager();
+            taskManager->flush(mThreadPoolID);
+            taskManager->flush(mThreadPoolSimpleSocketID);
             
-            Hermes::getInstance()->getTaskManager()->flush(mThreadPoolID);
-            Hermes::getInstance()->getTaskManager()->flush(mThreadPoolSimpleSocketID);
-            
-            while (mActivityCount.load() > 0)
+            while (taskManager->hasTask(mThreadPoolID) || taskManager->hasTask(mThreadPoolSimpleSocketID))
                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
             
             {
@@ -635,7 +633,6 @@ namespace hms
     std::shared_ptr<NetworkRecovery> NetworkManager::addRecovery(size_t pId, std::string pName, NetworkRecovery::Config pConfig)
     {
         std::shared_ptr<NetworkRecovery> result = nullptr;
-        mActivityCount++;    
         if (mInitialized.load() == 2)
         {
             result = std::shared_ptr<NetworkRecovery>(new NetworkRecovery(pId, std::move(pName), std::move(pConfig)), std::bind(&NetworkManager::deleterNetworkRecovery, std::placeholders::_1));
@@ -647,8 +644,7 @@ namespace hms
             assert(mRecovery[pId] == nullptr);
             mRecovery[pId] = result;
         }
-        mActivityCount--;
-        
+
         return mRecovery[pId];
     }
     
@@ -675,158 +671,151 @@ namespace hms
         auto requestTask = [weakThis, pRequestHandle](NetworkRequestParam lpParam, RequestSettings lpRequestSettings) -> void
         {
             std::shared_ptr<NetworkManager> strongThis = weakThis.lock();
-            if (strongThis != nullptr)
+            if (strongThis != nullptr && strongThis->mInitialized.load() == 2)
             {
-                strongThis->mActivityCount++;
-                if (strongThis->mInitialized.load() == 2)
+                if (lpParam.mAllowCache)
                 {
-                    if (lpParam.mAllowCache)
+                    NetworkResponse response = strongThis->getResponseFromCache(lpParam.mMethod, lpRequestSettings.mHttpCodeSuccess.first);
+                    
+                    if (response.mCode == ENetworkCode::OK)
                     {
-                        NetworkResponse response = strongThis->getResponseFromCache(lpParam.mMethod, lpRequestSettings.mHttpCodeSuccess.first);
-                        
-                        if (response.mCode == ENetworkCode::OK)
-                        {
-                            if (lpParam.mCallback != nullptr)
-                            {
-                                Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(lpParam.mCallback), response = std::move(response)]() mutable -> void
-                                {
-                                    callback(std::move(response));
-                                });
-                            }
-                            
-                            strongThis->mActivityCount--;
-                            
-                            return;
-                        }
-                    }
-
-                    ENetworkCode code = ENetworkCode::Unknown;
-                    long httpCode = -1;
-                    std::vector<std::pair<std::string, std::string>> responseHeader;
-                    std::string responseMessage = "";
-                    DataBuffer responseRawData;
-                    
-                    auto uniqueHeader = strongThis->createUniqueHeader(lpParam.mHeader);
-                    curl_slist* header = nullptr;
-
-                    for (auto& v : uniqueHeader)
-                    {
-                        std::string singleHeader = v.first;
-                        singleHeader += ": ";
-                        singleHeader += v.second;
-                        
-                        header = curl_slist_append(header, singleHeader.c_str());
-                    }
-
-                    void* handle = nullptr;
-                    
-                    {
-                        std::lock_guard<std::mutex> lock(strongThis->mHandleMutex);
-                        handle = strongThis->mHandle[std::this_thread::get_id()];
-                    }
-                    
-                    if (handle == nullptr)
-                    {
-                        handle = curl_easy_init();
-                        curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, CURL_HEADER_CALLBACK);
-
-                        std::lock_guard<std::mutex> lock(strongThis->mHandleMutex);
-                        strongThis->mHandle[std::this_thread::get_id()] = handle;
-                    }
-                    
-                    char errorBuffer[CURL_ERROR_SIZE];
-                    errorBuffer[0] = 0;
-
-                    ProgressData progressData;
-                    progressData.mRequestHandle = pRequestHandle;
-                    progressData.mTerminateAbort = &strongThis->mTerminateAbort;
-                    
-                    if (lpParam.mProgress != nullptr)
-                    {
-                        decltype(lpParam.mProgress) progress = std::move(lpParam.mProgress);
-                        decltype(lpRequestSettings.mProgressTimePeriod) progressTimePeriod = lpRequestSettings.mProgressTimePeriod;
-                        auto lastTick = std::chrono::system_clock::now();
-                        progressData.mProgressTask = [progressTimePeriod, progress, lastTick]
-                            (const long long& lpDN, const long long& lpDT, const long long& lpUN, const long long& lpUT) mutable -> void
-                        {
-                            auto thisTick = std::chrono::system_clock::now();
-                            const auto difference = std::chrono::duration_cast<std::chrono::milliseconds>(thisTick - lastTick).count();
-                            
-                            if (difference > progressTimePeriod || (lpDN != 0 && lpDN == lpDT) || (lpUN != 0 && lpUN == lpUT))
-                            {
-                                lastTick = std::chrono::system_clock::now();
-                                Hermes::getInstance()->getTaskManager()->execute(-1, progress, lpDN, lpDT, lpUN, lpUT);
-                            }
-                        };
-                    }
-                    
-                    std::string requestUrl = std::move(lpParam.mMethod);
-                    strongThis->appendParameter(requestUrl, lpParam.mParameter);
-                    
-                    strongThis->configureHandle(handle, lpParam.mRequestType, lpParam.mResponseType, requestUrl, lpParam.mRequestBody, &responseMessage, &responseRawData, &responseHeader, header,
-                        lpRequestSettings.mTimeout, lpRequestSettings.mFlag, &progressData, errorBuffer, lpRequestSettings.mCACertificatePath);
-                    
-                    CURLcode curlCode = CURLE_OK;
-                    unsigned step = 0;
-                    unsigned terminateAbort = 0;
-
-                    do
-                    {
-                        curlCode = curl_easy_perform(handle);
-                        step++;
-                    }
-                    while ((terminateAbort = strongThis->mTerminateAbort.load()) == 0 && curlCode != CURLE_OK && step <= lpParam.mRepeatCount);
-
-                    curl_slist_free_all(header);
-
-                    strongThis->resetHandle(handle);
-                    
-                    if (terminateAbort == 0)
-                    {
-                        switch (curlCode)
-                        {
-                        case CURLE_OK:
-                            curl_easy_getinfo (handle, CURLINFO_RESPONSE_CODE, &httpCode);
-                            code = httpCode >= lpRequestSettings.mHttpCodeSuccess.first && httpCode <= lpRequestSettings.mHttpCodeSuccess.second ? ENetworkCode::OK : ENetworkCode::InvalidHttpCodeRange;
-                            break;
-                        case CURLE_COULDNT_RESOLVE_HOST:
-                            code = ENetworkCode::LostConnection;
-                            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Lost connection: %", requestUrl);
-                            break;
-                        case CURLE_OPERATION_TIMEDOUT:
-                            code = ENetworkCode::Timeout;
-                            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Timeout: %", requestUrl);
-                            break;
-                        case CURLE_ABORTED_BY_CALLBACK:
-                            code = ENetworkCode::Cancel;
-                            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Cancel: %", requestUrl);
-                            break;
-                        default:
-                            code = static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(curlCode));
-                            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "CURL code: %. URL: %", curl_easy_strerror(curlCode), requestUrl);
-                            break;
-                        }
-
                         if (lpParam.mCallback != nullptr)
                         {
-                            NetworkResponse response;
-                            response.mCode = code;
-                            response.mHttpCode = static_cast<int>(httpCode);
-                            response.mHeader = std::move(responseHeader);
-                            response.mMessage = strlen(errorBuffer) == 0 ? std::move(responseMessage) : errorBuffer;
-                            response.mRawData = std::move(responseRawData);
-
-                            if (response.mCode == ENetworkCode::OK && lpParam.mAllowCache)
-                                strongThis->cacheResponse(response, requestUrl, lpParam.mCacheLifetime);
-
                             Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(lpParam.mCallback), response = std::move(response)]() mutable -> void
                             {
                                 callback(std::move(response));
                             });
                         }
+
+                        return;
                     }
                 }
-                strongThis->mActivityCount--;
+
+                ENetworkCode code = ENetworkCode::Unknown;
+                long httpCode = -1;
+                std::vector<std::pair<std::string, std::string>> responseHeader;
+                std::string responseMessage = "";
+                DataBuffer responseRawData;
+                
+                auto uniqueHeader = strongThis->createUniqueHeader(lpParam.mHeader);
+                curl_slist* header = nullptr;
+
+                for (auto& v : uniqueHeader)
+                {
+                    std::string singleHeader = v.first;
+                    singleHeader += ": ";
+                    singleHeader += v.second;
+                    
+                    header = curl_slist_append(header, singleHeader.c_str());
+                }
+
+                void* handle = nullptr;
+                
+                {
+                    std::lock_guard<std::mutex> lock(strongThis->mHandleMutex);
+                    handle = strongThis->mHandle[std::this_thread::get_id()];
+                }
+                
+                if (handle == nullptr)
+                {
+                    handle = curl_easy_init();
+                    curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, CURL_HEADER_CALLBACK);
+
+                    std::lock_guard<std::mutex> lock(strongThis->mHandleMutex);
+                    strongThis->mHandle[std::this_thread::get_id()] = handle;
+                }
+                
+                char errorBuffer[CURL_ERROR_SIZE];
+                errorBuffer[0] = 0;
+
+                ProgressData progressData;
+                progressData.mRequestHandle = pRequestHandle;
+                progressData.mTerminateAbort = &strongThis->mTerminateAbort;
+                
+                if (lpParam.mProgress != nullptr)
+                {
+                    decltype(lpParam.mProgress) progress = std::move(lpParam.mProgress);
+                    decltype(lpRequestSettings.mProgressTimePeriod) progressTimePeriod = lpRequestSettings.mProgressTimePeriod;
+                    auto lastTick = std::chrono::system_clock::now();
+                    progressData.mProgressTask = [progressTimePeriod, progress, lastTick]
+                        (const long long& lpDN, const long long& lpDT, const long long& lpUN, const long long& lpUT) mutable -> void
+                    {
+                        auto thisTick = std::chrono::system_clock::now();
+                        const auto difference = std::chrono::duration_cast<std::chrono::milliseconds>(thisTick - lastTick).count();
+                        
+                        if (difference > progressTimePeriod || (lpDN != 0 && lpDN == lpDT) || (lpUN != 0 && lpUN == lpUT))
+                        {
+                            lastTick = std::chrono::system_clock::now();
+                            Hermes::getInstance()->getTaskManager()->execute(-1, progress, lpDN, lpDT, lpUN, lpUT);
+                        }
+                    };
+                }
+                
+                std::string requestUrl = std::move(lpParam.mMethod);
+                strongThis->appendParameter(requestUrl, lpParam.mParameter);
+                
+                strongThis->configureHandle(handle, lpParam.mRequestType, lpParam.mResponseType, requestUrl, lpParam.mRequestBody, &responseMessage, &responseRawData, &responseHeader, header,
+                    lpRequestSettings.mTimeout, lpRequestSettings.mFlag, &progressData, errorBuffer, lpRequestSettings.mCACertificatePath);
+                
+                CURLcode curlCode = CURLE_OK;
+                unsigned step = 0;
+                unsigned terminateAbort = 0;
+
+                do
+                {
+                    curlCode = curl_easy_perform(handle);
+                    step++;
+                }
+                while ((terminateAbort = strongThis->mTerminateAbort.load()) == 0 && curlCode != CURLE_OK && step <= lpParam.mRepeatCount);
+
+                curl_slist_free_all(header);
+
+                strongThis->resetHandle(handle);
+                
+                if (terminateAbort == 0)
+                {
+                    switch (curlCode)
+                    {
+                    case CURLE_OK:
+                        curl_easy_getinfo (handle, CURLINFO_RESPONSE_CODE, &httpCode);
+                        code = httpCode >= lpRequestSettings.mHttpCodeSuccess.first && httpCode <= lpRequestSettings.mHttpCodeSuccess.second ? ENetworkCode::OK : ENetworkCode::InvalidHttpCodeRange;
+                        break;
+                    case CURLE_COULDNT_RESOLVE_HOST:
+                        code = ENetworkCode::LostConnection;
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Lost connection: %", requestUrl);
+                        break;
+                    case CURLE_OPERATION_TIMEDOUT:
+                        code = ENetworkCode::Timeout;
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Timeout: %", requestUrl);
+                        break;
+                    case CURLE_ABORTED_BY_CALLBACK:
+                        code = ENetworkCode::Cancel;
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Cancel: %", requestUrl);
+                        break;
+                    default:
+                        code = static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(curlCode));
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "CURL code: %. URL: %", curl_easy_strerror(curlCode), requestUrl);
+                        break;
+                    }
+
+                    if (lpParam.mCallback != nullptr)
+                    {
+                        NetworkResponse response;
+                        response.mCode = code;
+                        response.mHttpCode = static_cast<int>(httpCode);
+                        response.mHeader = std::move(responseHeader);
+                        response.mMessage = strlen(errorBuffer) == 0 ? std::move(responseMessage) : errorBuffer;
+                        response.mRawData = std::move(responseRawData);
+
+                        if (response.mCode == ENetworkCode::OK && lpParam.mAllowCache)
+                            strongThis->cacheResponse(response, requestUrl, lpParam.mCacheLifetime);
+
+                        Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(lpParam.mCallback), response = std::move(response)]() mutable -> void
+                        {
+                            callback(std::move(response));
+                        });
+                    }
+                }
             }
         };
         
@@ -867,244 +856,235 @@ namespace hms
                 multiRequestData[i].mParam = &lpParam[i];
             
             std::shared_ptr<NetworkManager> strongThis = weakThis.lock();
-            if (strongThis != nullptr)
+            if (strongThis != nullptr && strongThis->mInitialized.load() == 2)
             {
-                strongThis->mActivityCount++;
-                if (strongThis->mInitialized.load() == 2)
+                std::vector<NetworkRequestParam> param;
+                param.reserve(lpParam.size());
+                
+                for (auto it = lpParam.begin(); it != lpParam.end(); it++)
                 {
-                    std::vector<NetworkRequestParam> param;
-                    param.reserve(lpParam.size());
-                    
-                    for (auto it = lpParam.begin(); it != lpParam.end(); it++)
+                    if (!(*it).mAllowCache)
                     {
-                        if (!(*it).mAllowCache)
+                        param.push_back(std::move(*it));
+                    }
+                    else
+                    {
+                        NetworkResponse response = strongThis->getResponseFromCache(it->mMethod, lpRequestSettings.mHttpCodeSuccess.first);
+                        
+                        if (response.mCode != ENetworkCode::OK)
                         {
                             param.push_back(std::move(*it));
                         }
                         else
                         {
-                            NetworkResponse response = strongThis->getResponseFromCache(it->mMethod, lpRequestSettings.mHttpCodeSuccess.first);
-                            
-                            if (response.mCode != ENetworkCode::OK)
+                            if (it->mCallback != nullptr)
                             {
-                                param.push_back(std::move(*it));
-                            }
-                            else
-                            {
-                                if (it->mCallback != nullptr)
+                                Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(it->mCallback), response = std::move(response)]() mutable -> void
                                 {
-                                    Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(it->mCallback), response = std::move(response)]() mutable -> void
-                                    {
-                                        callback(std::move(response));
-                                    });
-                                }
+                                    callback(std::move(response));
+                                });
                             }
                         }
                     }
-                    
-                    if (param.size() == 0)
-                    {
-                        strongThis->mActivityCount--;
-                        
-                        return;
-                    }
-
-                    {
-                        std::lock_guard<std::mutex> lock(strongThis->mMultiHandleMutex);
-                        handle = strongThis->mMultiHandle[std::this_thread::get_id()];
-                    }
-                    
-                    if (handle == nullptr)
-                    {
-                        handle = curl_multi_init();
-
-                        std::lock_guard<std::mutex> lock(strongThis->mMultiHandleMutex);
-                        strongThis->mMultiHandle[std::this_thread::get_id()] = handle;
-                    }
-                
-                    paramSize = param.size();                    
-                    multiRequestData = std::vector<MultiRequestData>(paramSize);
-                
-                    for (size_t i = 0; i < paramSize; ++i)
-                    {
-                        multiRequestData[i].mHandle = curl_easy_init();
-                        multiRequestData[i].mParam = &param[i];
-                        multiRequestData[i].mErrorBuffer.resize(CURL_ERROR_SIZE);
-                        multiRequestData[i].mErrorBuffer[0] = 0;
-
-                        curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_HEADERFUNCTION, CURL_HEADER_CALLBACK);
-                        curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_PRIVATE, &multiRequestData[i]);
-                        
-                        auto uniqueHeader = strongThis->createUniqueHeader(param[i].mHeader);
-
-                        curl_slist* header = nullptr;
-
-                        for (auto& x : uniqueHeader)
-                        {
-                            std::string singleHeader = x.first;
-                            singleHeader += ": ";
-                            singleHeader += x.second;
-                            
-                            header = curl_slist_append(header, singleHeader.c_str());
-                        }
-
-                        multiRequestData[i].mProgressData.mRequestHandle = pRequestHandle[i];
-                        multiRequestData[i].mProgressData.mTerminateAbort = &strongThis->mTerminateAbort;
-                        
-                        if (param[i].mProgress != nullptr)
-                        {
-                            decltype(param[i].mProgress) progress = std::move(param[i].mProgress);
-                            decltype(lpRequestSettings.mProgressTimePeriod) progressTimePeriod = lpRequestSettings.mProgressTimePeriod;
-                            auto lastTick = std::chrono::system_clock::now();
-                            multiRequestData[i].mProgressData.mProgressTask = [progressTimePeriod, progress, lastTick]
-                                (const long long& lpDN, const long long& lpDT, const long long& lpUN, const long long& lpUT) mutable -> void
-                            {
-                                auto thisTick = std::chrono::system_clock::now();
-                                const auto difference = std::chrono::duration_cast<std::chrono::milliseconds>(thisTick - lastTick).count();
-                                
-                                if (difference > progressTimePeriod || (lpDN != 0 && lpDN == lpDT) || (lpUN != 0 && lpUN == lpUT))
-                                {
-                                    lastTick = std::chrono::system_clock::now();
-                                    Hermes::getInstance()->getTaskManager()->execute(-1, progress, lpDN, lpDT, lpUN, lpUT);
-                                }
-                            };
-                        }
-                        
-                        std::string requestUrl = param[i].mMethod;
-                        strongThis->appendParameter(requestUrl, param[i].mParameter);
-                        
-                        strongThis->configureHandle(multiRequestData[i].mHandle, param[i].mRequestType, param[i].mResponseType, requestUrl, param[i].mRequestBody, &multiRequestData[i].mResponseMessage,
-                            &multiRequestData[i].mResponseRawData, &multiRequestData[i].mResponseHeader, header, lpRequestSettings.mTimeout, lpRequestSettings.mFlag, &multiRequestData[i].mProgressData,
-                            &multiRequestData[i].mErrorBuffer[0], lpRequestSettings.mCACertificatePath);
-                        
-                        curl_multi_add_handle(handle, multiRequestData[i].mHandle);
-                    }
-
-                    int activeHandle = 0;
-                    unsigned terminateAbort = 0;
-                    
-                    do
-                    {
-                        long multiTimeout = -1;
-                        curl_multi_timeout(handle, &multiTimeout);
-                    
-                        timeval timeout = {1, 0};
-                        
-                        if (multiTimeout >= 0)
-                        {
-                            timeout.tv_sec = multiTimeout / 1000;
-                            
-                            if (timeout.tv_sec > 1)
-                                timeout.tv_sec = 1;
-                            else
-                                timeout.tv_usec = (multiTimeout % 1000) * 1000;
-                        }
-
-                        fd_set readFd;
-                        fd_set writeFd;
-                        fd_set exceptionFd;
-
-                        FD_ZERO(&readFd);
-                        FD_ZERO(&writeFd);
-                        FD_ZERO(&exceptionFd);
-                        
-                        int maxFd = -1;
-             
-                        CURLMcode codeFdset = curl_multi_fdset(handle, &readFd, &writeFd, &exceptionFd, &maxFd);
-                        
-                        if (codeFdset != CURLM_OK)
-                        {
-                            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "CURL fdset code: \"%\"", curl_multi_strerror(codeFdset));
-                            
-                            break;
-                        }
-
-                        int codeSelect = 0;
-                     
-                        if (maxFd == -1)
-                        {
-                            timeval wait = {0, 100000};
-                            codeSelect = select(0, nullptr, nullptr, nullptr, &wait);
-                        }
-                        else
-                        {
-                            codeSelect = select(maxFd + 1, &readFd, &writeFd, &exceptionFd, &timeout);
-                        }
-                        
-                        switch (codeSelect)
-                        {
-                        case -1: // error
-                            break;
-                        case 0: // timeout
-                        default:
-                            curl_multi_perform(handle, &activeHandle);
-                            break;
-                        }
-                        
-                        CURLMsg* message = nullptr;
-                        int messageLeft = 0;
-                        
-                        while ((terminateAbort = strongThis->mTerminateAbort.load()) == 0 && (message = curl_multi_info_read(handle, &messageLeft)))
-                        {
-                            if (message->msg == CURLMSG_DONE)
-                            {
-                                CURLcode curlCode = message->data.result;
-                                MultiRequestData* requestData = nullptr;
-                                
-                                ENetworkCode code = ENetworkCode::Unknown;
-                                long httpCode = -1;
-                                
-                                curl_easy_getinfo(message->easy_handle, CURLINFO_PRIVATE, &requestData);
-                                
-                                switch (curlCode)
-                                {
-                                case CURLE_OK:
-                                    curl_easy_getinfo(message->easy_handle, CURLINFO_RESPONSE_CODE, &httpCode);
-                                    code = httpCode >= lpRequestSettings.mHttpCodeSuccess.first && httpCode <= lpRequestSettings.mHttpCodeSuccess.second ? ENetworkCode::OK :
-                                        ENetworkCode::InvalidHttpCodeRange;
-                                    break;
-                                case CURLE_COULDNT_RESOLVE_HOST:
-                                    code = ENetworkCode::LostConnection;
-                                    Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Lost connection: %", (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
-                                    break;
-                                case CURLE_OPERATION_TIMEDOUT:
-                                    code = ENetworkCode::Timeout;
-                                    Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Timeout: %", (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
-                                    break;
-                                case CURLE_ABORTED_BY_CALLBACK:
-                                    code = ENetworkCode::Cancel;
-                                    Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Cancel: %", (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
-                                    break;
-                                default:
-                                    code = static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(curlCode));
-                                    Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "CURL code: %. URL: %", curl_easy_strerror(curlCode), (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
-                                    break;
-                                }
-
-                                if (requestData != nullptr && requestData->mParam->mCallback != nullptr)
-                                {
-                                    NetworkResponse response;
-
-                                    response.mCode = code;
-                                    response.mHttpCode = static_cast<int>(httpCode);
-                                    response.mHeader = std::move(requestData->mResponseHeader);
-                                    response.mMessage = strlen(&requestData->mErrorBuffer[0]) == 0 ? std::move(requestData->mResponseMessage) : &requestData->mErrorBuffer[0];
-                                    response.mRawData = std::move(requestData->mResponseRawData);
-                                    
-                                    if (response.mCode == ENetworkCode::OK && requestData->mParam->mAllowCache)
-                                        strongThis->cacheResponse(response, requestData->mParam->mMethod, requestData->mParam->mCacheLifetime);
-
-                                    Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(requestData->mParam->mCallback), response = std::move(response)]() mutable -> void
-                                    {
-                                        callback(std::move(response));
-                                    });
-                                }
-                            }
-                        }
-                    }
-                    while (activeHandle && terminateAbort == 0);
                 }
-                strongThis->mActivityCount--;
+                
+                if (param.size() == 0)
+                    return;
+
+                {
+                    std::lock_guard<std::mutex> lock(strongThis->mMultiHandleMutex);
+                    handle = strongThis->mMultiHandle[std::this_thread::get_id()];
+                }
+                
+                if (handle == nullptr)
+                {
+                    handle = curl_multi_init();
+
+                    std::lock_guard<std::mutex> lock(strongThis->mMultiHandleMutex);
+                    strongThis->mMultiHandle[std::this_thread::get_id()] = handle;
+                }
+            
+                paramSize = param.size();
+                multiRequestData = std::vector<MultiRequestData>(paramSize);
+            
+                for (size_t i = 0; i < paramSize; ++i)
+                {
+                    multiRequestData[i].mHandle = curl_easy_init();
+                    multiRequestData[i].mParam = &param[i];
+                    multiRequestData[i].mErrorBuffer.resize(CURL_ERROR_SIZE);
+                    multiRequestData[i].mErrorBuffer[0] = 0;
+
+                    curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_HEADERFUNCTION, CURL_HEADER_CALLBACK);
+                    curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_PRIVATE, &multiRequestData[i]);
+                    
+                    auto uniqueHeader = strongThis->createUniqueHeader(param[i].mHeader);
+
+                    curl_slist* header = nullptr;
+
+                    for (auto& x : uniqueHeader)
+                    {
+                        std::string singleHeader = x.first;
+                        singleHeader += ": ";
+                        singleHeader += x.second;
+                        
+                        header = curl_slist_append(header, singleHeader.c_str());
+                    }
+
+                    multiRequestData[i].mProgressData.mRequestHandle = pRequestHandle[i];
+                    multiRequestData[i].mProgressData.mTerminateAbort = &strongThis->mTerminateAbort;
+                    
+                    if (param[i].mProgress != nullptr)
+                    {
+                        decltype(param[i].mProgress) progress = std::move(param[i].mProgress);
+                        decltype(lpRequestSettings.mProgressTimePeriod) progressTimePeriod = lpRequestSettings.mProgressTimePeriod;
+                        auto lastTick = std::chrono::system_clock::now();
+                        multiRequestData[i].mProgressData.mProgressTask = [progressTimePeriod, progress, lastTick]
+                            (const long long& lpDN, const long long& lpDT, const long long& lpUN, const long long& lpUT) mutable -> void
+                        {
+                            auto thisTick = std::chrono::system_clock::now();
+                            const auto difference = std::chrono::duration_cast<std::chrono::milliseconds>(thisTick - lastTick).count();
+                            
+                            if (difference > progressTimePeriod || (lpDN != 0 && lpDN == lpDT) || (lpUN != 0 && lpUN == lpUT))
+                            {
+                                lastTick = std::chrono::system_clock::now();
+                                Hermes::getInstance()->getTaskManager()->execute(-1, progress, lpDN, lpDT, lpUN, lpUT);
+                            }
+                        };
+                    }
+                    
+                    std::string requestUrl = param[i].mMethod;
+                    strongThis->appendParameter(requestUrl, param[i].mParameter);
+                    
+                    strongThis->configureHandle(multiRequestData[i].mHandle, param[i].mRequestType, param[i].mResponseType, requestUrl, param[i].mRequestBody, &multiRequestData[i].mResponseMessage,
+                        &multiRequestData[i].mResponseRawData, &multiRequestData[i].mResponseHeader, header, lpRequestSettings.mTimeout, lpRequestSettings.mFlag, &multiRequestData[i].mProgressData,
+                        &multiRequestData[i].mErrorBuffer[0], lpRequestSettings.mCACertificatePath);
+                    
+                    curl_multi_add_handle(handle, multiRequestData[i].mHandle);
+                }
+
+                int activeHandle = 0;
+                unsigned terminateAbort = 0;
+                
+                do
+                {
+                    long multiTimeout = -1;
+                    curl_multi_timeout(handle, &multiTimeout);
+                
+                    timeval timeout = {1, 0};
+                    
+                    if (multiTimeout >= 0)
+                    {
+                        timeout.tv_sec = multiTimeout / 1000;
+                        
+                        if (timeout.tv_sec > 1)
+                            timeout.tv_sec = 1;
+                        else
+                            timeout.tv_usec = (multiTimeout % 1000) * 1000;
+                    }
+
+                    fd_set readFd;
+                    fd_set writeFd;
+                    fd_set exceptionFd;
+
+                    FD_ZERO(&readFd);
+                    FD_ZERO(&writeFd);
+                    FD_ZERO(&exceptionFd);
+                    
+                    int maxFd = -1;
+         
+                    CURLMcode codeFdset = curl_multi_fdset(handle, &readFd, &writeFd, &exceptionFd, &maxFd);
+                    
+                    if (codeFdset != CURLM_OK)
+                    {
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "CURL fdset code: \"%\"", curl_multi_strerror(codeFdset));
+                        
+                        break;
+                    }
+
+                    int codeSelect = 0;
+                 
+                    if (maxFd == -1)
+                    {
+                        timeval wait = {0, 100000};
+                        codeSelect = select(0, nullptr, nullptr, nullptr, &wait);
+                    }
+                    else
+                    {
+                        codeSelect = select(maxFd + 1, &readFd, &writeFd, &exceptionFd, &timeout);
+                    }
+                    
+                    switch (codeSelect)
+                    {
+                    case -1: // error
+                        break;
+                    case 0: // timeout
+                    default:
+                        curl_multi_perform(handle, &activeHandle);
+                        break;
+                    }
+                    
+                    CURLMsg* message = nullptr;
+                    int messageLeft = 0;
+                    
+                    while ((terminateAbort = strongThis->mTerminateAbort.load()) == 0 && (message = curl_multi_info_read(handle, &messageLeft)))
+                    {
+                        if (message->msg == CURLMSG_DONE)
+                        {
+                            CURLcode curlCode = message->data.result;
+                            MultiRequestData* requestData = nullptr;
+                            
+                            ENetworkCode code = ENetworkCode::Unknown;
+                            long httpCode = -1;
+                            
+                            curl_easy_getinfo(message->easy_handle, CURLINFO_PRIVATE, &requestData);
+                            
+                            switch (curlCode)
+                            {
+                            case CURLE_OK:
+                                curl_easy_getinfo(message->easy_handle, CURLINFO_RESPONSE_CODE, &httpCode);
+                                code = httpCode >= lpRequestSettings.mHttpCodeSuccess.first && httpCode <= lpRequestSettings.mHttpCodeSuccess.second ? ENetworkCode::OK :
+                                    ENetworkCode::InvalidHttpCodeRange;
+                                break;
+                            case CURLE_COULDNT_RESOLVE_HOST:
+                                code = ENetworkCode::LostConnection;
+                                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Lost connection: %", (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
+                                break;
+                            case CURLE_OPERATION_TIMEDOUT:
+                                code = ENetworkCode::Timeout;
+                                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Timeout: %", (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
+                                break;
+                            case CURLE_ABORTED_BY_CALLBACK:
+                                code = ENetworkCode::Cancel;
+                                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Cancel: %", (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
+                                break;
+                            default:
+                                code = static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(curlCode));
+                                Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "CURL code: %. URL: %", curl_easy_strerror(curlCode), (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
+                                break;
+                            }
+
+                            if (requestData != nullptr && requestData->mParam->mCallback != nullptr)
+                            {
+                                NetworkResponse response;
+
+                                response.mCode = code;
+                                response.mHttpCode = static_cast<int>(httpCode);
+                                response.mHeader = std::move(requestData->mResponseHeader);
+                                response.mMessage = strlen(&requestData->mErrorBuffer[0]) == 0 ? std::move(requestData->mResponseMessage) : &requestData->mErrorBuffer[0];
+                                response.mRawData = std::move(requestData->mResponseRawData);
+                                
+                                if (response.mCode == ENetworkCode::OK && requestData->mParam->mAllowCache)
+                                    strongThis->cacheResponse(response, requestData->mParam->mMethod, requestData->mParam->mCacheLifetime);
+
+                                Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(requestData->mParam->mCallback), response = std::move(response)]() mutable -> void
+                                {
+                                    callback(std::move(response));
+                                });
+                            }
+                        }
+                    }
+                }
+                while (activeHandle && terminateAbort == 0);
             }
             
             for (size_t i = 0; i < paramSize; ++i)
@@ -1137,13 +1117,11 @@ namespace hms
     
     void NetworkManager::setTimeout(long pTimeout)
     {
-        mActivityCount++;    
         if (mInitialized.load() == 2)
         {
             std::lock_guard<std::mutex> lock(mRequestSettingsMutex);
             mRequestSettings.mTimeout = pTimeout;
         }
-        mActivityCount--;
     }
     
     bool NetworkManager::getFlag(ENetworkFlag pFlag) const
@@ -1158,13 +1136,11 @@ namespace hms
     {
         assert(pFlag < ENetworkFlag::Count);
         
-        mActivityCount++;    
         if (mInitialized.load() == 2)
         {
             std::lock_guard<std::mutex> lock(mRequestSettingsMutex);
             mRequestSettings.mFlag[static_cast<size_t>(pFlag)] = pState;
         }
-        mActivityCount--;
     }
     
     long NetworkManager::getProgressTimePeriod() const
@@ -1175,13 +1151,11 @@ namespace hms
     
     void NetworkManager::setProgressTimePeriod(long pTimePeriod)
     {
-        mActivityCount++;    
         if (mInitialized.load() == 2)
         {
             std::lock_guard<std::mutex> lock(mRequestSettingsMutex);
             mRequestSettings.mProgressTimePeriod = pTimePeriod;
         }
-        mActivityCount--;
     }
     
     std::string NetworkManager::getCACertificatePath() const
@@ -1191,13 +1165,11 @@ namespace hms
     }
     void NetworkManager::setCACertificatePath(std::string pPath)
     {
-        mActivityCount++;    
         if (mInitialized.load() == 2)
         {
             std::lock_guard<std::mutex> lock(mRequestSettingsMutex);
             mRequestSettings.mCACertificatePath = std::move(pPath);
         }
-        mActivityCount--;
     }
     
     void NetworkManager::appendParameter(std::string& pURL, const std::vector<std::pair<std::string, std::string>>& pParameter) const
@@ -1693,7 +1665,7 @@ namespace hms
     void NetworkManager::closeSimpleSocket()
     {
         mStopSimpleSocketLoop.store(1);
-        Hermes::getInstance()->getTaskManager()->clearTask(mThreadPoolSimpleSocketID);
+        Hermes::getInstance()->getTaskManager()->flush(mThreadPoolSimpleSocketID);
     }
 
     void NetworkManager::sendSimpleSocketMessage(const std::string& pMessage, std::function<void(ENetworkCode)> pCallback)
@@ -1704,64 +1676,54 @@ namespace hms
         auto socketTask = [weakThis](std::string lpMessage, std::function<void(ENetworkCode)> lpCallback) -> void
         {
             std::shared_ptr<NetworkManager> strongThis = weakThis.lock();
-            if (strongThis != nullptr)
+            if (strongThis != nullptr && strongThis->mInitialized.load() == 2 && strongThis->mSimpleSocketInitialized.load() == 2 && strongThis->mSimpleSocketCURL != nullptr)
             {
-                strongThis->mActivityCount++;
-                if (strongThis->mInitialized.load() == 2 && strongThis->mSimpleSocketInitialized.load() == 2)
+                unsigned tryCount = 0;
+                
+                curl_socket_t socketfd;
+                CURLcode cCode = curl_easy_getinfo(strongThis->mSimpleSocketCURL, CURLINFO_ACTIVESOCKET, &socketfd);
+                
+                if (cCode != CURLE_OK)
                 {
-                    if (strongThis->mSimpleSocketCURL != nullptr)
+                    ENetworkCode code = static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(cCode));
+                    
+                    if (lpCallback != nullptr)
                     {
-                        unsigned tryCount = 0;
-                        
-                        curl_socket_t socketfd;
-                        CURLcode cCode = curl_easy_getinfo(strongThis->mSimpleSocketCURL, CURLINFO_ACTIVESOCKET, &socketfd);
-                        
-                        if (cCode != CURLE_OK)
+                        Hermes::getInstance()->getTaskManager()->execute(-1, [lpCallback = std::move(lpCallback), code]() -> void
                         {
-                            ENetworkCode code = static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(cCode));
-                            
-                            if (lpCallback != nullptr)
-                            {
-                                Hermes::getInstance()->getTaskManager()->execute(-1, [lpCallback = std::move(lpCallback), code]() -> void
-                                {
-                                    lpCallback(code);
-                                });
-                            }
+                            lpCallback(code);
+                        });
+                    }
 
-                            strongThis->mActivityCount--;
-                            
-                            return;
-                        }
-                        
-                        unsigned terminateAbort = 0;
-                        
-                        do
+                    return;
+                }
+                
+                unsigned terminateAbort = 0;
+                
+                do
+                {
+                    if (tryCount != 0)
+                        CURL_WAIT_ON_SOCKET(socketfd, 1, strongThis->mSocketWaitTimeout);
+                    
+                    size_t sendCount = 0;
+                    cCode = curl_easy_send(strongThis->mSimpleSocketCURL, lpMessage.c_str(), lpMessage.length(), &sendCount);
+                    
+                    tryCount++;
+                }
+                while ((terminateAbort = strongThis->mTerminateAbort.load()) == 0 && cCode == CURLE_AGAIN && tryCount < 3);
+                
+                if (terminateAbort == 0)
+                {
+                    ENetworkCode code = cCode == CURLE_OK ? ENetworkCode::OK : static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(cCode));
+                
+                    if (lpCallback != nullptr)
+                    {
+                        Hermes::getInstance()->getTaskManager()->execute(-1, [lpCallback = std::move(lpCallback), code]() -> void
                         {
-                            if (tryCount != 0)
-                                CURL_WAIT_ON_SOCKET(socketfd, 1, strongThis->mSocketWaitTimeout);
-                            
-                            size_t sendCount = 0;
-                            cCode = curl_easy_send(strongThis->mSimpleSocketCURL, lpMessage.c_str(), lpMessage.length(), &sendCount);
-                            
-                            tryCount++;
-                        }
-                        while ((terminateAbort = strongThis->mTerminateAbort.load()) == 0 && cCode == CURLE_AGAIN && tryCount < 3);
-                        
-                        if (terminateAbort == 0)
-                        {
-                            ENetworkCode code = cCode == CURLE_OK ? ENetworkCode::OK : static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(cCode));
-                        
-                            if (lpCallback != nullptr)
-                            {
-                                Hermes::getInstance()->getTaskManager()->execute(-1, [lpCallback = std::move(lpCallback), code]() -> void
-                                {
-                                    lpCallback(code);
-                                });
-                            }
-                        }
+                            lpCallback(code);
+                        });
                     }
                 }
-                strongThis->mActivityCount--;
             }
         };
 
@@ -1782,214 +1744,209 @@ namespace hms
         auto socketTask = [weakThis](SimpleSocketRequestParam lpParam, RequestSettings lpRequestSettings) -> void
         {
             std::shared_ptr<NetworkManager> strongThis = weakThis.lock();
-            if (strongThis != nullptr)
+            if (strongThis != nullptr && strongThis->mInitialized.load() == 2 && strongThis->mSimpleSocketInitialized.load() == 2)
             {
-                strongThis->mActivityCount++;
-                if (strongThis->mInitialized.load() == 2 && strongThis->mSimpleSocketInitialized.load() == 2)
+                std::chrono::time_point<std::chrono::system_clock> time = std::chrono::system_clock::now();
+                std::chrono::time_point<std::chrono::system_clock> lastMessageTime = std::chrono::system_clock::now();
+                
+                ESocketDisconnectCause disconnectCause = ESocketDisconnectCause::User;
+                
+                if (strongThis->mSimpleSocketCURL != nullptr)
                 {
-                    std::chrono::time_point<std::chrono::system_clock> time = std::chrono::system_clock::now();
-                    std::chrono::time_point<std::chrono::system_clock> lastMessageTime = std::chrono::system_clock::now();
+                    Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Tried to open new socket before closing old one.");
+                    disconnectCause = ESocketDisconnectCause::InitialConnection;
+                }
+                else
+                {
+                    strongThis->mSimpleSocketCURL = curl_easy_init();
                     
-                    ESocketDisconnectCause disconnectCause = ESocketDisconnectCause::User;
-                    
-                    if (strongThis->mSimpleSocketCURL != nullptr)
+                    if (strongThis->mSimpleSocketCURL == NULL)
                     {
-                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Tried to open new socket before closing old one.");
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Curl easy init fail for socket.");
                         disconnectCause = ESocketDisconnectCause::InitialConnection;
                     }
                     else
                     {
-                        strongThis->mSimpleSocketCURL = curl_easy_init();
+                        strongThis->mStopSimpleSocketLoop.store(0);
                         
-                        if (strongThis->mSimpleSocketCURL == NULL)
+                        strongThis->appendParameter(lpParam.mBaseURL, lpParam.mParameter);
+                        tools::URLTool url(lpParam.mBaseURL);
+                        
+                        curl_easy_setopt(strongThis->mSimpleSocketCURL, CURLOPT_URL, url.getHttpURL().c_str());
+                        curl_easy_setopt(strongThis->mSimpleSocketCURL, CURLOPT_CONNECT_ONLY, 1L);
+                        curl_easy_setopt(strongThis->mSimpleSocketCURL, CURLOPT_SSL_VERIFYPEER, !lpRequestSettings.mFlag[static_cast<size_t>(ENetworkFlag::DisableSSLVerifyPeer)] ? 1L : 0L);
+
+                        if (lpRequestSettings.mCACertificatePath.size() > 0)
+                            curl_easy_setopt(strongThis->mSimpleSocketCURL, CURLOPT_CAINFO, lpRequestSettings.mCACertificatePath.c_str());
+                        
+                        CURLcode res = curl_easy_perform(strongThis->mSimpleSocketCURL);
+                        
+                        if (res != CURLE_OK)
                         {
-                            Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Curl easy init fail for socket.");
+                            Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket connection failure for url '%'. CURL CODE %, message: '%'", lpParam.mBaseURL,
+                                res, curl_easy_strerror(res));
                             disconnectCause = ESocketDisconnectCause::InitialConnection;
                         }
                         else
                         {
-                            strongThis->mStopSimpleSocketLoop.store(0);
+                            curl_socket_t socketfd;
                             
-                            strongThis->appendParameter(lpParam.mBaseURL, lpParam.mParameter);
-                            tools::URLTool url(lpParam.mBaseURL);
-                            
-                            curl_easy_setopt(strongThis->mSimpleSocketCURL, CURLOPT_URL, url.getHttpURL().c_str());
-                            curl_easy_setopt(strongThis->mSimpleSocketCURL, CURLOPT_CONNECT_ONLY, 1L);
-                            curl_easy_setopt(strongThis->mSimpleSocketCURL, CURLOPT_SSL_VERIFYPEER, !lpRequestSettings.mFlag[static_cast<size_t>(ENetworkFlag::DisableSSLVerifyPeer)] ? 1L : 0L);
-
-                            if (lpRequestSettings.mCACertificatePath.size() > 0)
-                                curl_easy_setopt(strongThis->mSimpleSocketCURL, CURLOPT_CAINFO, lpRequestSettings.mCACertificatePath.c_str());
-                            
-                            CURLcode res = curl_easy_perform(strongThis->mSimpleSocketCURL);
+                            res = curl_easy_getinfo(strongThis->mSimpleSocketCURL, CURLINFO_LASTSOCKET, &socketfd);
                             
                             if (res != CURLE_OK)
                             {
-                                Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket connection failure for url '%'. CURL CODE %, message: '%'", lpParam.mBaseURL,
+                                Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket get info failure for url '%'. CURL CODE %, message: '%'", lpParam.mBaseURL,
                                     res, curl_easy_strerror(res));
                                 disconnectCause = ESocketDisconnectCause::InitialConnection;
                             }
                             else
                             {
-                                curl_socket_t socketfd;
+                                strongThis->mSimpleSocketActive.store(1);
                                 
-                                res = curl_easy_getinfo(strongThis->mSimpleSocketCURL, CURLINFO_LASTSOCKET, &socketfd);
+                                std::string secSocketAccept;
+                                res = static_cast<CURLcode>(strongThis->sendUpgradeHeader(strongThis->mSimpleSocketCURL, url, lpParam.mHeader, secSocketAccept));
                                 
                                 if (res != CURLE_OK)
                                 {
-                                    Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket get info failure for url '%'. CURL CODE %, message: '%'", lpParam.mBaseURL,
-                                        res, curl_easy_strerror(res));
-                                    disconnectCause = ESocketDisconnectCause::InitialConnection;
+                                    Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket header message fail for url '%'. CURL CODE %, message: '%'", url.getURL(), res, curl_easy_strerror(res));
+                                    disconnectCause = ESocketDisconnectCause::Header;
                                 }
                                 else
                                 {
-                                    strongThis->mSimpleSocketActive.store(1);
+                                    const size_t bufferLength = 2048;
+                                    char buffer[bufferLength];
+                                    std::string data;
+                                    bool error = false;
+                                    bool headerCheck = true;
+                                    std::vector<SocketFrame> frame;
                                     
-                                    std::string secSocketAccept;
-                                    res = static_cast<CURLcode>(strongThis->sendUpgradeHeader(strongThis->mSimpleSocketCURL, url, lpParam.mHeader, secSocketAccept));
+                                    data.reserve(bufferLength);
                                     
-                                    if (res != CURLE_OK)
+                                    while (strongThis->mTerminateAbort.load() == 0 && !error && Hermes::getInstance()->getTaskManager()->canContinueTask(strongThis->mThreadPoolSimpleSocketID))
                                     {
-                                        Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket header message fail for url '%'. CURL CODE %, message: '%'", url.getURL(), res, curl_easy_strerror(res));
-                                        disconnectCause = ESocketDisconnectCause::Header;
-                                    }
-                                    else
-                                    {
-                                        const size_t bufferLength = 2048;
-                                        char buffer[bufferLength];
-                                        std::string data;
-                                        bool error = false;
-                                        bool headerCheck = true;
-                                        std::vector<SocketFrame> frame;
+                                        size_t readCount = 0;
                                         
-                                        data.reserve(bufferLength);
-                                        
-                                        while (strongThis->mTerminateAbort.load() == 0 && !error && Hermes::getInstance()->getTaskManager()->canContinueTask(strongThis->mThreadPoolSimpleSocketID))
+                                        if (strongThis->mStopSimpleSocketLoop.load() == 1)
                                         {
-                                            size_t readCount = 0;
+                                            std::string message = strongThis->packSimpleSocketMessage("", ESocketOpCode::Close);
                                             
-                                            if (strongThis->mStopSimpleSocketLoop.load() == 1)
+                                            res = curl_easy_send(strongThis->mSimpleSocketCURL, message.c_str(), message.length(), &readCount);
+                                            
+                                            if (res != CURLE_OK)
+                                                Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Close send failed. CURLcode %", static_cast<int>(res));
+                                            
+                                            error = true;
+                                            disconnectCause = ESocketDisconnectCause::Close;
+                                            
+                                            break;
+                                        }
+                                        
+                                        data.clear();
+                                        
+                                        do
+                                        {
+                                            readCount = 0;
+                                            res = curl_easy_recv(strongThis->mSimpleSocketCURL, buffer, bufferLength * sizeof(char), &readCount);
+                                            
+                                            if (res != CURLE_OK && res != CURLE_AGAIN)
                                             {
-                                                std::string message = strongThis->packSimpleSocketMessage("", ESocketOpCode::Close);
+                                                Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket read fail for url '%'. CURL CODE %, message: '%'", url.getURL(), res,
+                                                    curl_easy_strerror(res));
                                                 
-                                                res = curl_easy_send(strongThis->mSimpleSocketCURL, message.c_str(), message.length(), &readCount);
-                                                
-                                                if (res != CURLE_OK)
-                                                    Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Close send failed. CURLcode %", static_cast<int>(res));
-                                                
+                                                disconnectCause = ESocketDisconnectCause::Other;
                                                 error = true;
-                                                disconnectCause = ESocketDisconnectCause::Close;
                                                 
                                                 break;
                                             }
-                                            
-                                            data.clear();
-                                            
-                                            do
+                                            else if (readCount > 0)
                                             {
-                                                readCount = 0;
-                                                res = curl_easy_recv(strongThis->mSimpleSocketCURL, buffer, bufferLength * sizeof(char), &readCount);
-                                                
-                                                if (res != CURLE_OK && res != CURLE_AGAIN)
-                                                {
-                                                    Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket read fail for url '%'. CURL CODE %, message: '%'", url.getURL(), res,
-                                                        curl_easy_strerror(res));
-                                                    
-                                                    disconnectCause = ESocketDisconnectCause::Other;
-                                                    error = true;
-                                                    
-                                                    break;
-                                                }
-                                                else if (readCount > 0)
-                                                {
-                                                    data.append(buffer, readCount);
-                                                }
-                                                else
-                                                {
-                                                    if (!data.empty())
-                                                        lastMessageTime = std::chrono::system_clock::now();
-                                                    
-                                                    break;
-                                                }
+                                                data.append(buffer, readCount);
                                             }
-                                            while (strongThis->mTerminateAbort.load() == 0);
-                                            
-                                            if (!error)
+                                            else
                                             {
                                                 if (!data.empty())
+                                                    lastMessageTime = std::chrono::system_clock::now();
+                                                
+                                                break;
+                                            }
+                                        }
+                                        while (strongThis->mTerminateAbort.load() == 0);
+                                        
+                                        if (!error)
+                                        {
+                                            if (!data.empty())
+                                            {
+                                                if (headerCheck)
                                                 {
-                                                    if (headerCheck)
+                                                    headerCheck = false;
+                                                    
+                                                    const std::string acceptKey = "Sec-WebSocket-Accept: ";
+                                                    size_t keyPos = data.find(acceptKey);
+                                                    size_t codePos = data.find("HTTP/1.1 101 Switching Protocols");
+                                                    
+                                                    if (codePos != std::string::npos && keyPos != std::string::npos && data.length() >= keyPos + acceptKey.length() + secSocketAccept.length() &&
+                                                        data.substr(keyPos + acceptKey.length(), secSocketAccept.length()).compare(secSocketAccept) == 0)
                                                     {
-                                                        headerCheck = false;
-                                                        
-                                                        const std::string acceptKey = "Sec-WebSocket-Accept: ";
-                                                        size_t keyPos = data.find(acceptKey);
-                                                        size_t codePos = data.find("HTTP/1.1 101 Switching Protocols");
-                                                        
-                                                        if (codePos != std::string::npos && keyPos != std::string::npos && data.length() >= keyPos + acceptKey.length() + secSocketAccept.length() &&
-                                                            data.substr(keyPos + acceptKey.length(), secSocketAccept.length()).compare(secSocketAccept) == 0)
+                                                        if (lpParam.mConnectCallback != nullptr)
                                                         {
-                                                            if (lpParam.mConnectCallback != nullptr)
+                                                            Hermes::getInstance()->getTaskManager()->execute(-1, [connectCallback = std::move(lpParam.mConnectCallback)]() -> void
                                                             {
-                                                                Hermes::getInstance()->getTaskManager()->execute(-1, [connectCallback = std::move(lpParam.mConnectCallback)]() -> void
-                                                                {
-                                                                    connectCallback();
-                                                                });
-                                                            }
-                                                        }
-                                                        else
-                                                        {
-                                                            Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket invalid handshake.");
-                                                            error = true;
-                                                            disconnectCause = ESocketDisconnectCause::Handshake;
+                                                                connectCallback();
+                                                            });
                                                         }
                                                     }
                                                     else
                                                     {
-                                                        auto newFrame = strongThis->unpackSimpleSocketMessage(data);
-                                                        
-                                                        if (!strongThis->handleSimpleSocketFrame(strongThis->mSimpleSocketCURL, newFrame, frame, lpParam.mMessageCallback))
-                                                        {
-                                                            error = true;
-                                                            disconnectCause = ESocketDisconnectCause::Close;
-                                                        }
+                                                        Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket invalid handshake.");
+                                                        error = true;
+                                                        disconnectCause = ESocketDisconnectCause::Handshake;
                                                     }
-                                                }
-                                                
-                                                if (lpParam.mTimeout == std::chrono::milliseconds::zero() || (lpParam.mTimeout > std::chrono::milliseconds::zero() && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - lastMessageTime) < lpParam.mTimeout))
-                                                {
-                                                    CURL_WAIT_ON_SOCKET(socketfd, 1, strongThis->mSocketWaitTimeout);
                                                 }
                                                 else
                                                 {
-                                                    error = true;
-                                                    disconnectCause = ESocketDisconnectCause::Timeout;
+                                                    auto newFrame = strongThis->unpackSimpleSocketMessage(data);
+                                                    
+                                                    if (!strongThis->handleSimpleSocketFrame(strongThis->mSimpleSocketCURL, newFrame, frame, lpParam.mMessageCallback))
+                                                    {
+                                                        error = true;
+                                                        disconnectCause = ESocketDisconnectCause::Close;
+                                                    }
                                                 }
-                                                
-                                                if (!error)
-                                                    Hermes::getInstance()->getTaskManager()->performTaskIfExists(strongThis->mThreadPoolSimpleSocketID);
                                             }
+                                            
+                                            if (lpParam.mTimeout == std::chrono::milliseconds::zero() || (lpParam.mTimeout > std::chrono::milliseconds::zero() && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - lastMessageTime) < lpParam.mTimeout))
+                                            {
+                                                CURL_WAIT_ON_SOCKET(socketfd, 1, strongThis->mSocketWaitTimeout);
+                                            }
+                                            else
+                                            {
+                                                error = true;
+                                                disconnectCause = ESocketDisconnectCause::Timeout;
+                                            }
+                                            
+                                            if (!error)
+                                                Hermes::getInstance()->getTaskManager()->performTaskIfExists(strongThis->mThreadPoolSimpleSocketID);
                                         }
                                     }
                                 }
                             }
-
-                            curl_easy_cleanup(strongThis->mSimpleSocketCURL);
-                            strongThis->mSimpleSocketCURL = nullptr;
                         }
-                    }
-                    
-                    strongThis->mSimpleSocketActive.store(0);
 
-                    if (lpParam.mDisconnectCallback != nullptr)
-                    {
-                        auto timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - time);
-                        Hermes::getInstance()->getTaskManager()->execute(-1, [disconnectCallback = std::move(lpParam.mDisconnectCallback), disconnectCause = std::move(disconnectCause), timeDiff]() mutable -> void
-                        {
-                            disconnectCallback(std::move(disconnectCause), timeDiff);
-                        });
+                        curl_easy_cleanup(strongThis->mSimpleSocketCURL);
+                        strongThis->mSimpleSocketCURL = nullptr;
                     }
                 }
-                strongThis->mActivityCount--;
+                
+                strongThis->mSimpleSocketActive.store(0);
+
+                if (lpParam.mDisconnectCallback != nullptr)
+                {
+                    auto timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - time);
+                    Hermes::getInstance()->getTaskManager()->execute(-1, [disconnectCallback = std::move(lpParam.mDisconnectCallback), disconnectCause = std::move(disconnectCause), timeDiff]() mutable -> void
+                    {
+                        disconnectCallback(std::move(disconnectCause), timeDiff);
+                    });
+                }
             }
         };
         

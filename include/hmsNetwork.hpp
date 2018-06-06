@@ -309,7 +309,6 @@ namespace hms
         std::shared_ptr<T> add(size_t pId, std::string pName, std::string pUrl, U&&... pArgument)
         {
             std::shared_ptr<T> result = nullptr;
-            mActivityCount++;
             if (mInitialized.load() == 2)
             {
                 result = std::shared_ptr<T>(new T(pId, std::move(pName), std::move(pUrl), std::forward<U>(pArgument)...), std::bind(&NetworkManager::deleterNetworkAPI, std::placeholders::_1));
@@ -321,7 +320,6 @@ namespace hms
                 assert(mApi[pId] == nullptr);
                 mApi[pId] = result;
             }
-            mActivityCount--;
             
             return result;
         }
@@ -459,7 +457,6 @@ namespace hms
         std::atomic<uint32_t> mStopSimpleSocketLoop {0};
         std::atomic<uint32_t> mSimpleSocketActive {0};
         std::atomic<uint32_t> mTerminateAbort {0};
-        std::atomic<uint32_t> mActivityCount {0};
         
         unsigned mCacheFileCountLimit = 0;
         unsigned mCacheFileSizeLimit = 0;
