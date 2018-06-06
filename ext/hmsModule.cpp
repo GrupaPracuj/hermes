@@ -87,7 +87,9 @@ namespace ext
     void ModuleHandler::pop(int32_t pPrimaryIndex, size_t pCount)
     {
         assert(pPrimaryIndex >= 0 && static_cast<size_t>(pPrimaryIndex) < mModule.size() && pCount > 0);
-        erase(pPrimaryIndex, std::max(0, std::min(static_cast<int32_t>(mModule[static_cast<size_t>(pPrimaryIndex)].size() - pCount), static_cast<int32_t>(mModule[static_cast<size_t>(pPrimaryIndex)].size()) - 1)), pCount);
+        
+        const size_t count = pCount > mModule[static_cast<size_t>(pPrimaryIndex)].size() ? mModule[static_cast<size_t>(pPrimaryIndex)].size() : pCount;
+        erase(pPrimaryIndex, static_cast<int32_t>(mModule[static_cast<size_t>(pPrimaryIndex)].size() - count), count);
     }
     
     void ModuleHandler::erase(int32_t pPrimaryIndex, int32_t pSecondaryIndex, size_t pCount)
