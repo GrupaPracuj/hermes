@@ -880,7 +880,7 @@ namespace hms
     {
         mWorkingDirectory = std::move(pWorkingDirectory);
         
-        if (mWorkingDirectory.back() != '/')
+        if (mWorkingDirectory.length() != 0 && mWorkingDirectory.back() != '/')
             mWorkingDirectory += '/';
     }
     
