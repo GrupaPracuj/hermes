@@ -326,7 +326,7 @@ namespace hms
         if (mLooperAndroid != nullptr)
             ALooper_addFd(mLooperAndroid, mMessagePipeAndroid[0], ALOOPER_POLL_CALLBACK, ALOOPER_EVENT_INPUT, TaskManager::messageHandlerAndroid, this);
 
-        int32_teventId = 0;
+        int32_t eventId = 0;
         write(mMessagePipeAndroid[1], &eventId, sizeof(eventId));
 #else
         if (mMainThreadHandler != nullptr)
