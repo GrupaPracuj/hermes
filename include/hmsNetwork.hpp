@@ -317,7 +317,6 @@ namespace hms
                 if (pId >= mApi.size())
                     mApi.resize(pId + 1);
 
-                assert(mApi[pId] == nullptr);
                 mApi[pId] = result;
             }
             
