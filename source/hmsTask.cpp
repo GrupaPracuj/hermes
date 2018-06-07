@@ -376,7 +376,7 @@ namespace hms
     }
 
 #if defined(ANDROID) || defined(__ANDROID__)
-    int TaskManager::messageHandlerAndroid(int pFd, int pEvent, void* pData)
+    int32_t TaskManager::messageHandlerAndroid(int32_t pFd, int32_t pEvent, void* pData)
     {
         TaskManager* taskManager = static_cast<TaskManager*>(pData);
         taskManager->dequeueMainThreadTask();

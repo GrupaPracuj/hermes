@@ -207,6 +207,9 @@ def executeShellCommand(pCommandLine):
     returnCode = process.wait()
     
     print(output.decode())
+
+    if returnCode != 0:
+        print('Error message:\n' + error.decode("utf-8"))
     
     return returnCode
     
@@ -222,6 +225,9 @@ def executeCmdCommand(pCommandLine, pWorkingDir):
     returnCode = process.wait()
     
     print(output.decode())
+
+    if returnCode != 0:
+        print('Error message:\n' + error.decode("utf-8"))
     
     return returnCode
     

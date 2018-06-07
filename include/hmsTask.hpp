@@ -119,7 +119,7 @@ namespace hms
         std::function<int32_t()> createCondition(int32_t& pThreadPoolId, uint64_t pDelayMs) const;
 
 #if defined(ANDROID) || defined(__ANDROID__)
-        static int messageHandlerAndroid(int pFd, int pEvent, void* pData);
+        static int32_t messageHandlerAndroid(int32_t pFd, int32_t pEvent, void* pData);
 #endif
 
         std::unordered_map<int32_t, ThreadPool*> mThreadPool;
@@ -128,7 +128,7 @@ namespace hms
         mutable std::mutex mMainThreadMutex;
 
 #if defined(ANDROID) || defined(__ANDROID__)
-        int mMessagePipeAndroid[2] = {0, 0};
+        int32_t mMessagePipeAndroid[2] = {0, 0};
         ALooper* mLooperAndroid = nullptr;
 #endif
 
