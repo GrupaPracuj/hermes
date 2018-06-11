@@ -26,8 +26,13 @@ namespace ext
             return module;
         }
         
-        void setOnAttachCallback(std::function<void(std::shared_ptr<ModuleShared>)> pCallback);
-        void setOnDetachCallback(std::function<void()> pCallback);
+        void setOnAttachCallback(std::function<void(std::shared_ptr<ModuleShared> lpModule)> pCallback);
+        
+        /*
+         * lpInfo.first - how many modules will be erased
+         * lpInfo.second - order in erase sequence of this module
+        */
+        void setOnDetachCallback(std::function<void(std::pair<size_t, size_t> lpInfo)> pCallback);
 
         std::pair<int32_t, int32_t> getIndex() const;
         
@@ -36,7 +41,7 @@ namespace ext
         virtual ~ModuleShared() = default;
         
         void attach(std::shared_ptr<ModuleShared> pThis);
-        void detach();
+        void detach(std::pair<size_t, size_t> pInfo);
         
         std::weak_ptr<ModuleShared> mThis;
         std::pair<int32_t, int32_t> mIndex = {-1, -1};
@@ -55,7 +60,7 @@ namespace ext
         }
         
         std::function<void(std::shared_ptr<ModuleShared>)> mOnAttach;
-        std::function<void()> mOnDetach;
+        std::function<void(std::pair<size_t, size_t>)> mOnDetach;
     };
     
     class ModuleHandler

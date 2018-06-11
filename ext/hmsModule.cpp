@@ -14,7 +14,7 @@ namespace ext
         mOnAttach = std::move(pCallback);
     }
     
-    void ModuleShared::setOnDetachCallback(std::function<void()> pCallback)
+    void ModuleShared::setOnDetachCallback(std::function<void(std::pair<size_t, size_t>)> pCallback)
     {
         mOnDetach = std::move(pCallback);
     }
@@ -30,10 +30,10 @@ namespace ext
             mOnAttach(pThis);
     }
     
-    void ModuleShared::detach()
+    void ModuleShared::detach(std::pair<size_t, size_t> lpInfo)
     {
         if (mOnDetach != nullptr)
-            mOnDetach();
+            mOnDetach(lpInfo);
     }
     
     /* ModuleHandler */
@@ -103,10 +103,10 @@ namespace ext
         for (int32_t i = stackSize - 1; i >= eraseEnd; --i)
             (*primaryStack)[static_cast<size_t>(i)]->mIndex.second -= eraseCount;
         
-        for (int32_t i = eraseEnd - 1; i >= pSecondaryIndex; --i)
+        for (int32_t i = eraseEnd - 1, j = 1; i >= pSecondaryIndex; --i, j++)
         {
             (*primaryStack)[static_cast<size_t>(i)]->mIndex = {-1, -1};
-            (*primaryStack)[static_cast<size_t>(i)]->detach();
+            (*primaryStack)[static_cast<size_t>(i)]->detach({static_cast<size_t>(eraseCount), static_cast<size_t>(j)});
         }
 
         std::shared_ptr<ModuleShared> activeModule = nullptr;
@@ -137,10 +137,11 @@ namespace ext
         for (size_t i = mModule.size(); i > 0; --i)
         {
             const size_t primaryIndex = i - 1;
-            for (size_t j = mModule[primaryIndex].size(); j > 0; --j)
+            const size_t count = mModule[primaryIndex].size();
+            for (size_t j = mModule[primaryIndex].size(), k = 1; j > 0; --j, k++)
             {
                 mModule[primaryIndex][j - 1]->mIndex = {-1, -1};
-                mModule[primaryIndex][j - 1]->detach();
+                mModule[primaryIndex][j - 1]->detach({count, k});
             }
         }
         mModule.clear();
