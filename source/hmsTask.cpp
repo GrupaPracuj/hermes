@@ -300,11 +300,31 @@ namespace hms
 
     void TaskManager::enqueueMainThreadTask(std::function<void()> pTask)
     {
-#if defined(__APPLE__)
-        if ([NSThread isMainThread])
+        if (mMainThreadHandler != nullptr)
         {
-            pTask();
+            mMainThreadHandler(std::move(pTask));
         }
+#if defined(__APPLE__)
+        else
+        {
+            if ([NSThread isMainThread])
+            {
+                pTask();
+            }
+            else
+            {
+                {
+                    std::lock_guard<std::mutex> lock(mMainThreadMutex);
+                    mMainThreadTask.push(std::move(pTask));
+                }
+
+                dispatch_async(dispatch_get_main_queue(), ^
+                {
+                    dequeueMainThreadTask();
+                });
+            }
+        }
+#elif defined(ANDROID) || defined(__ANDROID__)
         else
         {
             {
@@ -312,25 +332,12 @@ namespace hms
                 mMainThreadTask.push(std::move(pTask));
             }
 
-            dispatch_async(dispatch_get_main_queue(), ^
-            {
-                dequeueMainThreadTask();
-            });
-        }
-#elif defined(ANDROID) || defined(__ANDROID__)
-        {
-            std::lock_guard<std::mutex> lock(mMainThreadMutex);
-            mMainThreadTask.push(std::move(pTask));
-        }
+            if (mLooperAndroid != nullptr)
+                ALooper_addFd(mLooperAndroid, mMessagePipeAndroid[0], ALOOPER_POLL_CALLBACK, ALOOPER_EVENT_INPUT, TaskManager::messageHandlerAndroid, this);
 
-        if (mLooperAndroid != nullptr)
-            ALooper_addFd(mLooperAndroid, mMessagePipeAndroid[0], ALOOPER_POLL_CALLBACK, ALOOPER_EVENT_INPUT, TaskManager::messageHandlerAndroid, this);
-
-        int32_t eventId = 0;
-        write(mMessagePipeAndroid[1], &eventId, sizeof(eventId));
-#else
-        if (mMainThreadHandler != nullptr)
-            mMainThreadHandler(std::move(pTask));
+            int32_t eventId = 0;
+            write(mMessagePipeAndroid[1], &eventId, sizeof(eventId));
+        }
 #endif
     }
 
