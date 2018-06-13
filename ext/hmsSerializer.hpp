@@ -203,14 +203,11 @@ namespace ext
         template <typename C, typename = std::enable_if_t<!hasRegisteredProperties<C>() && !std::is_pointer<C>::value && (is_array<C>::value || is_vector<C>::value)>, typename = void, typename = void>
         void serialize(Json::Value& pDestination, const C& pSource, const std::string& pName = "");
         
-        template <typename C, typename = std::enable_if_t<!hasRegisteredProperties<C>() && std::is_pointer<C>::value && (!is_array<C>::value && !is_vector<C>::value)>, typename = void>
+        template <typename C, typename = std::enable_if_t<std::is_pointer<C>::value>>
         void serialize(Json::Value& pDestination, C pSource, const std::string& pName = "");
         
         template <typename C, typename = std::enable_if_t<hasRegisteredProperties<C>() && !std::is_pointer<C>::value>>
         void serialize(Json::Value& pDestination, const C& pSource, const std::string& pName = "");
-        
-        template <typename C, typename = std::enable_if_t<hasRegisteredProperties<C>() && std::is_pointer<C>::value>>
-        void serialize(Json::Value& pDestination, C pSource, const std::string& pName = "");
         
         template <typename C, typename = std::enable_if_t<!hasRegisteredProperties<C>() && !std::is_pointer<C>::value && (!is_array<C>::value && !is_vector<C>::value)>, typename = void>
         void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName = "");
@@ -221,10 +218,10 @@ namespace ext
         template <typename C, typename = std::enable_if_t<!hasRegisteredProperties<C>() && !std::is_pointer<C>::value && is_vector<C>::value>, typename = void, typename = void, typename = void>
         void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName = "");
         
-        template <typename C, typename = std::enable_if_t<!hasRegisteredProperties<C>() && std::is_pointer<C>::value && (!is_array<C>::value && !is_vector<C>::value)>, typename = void>
+        template <typename C, typename = std::enable_if_t<std::is_pointer<C>::value>>
         void deserialize(C pDestination, const Json::Value& pSource, const std::string& pName = "");
         
-        template <typename C, typename = std::enable_if_t<hasRegisteredProperties<C>()>>
+        template <typename C, typename = std::enable_if_t<hasRegisteredProperties<C>() && !std::is_pointer<C>::value>>
         void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName = "");
         
         template <typename C, typename, typename>
@@ -251,7 +248,7 @@ namespace ext
                 pDestination.append(std::move(value));
         }
         
-        template <typename C, typename, typename>
+        template <typename C, typename>
         void serialize(Json::Value& pDestination, C pSource, const std::string& pName)
         {
             serialize<typename std::remove_pointer<C>::type>(pDestination, *pSource, pName);
@@ -270,7 +267,7 @@ namespace ext
             
             if (pName.length() != 0)
                 pDestination[pName] = std::move(value);
-            else if (pDestination.type() == Json::arrayValue)
+            else if (pDestination.type() == Json::arrayValue && value != Json::nullValue)
                 pDestination.append(std::move(value));
         }
         
@@ -311,7 +308,7 @@ namespace ext
             }
         }
         
-        template <typename C, typename, typename>
+        template <typename C, typename>
         void deserialize(C pDestination, const Json::Value& pSource, const std::string& pName)
         {
             deserialize<typename std::remove_pointer<C>::type>(*pDestination, pSource, pName);
