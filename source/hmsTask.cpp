@@ -20,7 +20,8 @@ namespace hms
     
     void Spinlock::lock() noexcept
     {
-        while (mFlag.test_and_set(std::memory_order_acquire)) {}
+        while (mFlag.test_and_set(std::memory_order_acquire))
+            std::this_thread::yield();
     }
     
     void Spinlock::unlock() noexcept
