@@ -8,6 +8,7 @@ public class NativeObject {
 
     public void destroy() {
         nativeDestroy(mPointer);
+        mPointer = 0;
     }
 
     public long getPointer() {
