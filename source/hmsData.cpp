@@ -703,6 +703,30 @@ namespace hms
             
             return reader;
         }
+        virtual bool clearStorage(const std::string& pPath) override
+        {
+            bool found = false;
+            
+            std::string path = pPath.back() != '/' ? pPath + '/' : pPath;
+            if (path == mPath)
+            {
+                found = true;
+                for (const auto& v : mFileName)
+                    std::remove((mPath + v).c_str());
+                
+                mFileName.clear();
+            }
+            else
+            {
+                for (auto& v : mSubdirectory)
+                {
+                    if ((found = v->clearStorage(path)))
+                        break;
+                }
+            }
+            
+            return found;
+        }
         
     private:
         friend class DirectoryLoader;
@@ -1211,6 +1235,15 @@ namespace hms
         }
         
         return added;
+    }
+    
+    void DataManager::clearDirectory(const std::string& pPath)
+    {
+        for (auto& v : mStorage)
+        {
+            if (v->clearStorage(pPath))
+                break;
+        }
     }
     
 }

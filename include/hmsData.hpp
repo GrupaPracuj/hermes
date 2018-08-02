@@ -244,6 +244,7 @@ namespace hms
     public:
         virtual ~DataStorageReader() = default;
         virtual std::unique_ptr<DataReader> openFile(const std::string& pName) const = 0;
+        virtual bool clearStorage(const std::string& pPath) = 0;
         
     protected:
         std::string mPrefix;
@@ -309,6 +310,8 @@ namespace hms
         void addStorageReader(std::unique_ptr<DataStorageReader> pReader);
         bool addStorageReader(const std::string& pName, const std::string& pPrefix = "", bool pRelativeToWorkspace = true);
         bool addStorageReader(DataReader& pReader, const std::string& pPrefix = "");
+        
+        void clearDirectory(const std::string& pPath);
         
     private:
         friend class Hermes;

@@ -209,6 +209,9 @@ namespace ext
         template <typename C, typename = std::enable_if_t<hasRegisteredProperties<C>() && !std::is_pointer<C>::value>>
         void serialize(Json::Value& pDestination, const C& pSource, const std::string& pName = "");
         
+        template <typename C, typename = std::enable_if_t<!std::is_pointer<C>::value>>
+        Json::Value serialize(const C& pSource, const std::string& pName = "");
+        
         template <typename C, typename = std::enable_if_t<!hasRegisteredProperties<C>() && !std::is_pointer<C>::value && (!is_array<C>::value && !is_vector<C>::value)>, typename = void>
         void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName = "");
         
@@ -223,6 +226,9 @@ namespace ext
         
         template <typename C, typename = std::enable_if_t<hasRegisteredProperties<C>() && !std::is_pointer<C>::value>>
         void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName = "");
+        
+        template <typename C, typename = std::enable_if_t<!std::is_pointer<C>::value>>
+        C deserialize(const Json::Value& pSource, const std::string& pName = "");
         
         template <typename C, typename, typename>
         void serialize(Json::Value& pDestination, const C& pSource, const std::string& pName)
@@ -269,6 +275,15 @@ namespace ext
                 pDestination[pName] = std::move(value);
             else if (pDestination.type() == Json::arrayValue && value != Json::nullValue)
                 pDestination.append(std::move(value));
+        }
+        
+        template <typename C, typename>
+        Json::Value serialize(const C& pSource, const std::string& pName)
+        {
+            Json::Value dest;
+            serialize<C>(dest, pSource, pName);
+            
+            return dest;
         }
         
         template <typename C, typename, typename>
@@ -326,6 +341,15 @@ namespace ext
                     lpProperty.didDeserialize(pDestination);
                 }
             });
+        }
+        
+        template <typename C, typename>
+        C deserialize(const Json::Value& pSource, const std::string& pName)
+        {
+            C dest{};
+            deserialize<C>(dest, pSource, pName);
+            
+            return dest;
         }
     }
 }
