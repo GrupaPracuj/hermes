@@ -12,39 +12,62 @@ namespace hms
 {
 namespace ext
 {
-    
     class ModuleShared
     {
         friend class ModuleHandler;
     public:
+        class Callbacks
+        {
+        public:
+            Callbacks() = default;
+            virtual ~Callbacks() = default;
+        
+            void setAttach(std::function<void(std::shared_ptr<ModuleShared> lpModule)> pCallback);
+            
+            /*
+             * lpInfo.first - how many modules will be erased
+             * lpInfo.second - order in erase sequence of this module
+            */
+            void setDetach(std::function<void(std::pair<size_t, size_t> lpInfo)> pCallback);
+
+        private:
+            friend class ModuleHandler;
+        
+            Callbacks(const Callbacks& pOther) = delete;
+            Callbacks(Callbacks&& pOther) = delete;
+            
+            Callbacks& operator=(const Callbacks& pOther) = delete;
+            Callbacks& operator=(Callbacks&& pOther) = delete;
+            
+            std::function<void(std::shared_ptr<ModuleShared>)> mAttach = [](std::shared_ptr<ModuleShared>) -> void {};
+            std::function<void(std::pair<size_t, size_t>)> mDetach = [](std::pair<size_t, size_t>) -> void {};
+        };
+    
         template <typename T, typename = typename std::enable_if<std::is_base_of<ModuleShared, T>::value>::type, typename... U>
         static std::shared_ptr<T> create(U&&... pArgument)
         {
-            std::shared_ptr<T> module(new T(std::forward<U>(pArgument)...), std::bind(&ModuleShared::invokeDelete<T>, std::placeholders::_1));
+            std::shared_ptr<T> module(new T(std::forward<U>(pArgument)...), [](T* pThis) -> void { delete pThis; });
             module->mThis = module;
             
             return module;
         }
-        
-        void setOnAttachCallback(std::function<void(std::shared_ptr<ModuleShared> lpModule)> pCallback);
-        
-        /*
-         * lpInfo.first - how many modules will be erased
-         * lpInfo.second - order in erase sequence of this module
-        */
-        void setOnDetachCallback(std::function<void(std::pair<size_t, size_t> lpInfo)> pCallback);
 
-        std::pair<int32_t, int32_t> getIndex() const;
+        std::pair<int32_t, int32_t> getIndices() const;
+        
+        template <typename T, typename = typename std::enable_if<std::is_base_of<Callbacks, T>::value>::type>
+        T* getCallbacks() const
+        {
+            assert(mCallbacks != nullptr);
+            return static_cast<T*>(mCallbacks.get());
+        }
         
     protected:
-        ModuleShared() = default;
+        ModuleShared();
         virtual ~ModuleShared() = default;
-        
-        void attach(std::shared_ptr<ModuleShared> pThis);
-        void detach(std::pair<size_t, size_t> pInfo);
-        
+
+        std::pair<int32_t, int32_t> mIndices;
+        std::unique_ptr<Callbacks> mCallbacks;
         std::weak_ptr<ModuleShared> mThis;
-        std::pair<int32_t, int32_t> mIndex = {-1, -1};
         
     private:
         ModuleShared(const ModuleShared& pOther) = delete;
@@ -52,15 +75,6 @@ namespace ext
         
         ModuleShared& operator=(const ModuleShared& pOther) = delete;
         ModuleShared& operator=(ModuleShared&& pOther) = delete;
-        
-        template <typename T>
-        static void invokeDelete(T* pObject)
-        {
-            delete pObject;
-        }
-        
-        std::function<void(std::shared_ptr<ModuleShared>)> mOnAttach;
-        std::function<void(std::pair<size_t, size_t>)> mOnDetach;
     };
     
     class ModuleHandler
@@ -95,7 +109,7 @@ namespace ext
         void erase(int32_t pPrimaryIndex, int32_t pSecondaryIndex, size_t pCount = 1);
         void clear();
         
-        void setOnActiveCallback(std::function<void(std::shared_ptr<ModuleShared>)> pCallback);
+        void setStackChangedCallback(std::function<void(int32_t pPrimaryStack, std::shared_ptr<ModuleShared> lpLastModule)> pCallback);
         
         static ModuleHandler* getInstance();
         
@@ -109,11 +123,10 @@ namespace ext
         ModuleHandler& operator=(ModuleHandler&& pOther) = delete;
 
         std::shared_ptr<ModuleShared> mMainModule;
-        std::vector<std::vector<std::shared_ptr<ModuleShared>>> mModule;
+        std::vector<std::vector<std::shared_ptr<ModuleShared>>> mModules;
         
-        std::function<void(std::shared_ptr<ModuleShared>)> mOnActive;
+        std::function<void(int32_t, std::shared_ptr<ModuleShared>)> mStackChangedCallback;
     };
-    
 }
 }
 

@@ -6,34 +6,30 @@ namespace hms
 {
 namespace ext
 {
+
+    /* ModuleShared::Callbacks */
+    
+    void ModuleShared::Callbacks::setAttach(std::function<void(std::shared_ptr<ModuleShared>)> pCallback)
+    {
+        assert(pCallback != nullptr);
+        mAttach = std::move(pCallback);
+    }
+
+    void ModuleShared::Callbacks::setDetach(std::function<void(std::pair<size_t, size_t>)> pCallback)
+    {
+        assert(pCallback != nullptr);
+        mDetach = std::move(pCallback);
+    }
     
     /* ModuleShared */
     
-    void ModuleShared::setOnAttachCallback(std::function<void(std::shared_ptr<ModuleShared>)> pCallback)
+    ModuleShared::ModuleShared() : mIndices({-1, -1}), mCallbacks(std::make_unique<Callbacks>())
     {
-        mOnAttach = std::move(pCallback);
     }
     
-    void ModuleShared::setOnDetachCallback(std::function<void(std::pair<size_t, size_t>)> pCallback)
+    std::pair<int32_t, int32_t> ModuleShared::getIndices() const
     {
-        mOnDetach = std::move(pCallback);
-    }
-    
-    std::pair<int32_t, int32_t> ModuleShared::getIndex() const
-    {
-        return mIndex;
-    }
-    
-    void ModuleShared::attach(std::shared_ptr<ModuleShared> pThis)
-    {
-        if (mOnAttach != nullptr)
-            mOnAttach(pThis);
-    }
-    
-    void ModuleShared::detach(std::pair<size_t, size_t> lpInfo)
-    {
-        if (mOnDetach != nullptr)
-            mOnDetach(lpInfo);
+        return mIndices;
     }
     
     /* ModuleHandler */
@@ -45,68 +41,68 @@ namespace ext
     
     void ModuleHandler::setMain(std::shared_ptr<ModuleShared> pModule)
     {
-        assert(pModule == nullptr || pModule->getIndex() == std::make_pair(-1, -1));
+        assert(pModule == nullptr || pModule->getIndices() == std::make_pair(-1, -1));
         mMainModule = pModule;
     }
     
     int32_t ModuleHandler::countPrimary() const
     {
-        return static_cast<int32_t>(mModule.size());
+        return static_cast<int32_t>(mModules.size());
     }
     
     int32_t ModuleHandler::countSecondary(int32_t pPrimaryIndex) const
     {
-        assert(pPrimaryIndex >= 0 && static_cast<size_t>(pPrimaryIndex) < mModule.size());
+        assert(pPrimaryIndex >= 0 && static_cast<size_t>(pPrimaryIndex) < mModules.size());
         
-        return static_cast<int32_t>(mModule[static_cast<size_t>(pPrimaryIndex)].size());
+        return static_cast<int32_t>(mModules[static_cast<size_t>(pPrimaryIndex)].size());
     }
     
     std::weak_ptr<ModuleShared> ModuleHandler::get(std::pair<int32_t, int32_t> pIndex) const
     {
-        assert(pIndex.first >= 0 && static_cast<size_t>(pIndex.first) < mModule.size() && pIndex.second >= 0 && static_cast<size_t>(pIndex.second) < mModule[static_cast<size_t>(pIndex.first)].size());
+        assert(pIndex.first >= 0 && static_cast<size_t>(pIndex.first) < mModules.size() && pIndex.second >= 0 && static_cast<size_t>(pIndex.second) < mModules[static_cast<size_t>(pIndex.first)].size());
         
-        return mModule[static_cast<size_t>(pIndex.first)][static_cast<size_t>(pIndex.second)];
+        return mModules[static_cast<size_t>(pIndex.first)][static_cast<size_t>(pIndex.second)];
     }
     
     void ModuleHandler::push(int32_t pPrimaryIndex, std::shared_ptr<ModuleShared> pModule)
     {
         assert(pModule != nullptr && pModule.get() != mMainModule.get() && pPrimaryIndex >= 0 && pPrimaryIndex < INT32_MAX);
         
-        if (static_cast<size_t>(pPrimaryIndex) >= mModule.size())
-            mModule.resize(static_cast<size_t>(pPrimaryIndex) + 1);
+        if (static_cast<size_t>(pPrimaryIndex) >= mModules.size())
+            mModules.resize(static_cast<size_t>(pPrimaryIndex) + 1);
         
-        assert(mModule[static_cast<size_t>(pPrimaryIndex)].size() < INT32_MAX);
-        mModule[static_cast<size_t>(pPrimaryIndex)].push_back(pModule);
-        pModule->mIndex = {pPrimaryIndex, static_cast<int32_t>(mModule[static_cast<size_t>(pPrimaryIndex)].size()) - 1};
-        pModule->attach(pModule);
+        assert(mModules[static_cast<size_t>(pPrimaryIndex)].size() < INT32_MAX);
+        mModules[static_cast<size_t>(pPrimaryIndex)].push_back(pModule);
+        pModule->mIndices = {pPrimaryIndex, static_cast<int32_t>(mModules[static_cast<size_t>(pPrimaryIndex)].size()) - 1};
+        pModule->getCallbacks<ModuleShared::Callbacks>()->mAttach(pModule);
         
-        if (mOnActive != nullptr)
-            mOnActive(pModule);
+        if (mStackChangedCallback != nullptr)
+            mStackChangedCallback(pPrimaryIndex, pModule);
     }
     
     void ModuleHandler::pop(int32_t pPrimaryIndex, size_t pCount)
     {
-        assert(pPrimaryIndex >= 0 && static_cast<size_t>(pPrimaryIndex) < mModule.size() && pCount > 0);
+        assert(pPrimaryIndex >= 0 && static_cast<size_t>(pPrimaryIndex) < mModules.size() && pCount > 0);
         
-        const size_t count = pCount > mModule[static_cast<size_t>(pPrimaryIndex)].size() ? mModule[static_cast<size_t>(pPrimaryIndex)].size() : pCount;
-        erase(pPrimaryIndex, static_cast<int32_t>(mModule[static_cast<size_t>(pPrimaryIndex)].size() - count), count);
+        const size_t count = pCount > mModules[static_cast<size_t>(pPrimaryIndex)].size() ? mModules[static_cast<size_t>(pPrimaryIndex)].size() : pCount;
+        erase(pPrimaryIndex, static_cast<int32_t>(mModules[static_cast<size_t>(pPrimaryIndex)].size() - count), count);
     }
     
     void ModuleHandler::erase(int32_t pPrimaryIndex, int32_t pSecondaryIndex, size_t pCount)
     {
-        assert(pPrimaryIndex >= 0 && static_cast<size_t>(pPrimaryIndex) < mModule.size() && pSecondaryIndex >= 0 && pSecondaryIndex < mModule[static_cast<size_t>(pPrimaryIndex)].size() && pCount > 0);
-        auto* primaryStack = &mModule[static_cast<size_t>(pPrimaryIndex)];
+        assert(pPrimaryIndex >= 0 && static_cast<size_t>(pPrimaryIndex) < mModules.size() && pSecondaryIndex >= 0 && pSecondaryIndex < mModules[static_cast<size_t>(pPrimaryIndex)].size() && pCount > 0);
+        auto* primaryStack = &mModules[static_cast<size_t>(pPrimaryIndex)];
         const int32_t stackSize = static_cast<int32_t>(primaryStack->size());
         const int32_t eraseEnd = std::min(pSecondaryIndex + static_cast<int32_t>(pCount), stackSize);
         const int32_t eraseCount = std::max(0, eraseEnd - pSecondaryIndex);
         
         for (int32_t i = stackSize - 1; i >= eraseEnd; --i)
-            (*primaryStack)[static_cast<size_t>(i)]->mIndex.second -= eraseCount;
+            (*primaryStack)[static_cast<size_t>(i)]->mIndices.second -= eraseCount;
         
         for (int32_t i = eraseEnd - 1, j = 1; i >= pSecondaryIndex; --i, j++)
         {
-            (*primaryStack)[static_cast<size_t>(i)]->mIndex = {-1, -1};
-            (*primaryStack)[static_cast<size_t>(i)]->detach({static_cast<size_t>(eraseCount), static_cast<size_t>(j)});
+            (*primaryStack)[static_cast<size_t>(i)]->mIndices = {-1, -1};
+            (*primaryStack)[static_cast<size_t>(i)]->getCallbacks<ModuleShared::Callbacks>()->mDetach({static_cast<size_t>(eraseCount), static_cast<size_t>(j)});
         }
 
         std::shared_ptr<ModuleShared> activeModule = nullptr;
@@ -117,42 +113,42 @@ namespace ext
                 activeModule = primaryStack->back();
         }
 
-        auto eraseIt = mModule.end();        
-        for (auto it = mModule.rbegin(); it != mModule.rend(); ++it)
+        auto eraseIt = mModules.end();
+        for (auto it = mModules.rbegin(); it != mModules.rend(); ++it)
         {
             if (it->size() == 0)
                 --eraseIt;
             else
                 break;
         }
-        if (eraseIt != mModule.end())
-            mModule.erase(eraseIt, mModule.end());
+        if (eraseIt != mModules.end())
+            mModules.erase(eraseIt, mModules.end());
 
-        if (mOnActive != nullptr)
-            mOnActive(activeModule);
+        if (mStackChangedCallback != nullptr)
+            mStackChangedCallback(pPrimaryIndex, static_cast<size_t>(pPrimaryIndex) < mModules.size() ? mModules[static_cast<size_t>(pPrimaryIndex)].size() > 0 ? mModules[static_cast<size_t>(pPrimaryIndex)].back() : nullptr : nullptr);
     }
     
     void ModuleHandler::clear()
     {
-        for (size_t i = mModule.size(); i > 0; --i)
+        for (size_t i = mModules.size(); i > 0; --i)
         {
             const size_t primaryIndex = i - 1;
-            const size_t count = mModule[primaryIndex].size();
-            for (size_t j = mModule[primaryIndex].size(), k = 1; j > 0; --j, k++)
+            const size_t count = mModules[primaryIndex].size();
+            for (size_t j = mModules[primaryIndex].size(), k = 1; j > 0; --j, k++)
             {
-                mModule[primaryIndex][j - 1]->mIndex = {-1, -1};
-                mModule[primaryIndex][j - 1]->detach({count, k});
+                mModules[primaryIndex][j - 1]->mIndices = {-1, -1};
+                mModules[primaryIndex][j - 1]->getCallbacks<ModuleShared::Callbacks>()->mDetach({count, k});
             }
         }
-        mModule.clear();
+        mModules.clear();
         
-        if (mOnActive != nullptr)
-            mOnActive(nullptr);
+        if (mStackChangedCallback != nullptr)
+            mStackChangedCallback(-1, nullptr);
     }
     
-    void ModuleHandler::setOnActiveCallback(std::function<void(std::shared_ptr<ModuleShared>)> pCallback)
+    void ModuleHandler::setStackChangedCallback(std::function<void(int32_t, std::shared_ptr<ModuleShared>)> pCallback)
     {
-        mOnActive = std::move(pCallback);
+        mStackChangedCallback = std::move(pCallback);
     }
     
     ModuleHandler* ModuleHandler::getInstance()
