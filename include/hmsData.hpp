@@ -244,7 +244,7 @@ namespace hms
     public:
         virtual ~DataStorageReader() = default;
         virtual std::unique_ptr<DataReader> openFile(const std::string& pName) const = 0;
-        virtual bool clearStorage(const std::string& pPath) = 0;
+        virtual bool clearStorage(const std::string& pPath) { return false; };
         
     protected:
         std::string mPrefix;
