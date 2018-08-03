@@ -1,6 +1,7 @@
 #ifndef _HMS_MODULE_HPP_
 #define _HMS_MODULE_HPP_
 
+#include <cassert>
 #include <cstdint>
 #include <functional>
 #include <memory>

@@ -1,7 +1,5 @@
 #include "hmsModule.hpp"
 
-#include <cassert>
-
 namespace hms
 {
 namespace ext
