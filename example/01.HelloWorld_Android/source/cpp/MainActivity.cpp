@@ -6,65 +6,57 @@
 
 enum class EDataType : size_t
 {
-    JPH = 0
+    User = 0
 };
 
 enum class ENetworkAPI : size_t
 {
-    JPH = 0
+    JsonPlaceholder = 0
 };
 
-class JphData : public hms::DataShared
+class UserData : public hms::DataShared
 {
 public:
-    JphData(size_t pId) : DataShared(pId) {};
-
-    virtual bool pack(std::string& pData, const std::vector<unsigned>& pUserData) const override
+    class Address
     {
-        // You can use this method to prepare a request body. If you need to handle different request bodies in this method, you should provide additional data in pUserData and use switch-case.
-        // Because we don't need this functionality for our example this method will just return true.
+    public:
+        std::string mStreet;
+        std::string mSuite;
+        std::string mCity;
+        std::string mZipCode;
+    };
 
-        bool status = true;
-        // Json::Value root;
-        // root["user_name"] = mName;
-        //
-        // status = hms::Hermes::getInstance()->getDataManager()->convertJSON(root, pData);
-        //
-        // if (!status)
-        //		hms::Hermes::getInstance()->getLogger()->print(hms::ELogLevel::Error, "JphData::pack failed. Data:\n%", pData);
-        //
-        return status;
-    }
-
-    virtual bool unpack(const std::string& pData, const std::vector<unsigned int>& pUserData) override
+    UserData(size_t pId) : DataShared(pId)
     {
-        // You can use this method to retrieve data from a response message. If you need to handle different response messages in this method, you should provide additional data in pUserData and use switch-case.
-        // In our example we'll retrieve data from a request to 'https://jsonplaceholder.typicode.com/users/1'.
+    };
 
-        bool status = false;
-        Json::Value root;
+    int32_t mId = -1;
+    std::string mName;
+    Address mAddress;
+};
 
-        if (hms::ext::json::convert(pData, root))
+namespace hms
+{
+    namespace ext
+    {
+        template<>
+        inline auto registerProperties<UserData::Address>()
         {
-            status = true;
-
-            status &= hms::ext::json::safeAs<int>(root, mId, "id");
-            status &= hms::ext::json::safeAs<std::string>(root, mName, "name");
-
-            const Json::Value& address = root["address"];
-            status &= hms::ext::json::safeAs<std::string>(address, mCity, "city");
+            return std::make_tuple(Property<UserData::Address, std::string>("street", &UserData::Address::mStreet, ESerializerMode::Deserialize),
+                Property<UserData::Address, std::string>("suite", &UserData::Address::mSuite, ESerializerMode::Deserialize),
+                Property<UserData::Address, std::string>("city", &UserData::Address::mCity, ESerializerMode::Deserialize),
+                Property<UserData::Address, std::string>("zipcode", &UserData::Address::mZipCode, ESerializerMode::Deserialize));
         }
 
-        if (!status)
-            hms::Hermes::getInstance()->getLogger()->print(hms::ELogLevel::Error, "JphData::unpack failed. Data:\n%", pData);
-
-        return status;
+        template<>
+        inline auto registerProperties<UserData>()
+        {
+            return std::make_tuple(Property<UserData, int32_t>("id", &UserData::mId),
+                Property<UserData, std::string>("name", &UserData::mName),
+                Property<UserData, UserData::Address>("address", &UserData::mAddress, ESerializerMode::Deserialize));
+        }
     }
-
-    int mId = -1;
-    std::string mName;
-    std::string mCity;
-};
+}
 
 class HelloWorld
 {
@@ -76,7 +68,7 @@ public:
 
         auto dataManager = hms::Hermes::getInstance()->getDataManager();
         dataManager->initialize();
-        dataManager->add(std::shared_ptr<hms::DataShared>(new JphData(static_cast<size_t>(EDataType::JPH))));
+        dataManager->add(std::shared_ptr<hms::DataShared>(new UserData(static_cast<size_t>(EDataType::User))));
 
         auto taskManager = hms::Hermes::getInstance()->getTaskManager();
         // First element of pair - thread pool id, second element of pair - number of threads in thread pool.
@@ -88,7 +80,7 @@ public:
         const long timeout = 15;
         networkManager->initialize(timeout, threadInfo.first, {200, 299});
 
-        auto jphNetwork = networkManager->add(static_cast<size_t>(ENetworkAPI::JPH), "JsonPlaceholder", "https://jsonplaceholder.typicode.com/");
+        auto jphNetwork = networkManager->add(static_cast<size_t>(ENetworkAPI::JsonPlaceholder), "JsonPlaceholder", "https://jsonplaceholder.typicode.com/");
         jphNetwork->setDefaultHeader({{"Content-Type", "application/json; charset=utf-8"}});
 
         hms::Hermes::getInstance()->getNetworkManager()->setCACertificatePath(std::move(pCertificatePath));
@@ -108,15 +100,18 @@ public:
         {
             if (lpResponse.mCode == hms::ENetworkCode::OK)
             {
-                auto jphData = hms::Hermes::getInstance()->getDataManager()->get<JphData>(static_cast<size_t>(EDataType::JPH));
-                if (jphData->unpack(lpResponse.mMessage, {}))
+                Json::Value json;
+                if (hms::ext::json::convert(lpResponse.mMessage, json))
                 {
+                    auto userData = hms::Hermes::getInstance()->getDataManager()->get<UserData>(static_cast<size_t>(EDataType::User));
+                    hms::ext::json::deserialize<UserData>(*userData, json);
+
                     std::string outputText = "ID: ";
-                    outputText += std::to_string(jphData->mId);
+                    outputText += std::to_string(userData->mId);
                     outputText += " / Name: ";
-                    outputText += jphData->mName;
+                    outputText += userData->mName;
                     outputText += " / City: ";
-                    outputText += jphData->mCity;
+                    outputText += userData->mAddress.mCity;
 
                     hms::Hermes::getInstance()->getLogger()->print(hms::ELogLevel::Info, outputText);
 
@@ -135,7 +130,7 @@ public:
         requestParam.mMethod = "users/1";
         requestParam.mCallback = std::move(responseCallback);
 
-        hms::Hermes::getInstance()->getNetworkManager()->get(static_cast<size_t>(ENetworkAPI::JPH))->request(std::move(requestParam));
+        hms::Hermes::getInstance()->getNetworkManager()->get(static_cast<size_t>(ENetworkAPI::JsonPlaceholder))->request(std::move(requestParam));
     }
 };
 
