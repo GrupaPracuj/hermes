@@ -21,6 +21,8 @@
 		55DD60001F38980400BFA8E5 /* hermes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55A5745E1EA780F3003ECB8C /* hermes.cpp */; };
 		9E1950702007AED500CE339D /* hmsTools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E19506E2007AED500CE339D /* hmsTools.cpp */; };
 		9E1950732007AF2500CE339D /* hmsTools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E19506E2007AED500CE339D /* hmsTools.cpp */; };
+		9E3B28B321427B4B0092A089 /* hmsGZipReader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E3B28B121427B4B0092A089 /* hmsGZipReader.cpp */; };
+		9E3B28B421427B4B0092A089 /* hmsGZipReader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E3B28B121427B4B0092A089 /* hmsGZipReader.cpp */; };
 		9E5C7BAB203C45CF00CCBB8B /* hmsSerializer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E5C7BA9203C45CF00CCBB8B /* hmsSerializer.cpp */; };
 		9E5C7BAC203C45CF00CCBB8B /* hmsSerializer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9E5C7BA9203C45CF00CCBB8B /* hmsSerializer.cpp */; };
 /* End PBXBuildFile section */
@@ -36,6 +38,15 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		55465B4F2028CB8300060DED /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E3B28A3214278780092A089 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -70,6 +81,12 @@
 		55A574601EA78108003ECB8C /* hermes.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hermes.hpp; path = include/hermes.hpp; sourceTree = "<group>"; };
 		9E19506E2007AED500CE339D /* hmsTools.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = hmsTools.cpp; path = source/hmsTools.cpp; sourceTree = "<group>"; };
 		9E1950712007AEF300CE339D /* hmsTools.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hmsTools.hpp; path = include/hmsTools.hpp; sourceTree = "<group>"; };
+		9E3B2898214278580092A089 /* hmsextgzipreader_ios.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hmsextgzipreader_ios.h; sourceTree = "<group>"; };
+		9E3B2899214278580092A089 /* hmsextgzipreader_ios.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = hmsextgzipreader_ios.m; sourceTree = "<group>"; };
+		9E3B28A7214278780092A089 /* libhmsextgzipreader.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhmsextgzipreader.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E3B28B021427A6E0092A089 /* libhmsextgzipreader.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhmsextgzipreader.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E3B28B121427B4B0092A089 /* hmsGZipReader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hmsGZipReader.cpp; path = ext/hmsGZipReader.cpp; sourceTree = "<group>"; };
+		9E3B28B221427B4B0092A089 /* hmsGZipReader.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hmsGZipReader.hpp; path = ext/hmsGZipReader.hpp; sourceTree = "<group>"; };
 		9E5C7BA9203C45CF00CCBB8B /* hmsSerializer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hmsSerializer.cpp; path = ext/hmsSerializer.cpp; sourceTree = "<group>"; };
 		9E5C7BAA203C45CF00CCBB8B /* hmsSerializer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hmsSerializer.hpp; path = ext/hmsSerializer.hpp; sourceTree = "<group>"; };
 		9E6E7CA3203B01AC004F306B /* libhmsextserializer.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhmsextserializer.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -109,6 +126,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		9E3B28A2214278780092A089 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E3B28AB21427A6E0092A089 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9E6E7C9E203B01AC004F306B /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -138,6 +169,9 @@
 				9E7565A9202DA9C200DFF9A1 /* libhermes.a */,
 				9E7565AA202DA9C200DFF9A1 /* libhmsextmodule.a */,
 				9E6E7CAC203B01BF004F306B /* libhmsextserializer.a */,
+				9E3B2897214278580092A089 /* hmsextgzipreader_ios */,
+				9E3B28A7214278780092A089 /* libhmsextgzipreader.a */,
+				9E3B28B021427A6E0092A089 /* libhmsextgzipreader.a */,
 			);
 			sourceTree = "<group>";
 		};
@@ -170,12 +204,23 @@
 		55465B622028CC4A00060DED /* Extension */ = {
 			isa = PBXGroup;
 			children = (
+				9E3B28B121427B4B0092A089 /* hmsGZipReader.cpp */,
+				9E3B28B221427B4B0092A089 /* hmsGZipReader.hpp */,
 				9E5C7BA9203C45CF00CCBB8B /* hmsSerializer.cpp */,
 				9E5C7BAA203C45CF00CCBB8B /* hmsSerializer.hpp */,
 				55465B632028CC8200060DED /* hmsModule.cpp */,
 				55465B642028CC8200060DED /* hmsModule.hpp */,
 			);
 			name = Extension;
+			sourceTree = "<group>";
+		};
+		9E3B2897214278580092A089 /* hmsextgzipreader_ios */ = {
+			isa = PBXGroup;
+			children = (
+				9E3B2898214278580092A089 /* hmsextgzipreader_ios.h */,
+				9E3B2899214278580092A089 /* hmsextgzipreader_ios.m */,
+			);
+			path = hmsextgzipreader_ios;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -189,6 +234,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		55DD5FED1F38956600BFA8E5 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E3B28AC21427A6E0092A089 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -273,6 +325,40 @@
 			productReference = 9E7565A9202DA9C200DFF9A1 /* libhermes.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		9E3B289F214278780092A089 /* hmsextgzipreader_ios */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9E3B28A4214278780092A089 /* Build configuration list for PBXNativeTarget "hmsextgzipreader_ios" */;
+			buildPhases = (
+				9E3B28A0214278780092A089 /* Sources */,
+				9E3B28A2214278780092A089 /* Frameworks */,
+				9E3B28A3214278780092A089 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = hmsextgzipreader_ios;
+			productName = hermes;
+			productReference = 9E3B28A7214278780092A089 /* libhmsextgzipreader.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		9E3B28A821427A6E0092A089 /* hmsextgzipreader_macos */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9E3B28AD21427A6E0092A089 /* Build configuration list for PBXNativeTarget "hmsextgzipreader_macos" */;
+			buildPhases = (
+				9E3B28A921427A6E0092A089 /* Sources */,
+				9E3B28AB21427A6E0092A089 /* Frameworks */,
+				9E3B28AC21427A6E0092A089 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = hmsextgzipreader_macos;
+			productName = hermes_macos;
+			productReference = 9E3B28B021427A6E0092A089 /* libhmsextgzipreader.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		9E6E7C9B203B01AC004F306B /* hmsextserializer_ios */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9E6E7CA0203B01AC004F306B /* Build configuration list for PBXNativeTarget "hmsextserializer_ios" */;
@@ -337,9 +423,11 @@
 			projectRoot = "";
 			targets = (
 				38EC90CB1C3AC853008AE1A3 /* hermes_ios */,
+				9E3B289F214278780092A089 /* hmsextgzipreader_ios */,
 				55465B462028CB8300060DED /* hmsextmodule_ios */,
 				9E6E7C9B203B01AC004F306B /* hmsextserializer_ios */,
 				55DD5FEE1F38956600BFA8E5 /* hermes_macos */,
+				9E3B28A821427A6E0092A089 /* hmsextgzipreader_macos */,
 				55465B542028CB8900060DED /* hmsextmodule_macos */,
 				9E6E7CA4203B01BF004F306B /* hmsextserializer_macos */,
 			);
@@ -386,6 +474,22 @@
 				55DD5FFF1F38980400BFA8E5 /* hmsTask.cpp in Sources */,
 				55DD60001F38980400BFA8E5 /* hermes.cpp in Sources */,
 				9E1950732007AF2500CE339D /* hmsTools.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E3B28A0214278780092A089 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9E3B28B321427B4B0092A089 /* hmsGZipReader.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E3B28A921427A6E0092A089 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9E3B28B421427B4B0092A089 /* hmsGZipReader.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -541,6 +645,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DSTROOT = "$(SRCROOT)/lib/ios";
+				HEADER_SEARCH_PATHS = (
+					include,
+					depend/aes/include,
+					depend/curl/include,
+				);
 				PRODUCT_NAME = hermes;
 			};
 			name = Debug;
@@ -549,6 +658,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DSTROOT = "$(SRCROOT)/lib/ios";
+				HEADER_SEARCH_PATHS = (
+					include,
+					depend/aes/include,
+					depend/curl/include,
+				);
 				PRODUCT_NAME = hermes;
 			};
 			name = Release;
@@ -601,6 +715,64 @@
 			buildSettings = {
 				DSTROOT = "$(SRCROOT)/lib/macos";
 				PRODUCT_NAME = hermes;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		9E3B28A5214278780092A089 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = "$(SRCROOT)/lib/ios";
+				HEADER_SEARCH_PATHS = (
+					include,
+					depend/aes/include,
+					depend/curl/include,
+					depend/zlib/include,
+				);
+				PRODUCT_NAME = hmsextgzipreader;
+			};
+			name = Debug;
+		};
+		9E3B28A6214278780092A089 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = "$(SRCROOT)/lib/ios";
+				HEADER_SEARCH_PATHS = (
+					include,
+					depend/aes/include,
+					depend/curl/include,
+					depend/zlib/include,
+				);
+				PRODUCT_NAME = hmsextgzipreader;
+			};
+			name = Release;
+		};
+		9E3B28AE21427A6E0092A089 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = "$(SRCROOT)/lib/macos";
+				HEADER_SEARCH_PATHS = (
+					include,
+					depend/aes/include,
+					depend/curl/include,
+					depend/zlib/include,
+				);
+				PRODUCT_NAME = hmsextgzipreader;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		9E3B28AF21427A6E0092A089 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = "$(SRCROOT)/lib/macos";
+				HEADER_SEARCH_PATHS = (
+					include,
+					depend/aes/include,
+					depend/curl/include,
+					depend/zlib/include,
+				);
+				PRODUCT_NAME = hmsextgzipreader;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -707,6 +879,24 @@
 			buildConfigurations = (
 				55DD5FF71F38956600BFA8E5 /* Debug */,
 				55DD5FF81F38956600BFA8E5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9E3B28A4214278780092A089 /* Build configuration list for PBXNativeTarget "hmsextgzipreader_ios" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9E3B28A5214278780092A089 /* Debug */,
+				9E3B28A6214278780092A089 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9E3B28AD21427A6E0092A089 /* Build configuration list for PBXNativeTarget "hmsextgzipreader_macos" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9E3B28AE21427A6E0092A089 /* Debug */,
+				9E3B28AF21427A6E0092A089 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -455,7 +455,9 @@ namespace hms
         if (mStream.is_open())
         {
             mStream.read(reinterpret_cast<char*>(pBuffer), static_cast<std::streamsize>(pSize));
-            mPosition += static_cast<size_t>(mStream.gcount());
+            
+            readCount = static_cast<size_t>(mStream.gcount());
+            mPosition += readCount;
             
             auto flag = mStream.rdstate();
             if ((flag & std::ifstream::badbit) == 0 && (flag & std::ifstream::failbit) != 0)

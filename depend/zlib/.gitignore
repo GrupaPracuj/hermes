@@ -1,0 +1,11 @@
+*
+!.gitignore
+!build.py
+!build_ios.*
+!build_macos.*
+!Makefile
+!readme.txt
+!include
+!include/*.h
+!source
+!source/*.c
