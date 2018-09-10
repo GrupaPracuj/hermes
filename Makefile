@@ -18,7 +18,11 @@ EXT_SERIALIZER_NAME = libhmsextserializer.a
 EXT_SERIALIZER_SRCFILES = ext/hmsSerializer.cpp
 EXT_SERIALIZER_OBJFILES = $(EXT_SERIALIZER_SRCFILES:%.cpp=%.o)
 
-CXXFLAGS += -pipe -std=c++14 -fPIC -fno-strict-aliasing -fstack-protector -Iinclude -Idepend/aes/include -Idepend/curl/include -Idepend/jsoncpp/include
+EXT_GZIPREADER_NAME = libhmsgzipreader.a
+EXT_GZIPREADER_SRCFILES = ext/hmsGZipReader.cpp
+EXT_GZIPREADER_OBJFILES = $(EXT_GZIPREADER_SRCFILES:%.cpp=%.o)
+
+CXXFLAGS += -pipe -std=c++14 -fPIC -fno-strict-aliasing -fstack-protector -Iinclude -Idepend/aes/include -Idepend/curl/include -Idepend/jsoncpp/include -Idepend/zlib/include
 
 ifndef NDEBUG
 CXXFLAGS += -g -D_DEBUG=1 -DDEBUG=1
@@ -43,14 +47,17 @@ $(EXT_AASSETREADER_NAME): $(EXT_AASSETREADER_OBJFILES)
 $(EXT_SERIALIZER_NAME): $(EXT_SERIALIZER_OBJFILES)
 	$(AR) rs $@ $^
 
+$(EXT_GZIPREADER_NAME): $(EXT_GZIPREADER_OBJFILES)
+	$(AR) rs $@ $^
+
 %.d:%.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MM -MF $@ $<
 
 clean:
 ifeq ($(OS), Windows_NT)
-	del $(LIB_NAME) $(EXT_MODULE_NAME) $(EXT_JNI_NAME) $(EXT_AASSETREADER_NAME) $(EXT_SERIALIZER_NAME) source\*.o source\*.d ext\*.o ext\*.d >nul 2>&1
+	del $(LIB_NAME) $(EXT_MODULE_NAME) $(EXT_JNI_NAME) $(EXT_AASSETREADER_NAME) $(EXT_SERIALIZER_NAME) $(EXT_GZIPREADER_NAME) source\*.o source\*.d ext\*.o ext\*.d >nul 2>&1
 else
-	$(RM) $(LIB_NAME) $(EXT_MODULE_NAME) $(EXT_JNI_NAME) $(EXT_AASSETREADER_NAME) $(EXT_SERIALIZER_NAME) source/*.o source/*.d ext/*.o ext/*.d
+	$(RM) $(LIB_NAME) $(EXT_MODULE_NAME) $(EXT_JNI_NAME) $(EXT_AASSETREADER_NAME) $(EXT_SERIALIZER_NAME) $(EXT_GZIPREADER_NAME) source/*.o source/*.d ext/*.o ext/*.d
 endif
 
 .PHONY: all clean

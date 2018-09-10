@@ -81,8 +81,6 @@
 		55A574601EA78108003ECB8C /* hermes.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hermes.hpp; path = include/hermes.hpp; sourceTree = "<group>"; };
 		9E19506E2007AED500CE339D /* hmsTools.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = hmsTools.cpp; path = source/hmsTools.cpp; sourceTree = "<group>"; };
 		9E1950712007AEF300CE339D /* hmsTools.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = hmsTools.hpp; path = include/hmsTools.hpp; sourceTree = "<group>"; };
-		9E3B2898214278580092A089 /* hmsextgzipreader_ios.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hmsextgzipreader_ios.h; sourceTree = "<group>"; };
-		9E3B2899214278580092A089 /* hmsextgzipreader_ios.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = hmsextgzipreader_ios.m; sourceTree = "<group>"; };
 		9E3B28A7214278780092A089 /* libhmsextgzipreader.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhmsextgzipreader.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E3B28B021427A6E0092A089 /* libhmsextgzipreader.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libhmsextgzipreader.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E3B28B121427B4B0092A089 /* hmsGZipReader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = hmsGZipReader.cpp; path = ext/hmsGZipReader.cpp; sourceTree = "<group>"; };
@@ -163,15 +161,7 @@
 				38EC90ED1C3AC92E008AE1A3 /* Include */,
 				38EC90EE1C3AC974008AE1A3 /* Source */,
 				55465B622028CC4A00060DED /* Extension */,
-				9E7565A7202DA9C200DFF9A1 /* libhermes.a */,
-				9E6E7CA3203B01AC004F306B /* libhmsextserializer.a */,
-				9E7565A8202DA9C200DFF9A1 /* libhmsextmodule.a */,
-				9E7565A9202DA9C200DFF9A1 /* libhermes.a */,
-				9E7565AA202DA9C200DFF9A1 /* libhmsextmodule.a */,
-				9E6E7CAC203B01BF004F306B /* libhmsextserializer.a */,
-				9E3B2897214278580092A089 /* hmsextgzipreader_ios */,
-				9E3B28A7214278780092A089 /* libhmsextgzipreader.a */,
-				9E3B28B021427A6E0092A089 /* libhmsextgzipreader.a */,
+				556246002146CE2C0039E4EA /* Output */,
 			);
 			sourceTree = "<group>";
 		};
@@ -214,13 +204,19 @@
 			name = Extension;
 			sourceTree = "<group>";
 		};
-		9E3B2897214278580092A089 /* hmsextgzipreader_ios */ = {
+		556246002146CE2C0039E4EA /* Output */ = {
 			isa = PBXGroup;
 			children = (
-				9E3B2898214278580092A089 /* hmsextgzipreader_ios.h */,
-				9E3B2899214278580092A089 /* hmsextgzipreader_ios.m */,
+				9E7565A9202DA9C200DFF9A1 /* libhermes.a */,
+				9E7565A7202DA9C200DFF9A1 /* libhermes.a */,
+				9E3B28B021427A6E0092A089 /* libhmsextgzipreader.a */,
+				9E3B28A7214278780092A089 /* libhmsextgzipreader.a */,
+				9E7565A8202DA9C200DFF9A1 /* libhmsextmodule.a */,
+				9E7565AA202DA9C200DFF9A1 /* libhmsextmodule.a */,
+				9E6E7CAC203B01BF004F306B /* libhmsextserializer.a */,
+				9E6E7CA3203B01AC004F306B /* libhmsextserializer.a */,
 			);
-			path = hmsextgzipreader_ios;
+			name = Output;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
