@@ -872,10 +872,7 @@ namespace hms
             // resize array if required
             if (id >= mData.size())
                 mData.resize(id + 1);
-            
-            // check if Id is in use
-            assert(mData[id].get() == nullptr);
-            
+
             mData[id] = pData;
             
             status = true;
