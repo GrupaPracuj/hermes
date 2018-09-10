@@ -55,59 +55,127 @@ namespace ext
         return std::unique_ptr<GZipReader>(new GZipReader(pPath, pPrefix));
     }
     
-    std::unique_ptr<DataStorageReader> GZipLoader::createStorageReader(DataReader& pReader, const std::string& pPrefix) const
+    std::unique_ptr<DataStorageReader> GZipLoader::createStorageReader(std::shared_ptr<DataReader> pReader, const std::string& pPrefix) const
     {
         return std::unique_ptr<GZipReader>(new GZipReader(pReader, pPrefix));
     }
     
-    GZipReader::GZipReader(const std::string& pPath, const std::string& pPrefix) : DataStorageReader(pPrefix)
+    GZipReader::GZipReader(const std::string& pPath, const std::string& pPrefix) : DataStorageReader(pPrefix), mFilePath(std::move(pPath))
     {
         mBigEndian = !tools::isLittleEndian();
         
-        FileReader reader{pPath};
-        getCompressedData(reader, pPath);
+        FileReader reader{mFilePath};
+        unpackFileName(reader, mFilePath);
     }
     
-    GZipReader::GZipReader(DataReader& pReader, const std::string& pPrefix) : DataStorageReader(pPrefix)
+    GZipReader::GZipReader(std::shared_ptr<DataReader> pReader, const std::string& pPrefix) : DataStorageReader(pPrefix), mReader(pReader)
     {
         mBigEndian = !tools::isLittleEndian();
-        getCompressedData(pReader);
+        unpackFileName(*pReader);
     }
 
     std::unique_ptr<DataReader> GZipReader::openFile(const std::string& pName) const
     {
-        std::unique_ptr<MemoryReader> reader = nullptr;
-        if (mCompressedData.size() != 0 && mUncompressedSize != 0 && mPrefix + mFileName == pName)
+        std::unique_ptr<MemoryReader> memory = nullptr;
+        
+        if (mPrefix + mFileName == pName)
         {
-            char* output = new char[mUncompressedSize];
-            z_stream stream;
+            FileReader file{mFilePath};
+            DataReader* reader = mReader != nullptr ? mReader.get() : (file.isOpen() ? &file : nullptr);
             
-            stream.next_in = (z_const Bytef*)mCompressedData.data();
-            stream.avail_in = static_cast<uInt>(mCompressedData.size());
-            stream.next_out = (Bytef*)output;
-            stream.avail_out = static_cast<uInt>(mUncompressedSize);
-            stream.zalloc = (alloc_func)0;
-            stream.zfree = (free_func)0;
-            
-            int32_t error = inflateInit2(&stream, -MAX_WBITS);
-            if (error == Z_OK)
+            if (reader != nullptr)
             {
-                error = inflate(&stream, Z_FINISH);
-                inflateEnd(&stream);
-            }
-            
-            if (error != Z_STREAM_END)
-            {
-                Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Gzip decompress error %", error);
-                delete[] output;
-            }
-            else
-            {
-                reader = std::make_unique<MemoryReader>(output, mUncompressedSize, true);
+                GZipHeader header;
+                
+                reader->seek(0);
+                if (reader->read(&header, sizeof(header)) == sizeof(header))
+                {
+                    if (mBigEndian)
+                    {
+                        header.mSignature = tools::byteSwap16(header.mSignature);
+                        header.mModificationTime = tools::byteSwap32(header.mModificationTime);
+                    }
+                    
+                    if (header.mSignature != 0x8b1f)
+                    {
+                        const uint8_t crc16 = 1 << 1;
+                        const uint8_t extra = 1 << 2;
+                        const uint8_t fileName = 1 << 3;
+                        const uint8_t comment = 1 << 4;
+                        DataBuffer compressedData;
+                        uint32_t crc = 0;
+                        uint32_t uncompressedSize = 0;
+                        auto readUntilZero = [](DataReader& lpReader) -> void
+                        {
+                            char c = 0;
+                            do
+                                lpReader.read(&c, 1);
+                            while (c != 0);
+                        };
+                        
+                        if ((header.mFlags & extra) == extra)
+                        {
+                            uint16_t length = 0;
+                            reader->read(&length, 2);
+                            
+                            if (mBigEndian)
+                                length = tools::byteSwap16(length);
+                            
+                            reader->seek(static_cast<int64_t>(length), true);
+                        }
+                        
+                        if ((header.mFlags & fileName) == fileName)
+                            readUntilZero(*reader);
+                        
+                        if ((header.mFlags & comment) == comment)
+                            readUntilZero(*reader);
+                        
+                        if ((header.mFlags & crc16) == crc16)
+                            reader->seek(2, true);
+                        
+                        reader->read(compressedData, reader->getSize() - 8 - reader->getPosition());
+                        reader->read(&crc, 4);
+                        reader->read(&uncompressedSize, 4);
+                        
+                        if (mBigEndian)
+                            uncompressedSize = tools::byteSwap32(uncompressedSize);
+                        
+                        if (compressedData.size() != 0 && uncompressedSize != 0)
+                        {
+                            char* output = new char[uncompressedSize];
+                            z_stream stream;
+                            
+                            stream.next_in = (z_const Bytef*)compressedData.data();
+                            stream.avail_in = static_cast<uInt>(compressedData.size());
+                            stream.next_out = (Bytef*)output;
+                            stream.avail_out = static_cast<uInt>(uncompressedSize);
+                            stream.zalloc = (alloc_func)0;
+                            stream.zfree = (free_func)0;
+                            
+                            int32_t error = inflateInit2(&stream, -MAX_WBITS);
+                            if (error == Z_OK)
+                            {
+                                error = inflate(&stream, Z_FINISH);
+                                inflateEnd(&stream);
+                            }
+                            
+                            if (error != Z_STREAM_END)
+                            {
+                                Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Gzip decompress error %", error);
+                                delete[] output;
+                            }
+                            else
+                            {
+                                memory = std::make_unique<MemoryReader>(output, uncompressedSize, true);
+                            }
+                        }
+                    }
+                    reader->seek(0);
+                }
             }
         }
         
-        return reader;
+        return memory;
     }
     
     bool GZipReader::clearStorage(const std::string& pPath)
@@ -125,27 +193,23 @@ namespace ext
         mFileName = std::move(pFileName);
     }
     
-    void GZipReader::getCompressedData(DataReader& pReader, const std::string& pFilePath)
+    void GZipReader::unpackFileName(DataReader& pReader, const std::string& pFilePath)
     {
-        pReader.seek(0);
+        GZipHeader header;
         
-        if (pReader.read(&mHeader, sizeof(mHeader)) == sizeof(mHeader))
+        pReader.seek(0);
+        if (pReader.read(&header, sizeof(header)) == sizeof(header))
         {
             if (mBigEndian)
-            {
-                mHeader.mSignature = tools::byteSwap16(mHeader.mSignature);
-                mHeader.mModificationTime = tools::byteSwap32(mHeader.mModificationTime);
-            }
+                header.mSignature = tools::byteSwap16(header.mSignature);
             
-            if (mHeader.mSignature != 0x8b1f)
+            if (header.mSignature != 0x8b1f)
                 return;
             
-            const uint8_t crc16 = 1 << 1;
             const uint8_t extra = 1 << 2;
             const uint8_t fileName = 1 << 3;
-            const uint8_t comment = 1 << 4;
             
-            if ((mHeader.mFlags & extra) == extra)
+            if ((header.mFlags & extra) == extra)
             {
                 uint16_t length = 0;
                 pReader.read(&length, 2);
@@ -156,7 +220,7 @@ namespace ext
                 pReader.seek(static_cast<int64_t>(length), true);
             }
             
-            if ((mHeader.mFlags & fileName) == fileName)
+            if ((header.mFlags & fileName) == fileName)
             {
                 const size_t length = 1024;
                 char name[length] = {0};
@@ -178,28 +242,8 @@ namespace ext
                 mFileName = pFilePath.substr(begin, length);
             }
             
-            if ((mHeader.mFlags & comment) == comment)
-            {
-                char c = 0;
-                do
-                    pReader.read(&c, 1);
-                while (c != 0);
-            }
-            
-            if ((mHeader.mFlags & crc16) == crc16)
-                pReader.seek(2, true);
-            
-            pReader.read(mCompressedData, pReader.getSize() - 8 - pReader.getPosition());
-            
-            uint32_t crc = 0;
-            pReader.read(&crc, 4);
-            pReader.read(&mUncompressedSize, 4);
-            
-            if (mBigEndian)
-                mUncompressedSize = tools::byteSwap32(mUncompressedSize);
+            pReader.seek(0);
         }
-        
-        pReader.seek(0);
     }
 }
 }

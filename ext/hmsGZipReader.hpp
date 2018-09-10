@@ -16,7 +16,7 @@ namespace ext
         virtual bool isLoadable(const std::string& pPath) const override;
         virtual bool isLoadable(DataReader& pReader) const override;
         virtual std::unique_ptr<DataStorageReader> createStorageReader(const std::string& pPath, const std::string& pPrefix = "") const override;
-        virtual std::unique_ptr<DataStorageReader> createStorageReader(DataReader& pReader, const std::string& pPrefix = "") const override;
+        virtual std::unique_ptr<DataStorageReader> createStorageReader(std::shared_ptr<DataReader> pReader, const std::string& pPrefix = "") const override;
         
     private:
         bool mBigEndian = false;
@@ -27,7 +27,7 @@ namespace ext
     {
     public:
         GZipReader(const std::string& pPath, const std::string& pPrefix);
-        GZipReader(DataReader& pReader, const std::string& pPrefix);
+        GZipReader(std::shared_ptr<DataReader> pReader, const std::string& pPrefix);
         virtual ~GZipReader() = default;
         
         virtual std::unique_ptr<DataReader> openFile(const std::string& pName) const override;
@@ -46,14 +46,13 @@ namespace ext
             uint8_t  mFlagsExtra;
             uint8_t  mOS;
         } __attribute__((packed));
-    
-        DataBuffer mCompressedData;
-        GZipHeader mHeader;
+        
+        std::shared_ptr<DataReader> mReader = nullptr;
+        std::string mFilePath;
         std::string mFileName;
-        uint32_t mUncompressedSize = 0;
         bool mBigEndian = false;
         
-        void getCompressedData(DataReader& pReader, const std::string& pFilePath = "");
+        void unpackFileName(DataReader& pReader, const std::string& pFilePath = "");
     };
 }
 }

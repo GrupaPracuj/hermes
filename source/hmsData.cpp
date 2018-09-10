@@ -821,7 +821,7 @@ namespace hms
             return std::unique_ptr<DirectoryReader>(new DirectoryReader(pPath, pPrefix));
         }
         
-        virtual std::unique_ptr<DataStorageReader> createStorageReader(DataReader& pReader, const std::string& pPrefix = "") const override
+        virtual std::unique_ptr<DataStorageReader> createStorageReader(std::shared_ptr<DataReader> pReader, const std::string& pPrefix = "") const override
         {
             return nullptr;
         }
@@ -1222,13 +1222,13 @@ namespace hms
         return added;
     }
     
-    bool DataManager::addStorageReader(DataReader& pReader, const std::string& pPrefix)
+    bool DataManager::addStorageReader(std::shared_ptr<DataReader> pReader, const std::string& pPrefix)
     {
         bool added = false;
         
         for (auto it = mLoader.cbegin(); it != mLoader.cend(); it++)
         {
-            if(it->get()->isLoadable(pReader))
+            if(it->get()->isLoadable(*pReader))
             {
                 added = true;
                 mStorage.push_back(it->get()->createStorageReader(pReader, pPrefix));

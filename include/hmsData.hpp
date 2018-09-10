@@ -259,7 +259,7 @@ namespace hms
         virtual bool isLoadable(const std::string& pPath) const = 0;
         virtual bool isLoadable(DataReader& pReader) const = 0;
         virtual std::unique_ptr<DataStorageReader> createStorageReader(const std::string& pPath, const std::string& pPrefix = "") const = 0;
-        virtual std::unique_ptr<DataStorageReader> createStorageReader(DataReader& pReader, const std::string& pPrefix = "") const = 0;
+        virtual std::unique_ptr<DataStorageReader> createStorageReader(std::shared_ptr<DataReader> pReader, const std::string& pPrefix = "") const = 0;
         
     protected:
         DataStorageLoader() = default;
@@ -309,7 +309,7 @@ namespace hms
         void addStorageLoader(std::unique_ptr<DataStorageLoader> pLoader);
         void addStorageReader(std::unique_ptr<DataStorageReader> pReader);
         bool addStorageReader(const std::string& pName, const std::string& pPrefix = "", bool pRelativeToWorkspace = true);
-        bool addStorageReader(DataReader& pReader, const std::string& pPrefix = "");
+        bool addStorageReader(std::shared_ptr<DataReader> pReader, const std::string& pPrefix = "");
         
         void clearDirectory(const std::string& pPath);
         
