@@ -148,36 +148,6 @@ namespace hms
     DataShared::~DataShared()
     {
     }
-
-    bool DataShared::pack(std::string& pData, const std::vector<unsigned>& pUserData) const
-    {
-        return false;
-    }
-    
-    bool DataShared::unpack(const std::string& pData, const std::vector<unsigned>& pUserData)
-    {
-        return false;
-    }
-    
-    bool DataShared::unpack(std::string&& pData, const std::vector<unsigned>& pUserData)
-    {
-        return false;
-    }
-    
-    bool DataShared::packBuffer(DataBuffer& pData, const std::vector<unsigned>& pUserData) const
-    {
-        return false;
-    }
-    
-    bool DataShared::unpackBuffer(const DataBuffer& pData, const std::vector<unsigned>& pUserData)
-    {
-        return false;
-    }
-    
-    bool DataShared::unpackBuffer(DataBuffer&& pData, const std::vector<unsigned>& pUserData)
-    {
-        return false;
-    }
     
     size_t DataShared::getId() const
     {
@@ -912,104 +882,9 @@ namespace hms
         return mWorkingDirectory;
     }
     
-    bool DataManager::readFile(const std::string& pFileName, DataShared* pData, const std::vector<unsigned>& pUserData, EDataSharedType pType)
+    bool DataManager::readFile(const std::string& pFileName, std::string& pText, crypto::ECryptoMode pCryptoMode) const
     {
-        using namespace crypto;
-                
-        assert(pData != nullptr && pFileName.length() != 0);
-
-        bool status = false;
-        std::unique_ptr<DataReader> reader = nullptr;
-        
-        for (auto it = mStorage.cbegin(); it != mStorage.cend(); it++)
-        {
-            reader = it->get()->openFile(pFileName);
-            if (reader != nullptr)
-                break;
-        }
-        
-        if (reader == nullptr)
-            reader = getDataReader(pFileName);
-        
-        if (reader->isOpen())
-        {
-            auto decryptCallback = [this](std::string* lpString, DataBuffer* lpBuffer, ECryptoMode lpMode) -> void
-            {
-                if (mCipher != nullptr && lpMode != ECryptoMode::None)
-                {
-                    std::string key, iv;
-                    mCipher(key, iv);
-                    
-                    if (lpString != nullptr)
-                    {
-                        *lpString = decrypt(*lpString, key, iv, lpMode);
-                        
-                        size_t eofCount = 0;
-                        auto it = lpString->rbegin();
-                        for (; it != lpString->rend() && *(it) == '\x03'; it++) // check for end of text character at the end
-                            eofCount++;
-                        
-                        if (eofCount != 0)
-                            lpString->erase(it.base(), lpString->end());
-                    }
-                    else if (lpBuffer != nullptr)
-                    {
-                        *lpBuffer = decrypt(*lpBuffer, key, iv, lpMode);
-                        
-                        auto data = reinterpret_cast<const char*>(lpBuffer->data());
-                        size_t eofCount = 0;
-                        for (size_t i = lpBuffer->size(); i > 0 && data[i] == '\x03'; i--)
-                            eofCount++;
-                        
-                        if (eofCount != 0)
-                            lpBuffer->pop_back(eofCount);
-                    }
-                    
-                    // TODO find reliable way to clear strings without compiler optimizing it away
-                    key.clear();
-                    iv.clear();
-                }
-            };
-            
-            switch (pType)
-            {
-                case EDataSharedType::Text:
-                {
-                    std::string text;
-                    reader->read(text);
-                    
-                    decryptCallback(&text, nullptr, pData->getCryptoMode());
-                    
-                    status = pData->unpack(text, pUserData);
-                }
-                    break;
-                case EDataSharedType::Binary:
-                {
-                    DataBuffer dataBuffer;
-                    reader->read(dataBuffer);
-                    
-                    decryptCallback(nullptr, &dataBuffer, pData->getCryptoMode());
-                    
-                    status = pData->unpackBuffer(std::move(dataBuffer), pUserData);
-                }
-                    break;
-                default:
-                    // wrong access type
-                    assert(false);
-                    break;
-            }
-        }
-        else
-        {
-            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "DataShared file not found: \"%\".", mWorkingDirectory + pFileName);
-        }
-        
-        return status;
-    }
-    
-    bool DataManager::readFile(const std::string& pFileName, std::string& pText) const
-    {
-        assert(pFileName.length() != 0);
+        assert(pFileName.size() > 0);
         
         bool status = false;
         std::unique_ptr<DataReader> reader = nullptr;
@@ -1027,15 +902,36 @@ namespace hms
         if (reader->isOpen())
         {
             reader->read(pText);
+            
+            if (mCipher != nullptr && pCryptoMode != crypto::ECryptoMode::None && pText.size() > 0)
+            {
+                std::string key, iv;
+                mCipher(key, iv);
+
+                pText = decrypt(pText, key, iv, pCryptoMode);
+                
+                size_t eofCount = 0;
+                auto it = pText.rbegin();
+                for (; it != pText.rend() && *(it) == '\x03'; it++) // check for end of text character at the end
+                    eofCount++;
+                
+                if (eofCount != 0)
+                    pText.erase(it.base(), pText.end());
+                
+                // TODO find reliable way to clear strings without compiler optimizing it away
+                key.clear();
+                iv.clear();
+            }
+            
             status = true;
         }
         
         return status;
     }
     
-    bool DataManager::readFile(const std::string& pFileName, DataBuffer& pDataBuffer) const
+    bool DataManager::readFile(const std::string& pFileName, DataBuffer& pDataBuffer, crypto::ECryptoMode pCryptoMode) const
     {
-        assert(pFileName.length() != 0);
+        assert(pFileName.size() > 0);
         
         bool status = false;
         std::unique_ptr<DataReader> reader = nullptr;
@@ -1053,124 +949,107 @@ namespace hms
         if (reader->isOpen())
         {
             reader->read(pDataBuffer);
-            status = true;
-        }
-        
-        return status;
-    }
-    
-    bool DataManager::writeFile(const std::string& pFileName, const DataShared* pData, const std::vector<unsigned>& pUserData, EDataSharedType pType, bool pClearContent) const
-    {
-        using namespace crypto;
-        
-        assert(pData != nullptr && pFileName.length() != 0);
-        
-        bool status = false;
-        auto writer = getDataWriter(pFileName, !pClearContent);
-        
-        if (writer->isOpen())
-        {
-            auto encryptCallback = [this](std::string* lpString, DataBuffer* lpBuffer, ECryptoMode lpMode) -> void
-            {
-                if (mCipher != nullptr && lpMode != ECryptoMode::None)
-                {
-                    const size_t blockLength = 16;
-                    std::string key, iv;
-                    
-                    mCipher(key, iv);
-                    
-                    if (lpString != nullptr)
-                    {
-                        const size_t fillCount = lpString->length() % blockLength;
-                        if (fillCount != 0)
-                            lpString->insert(lpString->end(), blockLength - fillCount, '\x03');
-                        
-                        *lpString = encrypt(*lpString, key, iv, lpMode);
-                    }
-                    else if (lpBuffer != nullptr)
-                    {
-                        const size_t fillCount = lpBuffer->size() % blockLength;
-                        if (fillCount != 0)
-                        {
-                            std::string fill(blockLength - fillCount, '\x03');
-                            lpBuffer->push_back(fill.data(), fill.size());
-                        }
-                        
-                        *lpBuffer = encrypt(*lpBuffer, key, iv, lpMode);
-                    }
-                    
-                    // TODO find reliable way to clear strings without compiler optimizing it away
-                    key.clear();
-                    iv.clear();
-                }
-            };
             
-            switch (pType)
+            if (mCipher != nullptr && pCryptoMode != crypto::ECryptoMode::None && pDataBuffer.size() > 0)
             {
-                case EDataSharedType::Text:
-                {
-                    std::string text = "";
-                    status = pData->pack(text, pUserData);
-                    
-                    if (status)
-                    {
-                        encryptCallback(&text, nullptr, pData->getCryptoMode());
-                        writer->write(text);
-                    }
-                }
-                    break;
-                case EDataSharedType::Binary:
-                {
-                    DataBuffer dataBuffer;
-                    status = pData->packBuffer(dataBuffer, pUserData);
-                    
-                    if (status)
-                    {
-                        encryptCallback(nullptr, &dataBuffer, pData->getCryptoMode());
-                        writer->write(dataBuffer);
-                    }
-                }
-                    break;
-                default:
-                    // wrong access type
-                    assert(false);
-                    break;
+                std::string key, iv;
+                mCipher(key, iv);
+
+                pDataBuffer = decrypt(pDataBuffer, key, iv, pCryptoMode);
+
+                size_t eofCount = 0;
+                for (size_t i = pDataBuffer.size(); i > 0 && reinterpret_cast<const char*>(pDataBuffer.data())[i] == '\x03'; i--)
+                    eofCount++;
+        
+                if (eofCount != 0)
+                    pDataBuffer.pop_back(eofCount);
+                
+                // TODO find reliable way to clear strings without compiler optimizing it away
+                key.clear();
+                iv.clear();
             }
-        }
-        else
-        {
-            Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "DataShared write fail to: \"%\".", mWorkingDirectory + pFileName);
-        }
-        
-        return status;
-    }
-    
-    bool DataManager::writeFile(const std::string& pFileName, const std::string& pText, bool pClearContent) const
-    {
-        assert(pFileName.length() != 0);
-        
-        bool status = false;
-        auto writer = getDataWriter(pFileName, !pClearContent);
-        
-        if (writer->isOpen())
-        {
-            writer->write(pText);
+            
             status = true;
         }
         
         return status;
     }
     
-    bool DataManager::writeFile(const std::string& pFileName, const DataBuffer& pDataBuffer, bool pClearContent) const
+    bool DataManager::writeFile(const std::string& pFileName, const std::string& pText, crypto::ECryptoMode pCryptoMode, bool pClearContent) const
     {
-        assert(pFileName.length() != 0);
+        assert(pFileName.size() > 0);
         
         bool status = false;
         auto writer = getDataWriter(pFileName, !pClearContent);
+        const std::string* textPtr = &pText;
+        std::string tmpText;
         
         if (writer->isOpen())
         {
-            writer->write(pDataBuffer);
+            if (mCipher != nullptr && pCryptoMode != crypto::ECryptoMode::None && textPtr->size() > 0)
+            {
+                const size_t blockLength = 16;
+                std::string key, iv;
+                mCipher(key, iv);
+
+                const size_t fillCount = textPtr->size() % blockLength;
+                if (fillCount != 0)
+                {
+                    tmpText = *textPtr;
+                    tmpText.insert(tmpText.end(), blockLength - fillCount, '\x03');
+                    textPtr = &tmpText;
+                }
+                
+                tmpText = encrypt(*textPtr, key, iv, pCryptoMode);
+                textPtr = &tmpText;
+                
+                // TODO find reliable way to clear strings without compiler optimizing it away
+                key.clear();
+                iv.clear();
+            }
+        
+            writer->write(*textPtr);
+            status = true;
+        }
+        
+        return status;
+    }
+    
+    bool DataManager::writeFile(const std::string& pFileName, const DataBuffer& pDataBuffer, crypto::ECryptoMode pCryptoMode, bool pClearContent) const
+    {
+        assert(pFileName.size() > 0);
+        
+        bool status = false;
+        auto writer = getDataWriter(pFileName, !pClearContent);
+        const DataBuffer* dataBufferPtr = &pDataBuffer;
+        DataBuffer tmpDataBuffer;
+        
+        if (writer->isOpen())
+        {
+            if (mCipher != nullptr && pCryptoMode != crypto::ECryptoMode::None && dataBufferPtr->size() > 0)
+            {
+                const size_t blockLength = 16;
+                std::string key, iv;
+                mCipher(key, iv);
+
+                const size_t fillCount = dataBufferPtr->size() % blockLength;
+                if (fillCount != 0)
+                {
+                    tmpDataBuffer = *dataBufferPtr;
+                    const std::string fill(blockLength - fillCount, '\x03');
+                    tmpDataBuffer.push_back(fill.data(), fill.size());
+                    dataBufferPtr = &tmpDataBuffer;
+                }
+                
+                tmpDataBuffer = encrypt(*dataBufferPtr, key, iv, pCryptoMode);
+                dataBufferPtr = &tmpDataBuffer;
+
+                // TODO find reliable way to clear strings without compiler optimizing it away
+                key.clear();
+                iv.clear();
+            }
+        
+            writer->write(*dataBufferPtr);
             status = true;
         }
         

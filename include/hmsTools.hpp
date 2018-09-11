@@ -64,9 +64,9 @@ namespace crypto
 {
     enum class ECryptoMode : int
     {
-        AES_256_OFB = 0,
-        AES_256_CBC,
-        None
+        None = 0,
+        AES_256_OFB,
+        AES_256_CBC
     };
     
     std::string encodeBase64(unsigned char const* bytes_to_encode, size_t in_len);

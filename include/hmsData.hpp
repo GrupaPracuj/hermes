@@ -75,21 +75,7 @@ namespace hms
     public:
         DataShared(size_t pId);
         virtual ~DataShared();
-        
-        // Pack elements to request string.
-        virtual bool pack(std::string& pData, const std::vector<unsigned>& pUserData) const;
 
-        // Unpack elements from response string.
-        virtual bool unpack(const std::string& pData, const std::vector<unsigned>& pUserData);
-        virtual bool unpack(std::string&& pData, const std::vector<unsigned>& pUserData);
-        
-        // Pack elements to request raw data.
-        virtual bool packBuffer(DataBuffer& pData, const std::vector<unsigned>& pUserData) const;
-        
-        // Unpack elements from response raw data.
-        virtual bool unpackBuffer(const DataBuffer& pData, const std::vector<unsigned>& pUserData);
-        virtual bool unpackBuffer(DataBuffer&& pData, const std::vector<unsigned>& pUserData);
-        
         size_t getId() const;
         crypto::ECryptoMode getCryptoMode() const;
         
@@ -294,14 +280,12 @@ namespace hms
         void setWorkingDirectory(std::string pWorkingDirectory);
         
         std::string getWorkingDirectory() const;
-        
-        bool readFile(const std::string& pFileName, DataShared* pData, const std::vector<unsigned>& pUserData, EDataSharedType pType = EDataSharedType::Text);
-        bool readFile(const std::string& pFileName, std::string& pText) const;
-        bool readFile(const std::string& pFileName, DataBuffer& pDataBuffer) const;
-        
-        bool writeFile(const std::string& pFileName, const DataShared* pData, const std::vector<unsigned>& pUserData, EDataSharedType pType = EDataSharedType::Text, bool pClearContent = true) const;
-        bool writeFile(const std::string& pFileName, const std::string& pText, bool pClearContent = true) const;
-        bool writeFile(const std::string& pFileName, const DataBuffer& pDataBuffer, bool pClearContent = true) const;
+
+        bool readFile(const std::string& pFileName, std::string& pText, crypto::ECryptoMode pCryptoMode = static_cast<crypto::ECryptoMode>(0)) const;
+        bool readFile(const std::string& pFileName, DataBuffer& pDataBuffer, crypto::ECryptoMode pCryptoMode = static_cast<crypto::ECryptoMode>(0)) const;
+
+        bool writeFile(const std::string& pFileName, const std::string& pText, crypto::ECryptoMode pCryptoMode = static_cast<crypto::ECryptoMode>(0), bool pClearContent = true) const;
+        bool writeFile(const std::string& pFileName, const DataBuffer& pDataBuffer, crypto::ECryptoMode pCryptoMode = static_cast<crypto::ECryptoMode>(0), bool pClearContent = true) const;
         
         std::unique_ptr<DataReader> getDataReader(const std::string& pFileName) const;
         std::unique_ptr<DataWriter> getDataWriter(const std::string& pFileName, bool pAppend = false) const;
