@@ -1179,7 +1179,21 @@ namespace hms
     
     std::unique_ptr<DataReader> DataManager::getDataReader(const std::string& pFileName) const
     {
-        return std::unique_ptr<DataReader>(new FileReader(mWorkingDirectory + pFileName));
+        assert(pFileName.length() != 0);
+        
+        std::unique_ptr<DataReader> reader = nullptr;
+        
+        for (auto it = mStorage.cbegin(); it != mStorage.cend(); it++)
+        {
+            reader = it->get()->openFile(pFileName);
+            if (reader != nullptr)
+                break;
+        }
+        
+        if (reader == nullptr)
+            reader = std::make_unique<FileReader>(mWorkingDirectory + pFileName);
+        
+        return reader;
     }
     
     std::unique_ptr<DataWriter> DataManager::getDataWriter(const std::string& pFileName, bool pAppend) const

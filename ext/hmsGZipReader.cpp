@@ -96,7 +96,7 @@ namespace ext
                         header.mModificationTime = tools::byteSwap32(header.mModificationTime);
                     }
                     
-                    if (header.mSignature != 0x8b1f)
+                    if (header.mSignature == 0x8b1f)
                     {
                         const uint8_t crc16 = 1 << 1;
                         const uint8_t extra = 1 << 2;
