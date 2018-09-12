@@ -18,7 +18,7 @@ EXT_SERIALIZER_NAME = libhmsextserializer.a
 EXT_SERIALIZER_SRCFILES = ext/hmsSerializer.cpp
 EXT_SERIALIZER_OBJFILES = $(EXT_SERIALIZER_SRCFILES:%.cpp=%.o)
 
-EXT_GZIPREADER_NAME = libhmsgzipreader.a
+EXT_GZIPREADER_NAME = libhmsextgzipreader.a
 EXT_GZIPREADER_SRCFILES = ext/hmsGZipReader.cpp
 EXT_GZIPREADER_OBJFILES = $(EXT_GZIPREADER_SRCFILES:%.cpp=%.o)
 
