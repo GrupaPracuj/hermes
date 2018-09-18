@@ -887,17 +887,7 @@ namespace hms
         assert(pFileName.size() > 0);
         
         bool status = false;
-        std::unique_ptr<DataReader> reader = nullptr;
-                
-        for (auto it = mStorage.cbegin(); it != mStorage.cend(); it++)
-        {
-            reader = it->get()->openFile(pFileName);
-            if (reader != nullptr)
-                break;
-        }
-        
-        if (reader == nullptr)
-            reader = getDataReader(pFileName);
+        std::unique_ptr<DataReader> reader = getDataReader(pFileName);
         
         if (reader->isOpen())
         {
@@ -934,17 +924,7 @@ namespace hms
         assert(pFileName.size() > 0);
         
         bool status = false;
-        std::unique_ptr<DataReader> reader = nullptr;
-        
-        for (auto it = mStorage.cbegin(); it != mStorage.cend(); it++)
-        {
-            reader = it->get()->openFile(pFileName);
-            if (reader != nullptr)
-                break;
-        }
-        
-        if (reader == nullptr)
-            reader = getDataReader(pFileName);
+        std::unique_ptr<DataReader> reader = getDataReader(pFileName);
         
         if (reader->isOpen())
         {
