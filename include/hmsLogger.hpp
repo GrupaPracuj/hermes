@@ -1,4 +1,4 @@
-// Copyright (C) 2017 Grupa Pracuj Sp. z o.o.
+// Copyright (C) 2017-2018 Grupa Pracuj Sp. z o.o.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -13,7 +13,7 @@
 namespace hms
 {
 
-    enum class ELogLevel : int
+    enum class ELogLevel : size_t
     {
         Info = 0,
         Warning,
@@ -24,21 +24,30 @@ namespace hms
     class Logger
     {
     public:
-        bool initialize(ELogLevel pLevel, std::function<void(ELogLevel pType, std::string pText)> pPostCallback);
+        bool initialize(ELogLevel pLevel, std::string pTag, std::function<void(ELogLevel pType, std::string pText)> pCallback);
         bool terminate();
+        
+        ELogLevel getLevel() const;
+        void setLevel(ELogLevel pLevel);
+        
+        const std::string& getTag() const;
+        void setTag(std::string pTag);
+
+        const std::function<void(ELogLevel pType, std::string pText)>& getCallback() const;
+        void setCallback(std::function<void(ELogLevel pType, std::string pText)> pCallback);
         
         template<typename... Argument>
         void print(ELogLevel pType, const std::string& pText, Argument... pArgument)
         {
-            if (mInitialized && static_cast<unsigned>(pType) >= static_cast<unsigned>(mLevel))
+            if (mInitialized && static_cast<size_t>(pType) >= static_cast<size_t>(mLevel))
             {
                 std::string buffer;
                 createBuffer(buffer, pText.c_str(), pArgument...);
 
                 printNative(pType, buffer);
 
-                if (mPostCallback != nullptr)
-                    mPostCallback(pType, std::move(buffer));
+                if (mCallback != nullptr)
+                    mCallback(pType, std::move(buffer));
             }
         }
 
@@ -85,7 +94,8 @@ namespace hms
         }
         
         ELogLevel mLevel = ELogLevel::Info;
-        std::function<void(ELogLevel pType, std::string pText)> mPostCallback = nullptr;
+        std::string mTag;
+        std::function<void(ELogLevel pType, std::string pText)> mCallback = nullptr;
         bool mInitialized = false;
     };
 

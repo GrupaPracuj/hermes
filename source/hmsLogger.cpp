@@ -1,4 +1,4 @@
-// Copyright (C) 2017 Grupa Pracuj Sp. z o.o.
+// Copyright (C) 2017-2018 Grupa Pracuj Sp. z o.o.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -22,8 +22,8 @@ namespace hms
     {
         terminate();
     }
-    
-    bool Logger::initialize(ELogLevel pLevel, std::function<void(ELogLevel pType, std::string pText)> pPostCallback)
+
+    bool Logger::initialize(ELogLevel pLevel, std::string pTag, std::function<void(ELogLevel pType, std::string pText)> pCallback)
     {
         if (mInitialized)
             return false;
@@ -31,7 +31,8 @@ namespace hms
         mInitialized = true;
         
         mLevel = pLevel;
-        mPostCallback = pPostCallback;
+        mTag = std::move(pTag);
+        mCallback = std::move(pCallback);
         
         return true;
     }
@@ -42,11 +43,42 @@ namespace hms
             return false;
         
         mLevel = ELogLevel::Info;
-        mPostCallback = nullptr;
+        mTag = "";
+        mCallback = nullptr;
 
         mInitialized = false;
         
         return true;
+    }
+    
+    ELogLevel Logger::getLevel() const
+    {
+        return mLevel;
+    }
+    
+    void Logger::setLevel(ELogLevel pLevel)
+    {
+        mLevel = pLevel;
+    }
+    
+    const std::string& Logger::getTag() const
+    {
+        return mTag;
+    }
+    
+    void Logger::setTag(std::string pTag)
+    {
+        mTag = std::move(pTag);
+    }
+    
+    const std::function<void(ELogLevel pType, std::string pText)>& Logger::getCallback() const
+    {
+        return mCallback;
+    }
+
+    void Logger::setCallback(std::function<void(ELogLevel pType, std::string pText)> pCallback)
+    {
+        mCallback = std::move(pCallback);
     }
     
     void Logger::printNative(ELogLevel pType, const std::string& pText) const
@@ -59,7 +91,7 @@ namespace hms
                 ANDROID_LOG_FATAL
         };
 
-        __android_log_print(translationTable[static_cast<size_t>(pType)], "Hermes", "%s", pText.c_str());
+        __android_log_print(translationTable[static_cast<size_t>(pType)], mTag.c_str(), "%s", pText.c_str());
 #else
         std::string output = createPrefix(pType);
         output += pText;
@@ -71,23 +103,26 @@ namespace hms
     {
         std::string prefix;
         
+        if (mTag.size() > 0)
+            prefix += mTag + " | ";
+        
         switch (pType)
         {
-            case ELogLevel::Info:
-                prefix = "INFO: ";
-                break;
-            case ELogLevel::Warning:
-                prefix = "WARNING: ";
-                break;
-            case ELogLevel::Error:
-                prefix = "ERROR: ";
-                break;
-            case ELogLevel::Fatal:
-                prefix = "FATAL: ";
-                break;
-            default:
-                prefix = "UNKNOWN: ";
-                break;
+        case ELogLevel::Info:
+            prefix += "INFO: ";
+            break;
+        case ELogLevel::Warning:
+            prefix += "WARNING: ";
+            break;
+        case ELogLevel::Error:
+            prefix += "ERROR: ";
+            break;
+        case ELogLevel::Fatal:
+            prefix += "FATAL: ";
+            break;
+        default:
+            prefix += "UNKNOWN: ";
+            break;
         }
         
         return prefix;

@@ -1,4 +1,4 @@
-// Copyright (C) 2017 Grupa Pracuj Sp. z o.o.
+// Copyright (C) 2017-2018 Grupa Pracuj Sp. z o.o.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
