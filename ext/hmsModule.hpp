@@ -49,6 +49,7 @@ namespace ext
         {
             std::shared_ptr<T> module(new T(std::forward<U>(pArgument)...), [](T* pThis) -> void { delete pThis; });
             module->mThis = module;
+            module->postCreate();
             
             return module;
         }
@@ -76,6 +77,10 @@ namespace ext
         
         ModuleShared& operator=(const ModuleShared& pOther) = delete;
         ModuleShared& operator=(ModuleShared&& pOther) = delete;
+
+        void postCreate()
+        {
+        }
     };
     
     class ModuleHandler
