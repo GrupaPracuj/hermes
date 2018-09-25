@@ -24,7 +24,7 @@ namespace hms
     class Logger
     {
     public:
-        bool initialize(ELogLevel pLevel, std::string pTag, std::function<void(ELogLevel pType, std::string pText)> pCallback);
+        bool initialize(ELogLevel pLevel, std::string pTag, std::function<void(ELogLevel pLevel, std::string pMessage)> pCallback);
         bool terminate();
         
         ELogLevel getLevel() const;
@@ -33,21 +33,21 @@ namespace hms
         const std::string& getTag() const;
         void setTag(std::string pTag);
 
-        const std::function<void(ELogLevel pType, std::string pText)>& getCallback() const;
-        void setCallback(std::function<void(ELogLevel pType, std::string pText)> pCallback);
+        const std::function<void(ELogLevel pLevel, std::string pMessage)>& getCallback() const;
+        void setCallback(std::function<void(ELogLevel pLevel, std::string pMessage)> pCallback);
         
         template<typename... Argument>
-        void print(ELogLevel pType, const std::string& pText, Argument... pArgument)
+        void print(ELogLevel pLevel, const std::string& pMessage, Argument... pArgument)
         {
-            if (mInitialized && static_cast<size_t>(pType) >= static_cast<size_t>(mLevel))
+            if (mInitialized && static_cast<size_t>(pLevel) >= static_cast<size_t>(mLevel))
             {
                 std::string buffer;
-                createBuffer(buffer, pText.c_str(), pArgument...);
+                createBuffer(buffer, pMessage.c_str(), pArgument...);
 
-                printNative(pType, buffer);
+                printNative(pLevel, buffer);
 
                 if (mCallback != nullptr)
-                    mCallback(pType, std::move(buffer));
+                    mCallback(pLevel, std::move(buffer));
             }
         }
 
@@ -62,8 +62,8 @@ namespace hms
         Logger& operator=(const Logger& pOther) = delete;
         Logger& operator=(Logger&& pOther) = delete;
         
-        void printNative(ELogLevel pType, const std::string& pText) const;
-        std::string createPrefix(ELogLevel pType) const;
+        void printNative(ELogLevel pLevel, const std::string& pMessage) const;
+        std::string createPrefix(ELogLevel pLevel) const;
         void createBuffer(std::string& pDestination, const char* pSource) const;
                 
         template<typename T, typename... Argument>
@@ -95,7 +95,7 @@ namespace hms
         
         ELogLevel mLevel = ELogLevel::Info;
         std::string mTag;
-        std::function<void(ELogLevel pType, std::string pText)> mCallback = nullptr;
+        std::function<void(ELogLevel, std::string)> mCallback = nullptr;
         bool mInitialized = false;
     };
 

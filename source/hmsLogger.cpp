@@ -23,7 +23,7 @@ namespace hms
         terminate();
     }
 
-    bool Logger::initialize(ELogLevel pLevel, std::string pTag, std::function<void(ELogLevel pType, std::string pText)> pCallback)
+    bool Logger::initialize(ELogLevel pLevel, std::string pTag, std::function<void(ELogLevel, std::string)> pCallback)
     {
         if (mInitialized)
             return false;
@@ -71,42 +71,43 @@ namespace hms
         mTag = std::move(pTag);
     }
     
-    const std::function<void(ELogLevel pType, std::string pText)>& Logger::getCallback() const
+    const std::function<void(ELogLevel, std::string)>& Logger::getCallback() const
     {
         return mCallback;
     }
 
-    void Logger::setCallback(std::function<void(ELogLevel pType, std::string pText)> pCallback)
+    void Logger::setCallback(std::function<void(ELogLevel, std::string)> pCallback)
     {
         mCallback = std::move(pCallback);
     }
     
-    void Logger::printNative(ELogLevel pType, const std::string& pText) const
+    void Logger::printNative(ELogLevel pLevel, const std::string& pMessage) const
     {
 #if defined(ANDROID) || defined(__ANDROID__)
-        static android_LogPriority const translationTable[] = {
+        static android_LogPriority const translationTable[] =
+        {
                 ANDROID_LOG_INFO,
                 ANDROID_LOG_WARN,
                 ANDROID_LOG_ERROR,
                 ANDROID_LOG_FATAL
         };
 
-        __android_log_print(translationTable[static_cast<size_t>(pType)], mTag.c_str(), "%s", pText.c_str());
+        __android_log_print(translationTable[static_cast<size_t>(pLevel)], mTag.c_str(), "%s", pMessage.c_str());
 #else
-        std::string output = createPrefix(pType);
-        output += pText;
+        std::string output = createPrefix(pLevel);
+        output += pMessage;
         std::cout << output << "\n";
 #endif
     }
     
-    std::string Logger::createPrefix(ELogLevel pType) const
+    std::string Logger::createPrefix(ELogLevel pLevel) const
     {
         std::string prefix;
         
         if (mTag.size() > 0)
             prefix += mTag + " | ";
         
-        switch (pType)
+        switch (pLevel)
         {
         case ELogLevel::Info:
             prefix += "INFO: ";
