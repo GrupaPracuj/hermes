@@ -14,9 +14,9 @@ if configure(settings):
         prepareToolchain(settings)
         remove('include')
         shutil.copy2('Makefile.in', os.path.join(libraryName, 'Makefile'))
-        openSSL = os.path.isdir(os.path.join('..', 'openssl', 'include', 'openssl'))
+        openSSL = os.path.isdir(os.path.join('..', 'openssl', 'include', 'openssl', settings.mBuildTarget))
         if openSSL:
-            for i in range(0, len(settings.mArchName)):
+            for i in range(0, min(len(settings.mArchName), len(settings.mToolchainArch))):
                 if os.path.isdir(os.path.join(settings.mToolchainDir, settings.mToolchainArch[i], 'bin')):
                     libraryPath = os.path.join('..', '..', 'lib', settings.mBuildTarget, settings.mArchName[i])
                     openSSL &= os.path.isfile(os.path.join(libraryPath, 'libcrypto.a')) and os.path.isfile(os.path.join(libraryPath, 'libssl.a'))
