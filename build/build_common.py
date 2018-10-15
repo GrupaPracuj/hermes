@@ -196,7 +196,11 @@ def prepareToolchain(pSettings):
         for i in range(0, len(pSettings.mArch)):
             destinationPath = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i])
             if not os.path.isdir(destinationPath):
-                os.system(os.path.join(pSettings.mAndroidNdkDir, 'build', 'tools', 'make_standalone_toolchain.py') + ' --arch ' + pSettings.mToolchainArch[i] + ' --api ' + pSettings.mAndroidApi + ' --stl libc++ --install-dir ' + destinationPath)
+                androidApi = pSettings.mAndroidApi
+                if (int(androidApi) < 21 and (pSettings.mToolchainArch[i] == 'arm64' or pSettings.mToolchainArch[i] == 'x86_64')):
+                    androidApi = '21'
+                    print('Force Android API: \"21\" for architecture \"' + pSettings.mToolchainArch[i] + '\".')
+                os.system(os.path.join(pSettings.mAndroidNdkDir, 'build', 'tools', 'make_standalone_toolchain.py') + ' --arch ' + pSettings.mToolchainArch[i] + ' --api ' + androidApi + ' --stl libc++ --install-dir ' + destinationPath)
 
         pSettings.mToolchainRemovable = True
         return

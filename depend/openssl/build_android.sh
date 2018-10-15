@@ -52,7 +52,12 @@ ARCH_NAME=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
 # Prepare toolchains
 for ((i=0; i<${#TOOLCHAIN_ARCH[@]}; i++)); do
   if [ ! -d ${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]} ]; then
-        python ${ANDROID_NDK_ROOT}/build/tools/make_standalone_toolchain.py --arch ${TOOLCHAIN_ARCH[$i]} --api ${ANDROID_API} --stl libc++ --install-dir ${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}
+    TOOLCHAIN_ANDROID_API=${ANDROID_API}
+    if [[ "$TOOLCHAIN_ANDROID_API" -lt 21 && ("${TOOLCHAIN_ARCH[$i]}" == 'arm64' || "${TOOLCHAIN_ARCH[$i]}" == 'x86_64') ]]; then
+      TOOLCHAIN_ANDROID_API="21"
+      echo "Force Android API: \"21\" for architecture \""${TOOLCHAIN_ARCH[$i]}"\"."
+    fi
+    python ${ANDROID_NDK_ROOT}/build/tools/make_standalone_toolchain.py --arch ${TOOLCHAIN_ARCH[$i]} --api ${TOOLCHAIN_ANDROID_API} --stl libc++ --install-dir ${TOOLCHAIN_DIR}/${TOOLCHAIN_ARCH[$i]}
   fi
 done
 
