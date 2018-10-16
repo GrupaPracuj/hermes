@@ -127,7 +127,7 @@ def configure(pSettings):
             if version is not None and len(version) > 0:
                 pSettings.mAndroidApi = version
             else:
-                pSettings.mAndroidApi = name;
+                pSettings.mAndroidApi = name
             
             pSettings.mAndroidNdkDir = os.getenv('ANDROID_NDK_ROOT')
 
@@ -253,7 +253,7 @@ def cleanup(pSettings):
     return
 
 def buildMake(pRootDir, pLibraryName, pSettings, pMakeFlag):
-    status = True
+    status = False
     if pSettings.mBuildTarget == 'android':
         status = buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag)
     elif pSettings.mBuildTarget == 'linux':
