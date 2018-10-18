@@ -777,7 +777,7 @@ namespace hms
                     switch (curlCode)
                     {
                     case CURLE_OK:
-                        curl_easy_getinfo (handle, CURLINFO_RESPONSE_CODE, &httpCode);
+                        curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &httpCode);
                         code = httpCode >= lpRequestSettings.mHttpCodeSuccess.first && httpCode <= lpRequestSettings.mHttpCodeSuccess.second ? ENetworkCode::OK : ENetworkCode::InvalidHttpCodeRange;
                         break;
                     case CURLE_COULDNT_RESOLVE_HOST:
@@ -804,7 +804,7 @@ namespace hms
                         response.mCode = code;
                         response.mHttpCode = static_cast<int>(httpCode);
                         response.mHeader = std::move(responseHeader);
-                        response.mMessage = strlen(errorBuffer) == 0 ? std::move(responseMessage) : errorBuffer;
+                        response.mMessage = curlCode == CURLE_OK ? std::move(responseMessage) : errorBuffer;
                         response.mRawData = std::move(responseRawData);
 
                         if (response.mCode == ENetworkCode::OK && lpParam.mAllowCache)
@@ -1070,7 +1070,7 @@ namespace hms
                                 response.mCode = code;
                                 response.mHttpCode = static_cast<int>(httpCode);
                                 response.mHeader = std::move(requestData->mResponseHeader);
-                                response.mMessage = strlen(&requestData->mErrorBuffer[0]) == 0 ? std::move(requestData->mResponseMessage) : &requestData->mErrorBuffer[0];
+                                response.mMessage = curlCode == CURLE_OK ? std::move(requestData->mResponseMessage) : &requestData->mErrorBuffer[0];
                                 response.mRawData = std::move(requestData->mResponseRawData);
                                 
                                 if (response.mCode == ENetworkCode::OK && requestData->mParam->mAllowCache)
