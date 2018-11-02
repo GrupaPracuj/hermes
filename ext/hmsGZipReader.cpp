@@ -136,37 +136,49 @@ namespace ext
                         reader->read(compressedData, reader->getSize() - 8 - reader->getPosition());
                         reader->read(&crc, 4);
                         reader->read(&uncompressedSize, 4);
-                        
-                        if (mBigEndian)
-                            uncompressedSize = tools::byteSwap32(uncompressedSize);
-                        
-                        if (compressedData.size() != 0 && uncompressedSize != 0)
+
+                        if (compressedData.size() != 0)
                         {
-                            char* output = new char[uncompressedSize];
-                            z_stream stream;
+                            const size_t chunkSize = 1024 * 256;
+                            Bytef chunk[chunkSize];
+                            DataBuffer output;
                             
+                            z_stream stream;
+                            stream.zalloc = Z_NULL;
+                            stream.zfree = Z_NULL;
+                            stream.opaque = Z_NULL;
                             stream.next_in = (z_const Bytef*)compressedData.data();
                             stream.avail_in = static_cast<uInt>(compressedData.size());
-                            stream.next_out = (Bytef*)output;
-                            stream.avail_out = static_cast<uInt>(uncompressedSize);
-                            stream.zalloc = (alloc_func)0;
-                            stream.zfree = (free_func)0;
                             
                             int32_t error = inflateInit2(&stream, -MAX_WBITS);
                             if (error == Z_OK)
                             {
-                                error = inflate(&stream, Z_FINISH);
+                                do
+                                {
+                                    stream.avail_out = chunkSize;
+                                    stream.next_out = chunk;
+                                    error = inflate(&stream, Z_NO_FLUSH);
+                                    
+                                    if (!(error == Z_OK || error == Z_STREAM_END))
+                                        break;
+                                    
+                                    output.push_back(chunk, chunkSize - stream.avail_out);
+                                }
+                                while (stream.avail_out == 0 && error != Z_STREAM_END);
+
                                 inflateEnd(&stream);
                             }
                             
                             if (error != Z_STREAM_END)
                             {
                                 Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Gzip decompress error %", error);
-                                delete[] output;
                             }
                             else
                             {
-                                memory = std::make_unique<MemoryReader>(output, uncompressedSize, true);
+                                const size_t outputSize = output.size();
+                                Bytef* outputMemory = new Bytef[outputSize];
+                                memcpy(outputMemory, output.data(), outputSize);
+                                memory = std::make_unique<MemoryReader>(outputMemory, outputSize, true);
                             }
                         }
                     }
@@ -177,7 +189,7 @@ namespace ext
         
         return memory;
     }
-    
+
     bool GZipReader::clearStorage(const std::string& pPath)
     {
         return false;

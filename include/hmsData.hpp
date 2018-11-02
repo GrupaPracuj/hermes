@@ -48,7 +48,7 @@ namespace hms
             if (pData != nullptr && pCount > 0)
             {
                 if (mCapacity < mSize + pCount)
-                    reallocate(mSize + pCount);
+                    reallocate(std::max(mSize + pCount, mCapacity * 2));
                 
                 const size_t copySize = sizeof(T) * pCount;
                 
@@ -63,7 +63,7 @@ namespace hms
         size_t size() const;
         
     private:
-        void reallocate(const size_t pCapacity);
+        void reallocate(size_t pCapacity);
         
         char* mData = nullptr;
         size_t mSize = 0;

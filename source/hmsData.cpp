@@ -110,7 +110,7 @@ namespace hms
         return mSize;
     }
     
-    void DataBuffer::reallocate(const size_t pCapacity)
+    void DataBuffer::reallocate(size_t pCapacity)
     {
         if (pCapacity != mCapacity)
         {
