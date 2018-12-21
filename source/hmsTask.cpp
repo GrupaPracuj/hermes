@@ -5,6 +5,7 @@
 #include "hmsTask.hpp"
 
 #include <chrono>
+#include <list>
 #if defined(__APPLE__)
 #import <Foundation/Foundation.h>
 #elif defined(ANDROID) || defined(__ANDROID__)
@@ -92,7 +93,7 @@ namespace hms
     
     void ThreadPool::performTaskIfExists()
     {
-        int32_t condition = 0;
+        int32_t condition = 1;
         std::function<void()> task = nullptr;
         
         {
@@ -109,12 +110,12 @@ namespace hms
             }
         }
         
-        if (condition == 1)
+        if (condition == 0)
         {
             task();
             mProcessingTaskCount--;
         }
-        else if (condition > 1)
+        else if (condition < 0)
         {
             mTaskManager->enqueueMainThreadTask(std::move(task));
             mProcessingTaskCount--;
@@ -123,36 +124,64 @@ namespace hms
     
     void ThreadPool::update(size_t pId)
     {
+        uint64_t delay = 0;
+        std::list<std::pair<std::function<int32_t()>, std::function<void()>>> tasksDelayed;
+    
         while (mTerminate.load() == 0)
         {
             std::unique_lock<std::mutex> lock(mTaskMutex);
-            mTaskCondition.wait(lock, [this]
+            if (delay == 0)
             {
-                return !mTask.empty() || mTerminate.load() > 0;
-            });
+                mTaskCondition.wait(lock, [this]
+                {
+                    return !mTask.empty() || mTerminate.load() > 0;
+                });
+            }
+            else
+            {
+                const auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(delay + 1);
+                mTaskCondition.wait_until(lock, timeout, [this]
+                {
+                    return !mTask.empty() || mTerminate.load() > 0;
+                });
+                
+                delay = 0;
+                for (auto it = tasksDelayed.begin(); it != tasksDelayed.end(); ++it)
+                {
+                    if (it->first() == -1)
+                    {
+                        mTask.push({[]() -> int32_t { return -1; }, std::move(it->second)});
+                        it = tasksDelayed.erase(it);
+                    }
+                }
+            }
             
-            int32_t condition = 0;
+            int32_t condition = 1;
             std::function<void()> task = nullptr;
 
             if (!mTask.empty())
             {
-                condition = mTask.front().first == nullptr ? 1 : mTask.front().first();
-                if (condition != 0)
+                condition = mTask.front().first == nullptr ? 0 : mTask.front().first();
+                if (condition <= 0)
                 {
                     mProcessingTaskCount++;
                     task = std::move(mTask.front().second);
-                    mTask.pop();
                 }
+                else
+                {
+                    tasksDelayed.push_back(std::move(mTask.front()));
+                }
+                mTask.pop();
             }
             
             lock.unlock();
             
-            if (condition == 1)
+            if (condition == 0)
             {
                 task();
                 mProcessingTaskCount--;
             }
-            else if (condition > 1)
+            else if (condition < 0)
             {
                 mTaskManager->enqueueMainThreadTask(std::move(task));
                 mProcessingTaskCount--;
@@ -366,21 +395,12 @@ namespace hms
         }
     }
     
-    std::function<int32_t()> TaskManager::createCondition(int32_t& pThreadPoolId, uint64_t pDelayMs) const
+    std::function<int32_t()> TaskManager::createCondition(int32_t pDelayMs) const
     {
-        std::function<int32_t()> condition = nullptr;
-        
-        if (pDelayMs > 0)
+        return [pDelayMs, startTime = std::chrono::steady_clock::now()]() -> int32_t
         {
-            condition = [pThreadPoolId, pDelayMs, startTime = std::chrono::steady_clock::now()]() -> int32_t
-            {
-                return std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(std::chrono::steady_clock::now() - startTime).count() >= pDelayMs ? pThreadPoolId < 0 ? 2 : 1 : 0;
-            };
-            
-            pThreadPoolId = 0;
-        }
-        
-        return condition;
+            return std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(std::chrono::steady_clock::now() - startTime).count() >= pDelayMs ? -1 : pDelayMs;
+        };
     }
 
 #if defined(ANDROID) || defined(__ANDROID__)

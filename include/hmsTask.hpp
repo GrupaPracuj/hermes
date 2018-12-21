@@ -78,16 +78,9 @@ namespace hms
         template<typename M, typename... P>
         void execute(int32_t pThreadPoolId, M&& pMethod, P&&... pParameter)
         {
-            executeDelayed(pThreadPoolId, 0, pMethod, pParameter...);
-        }
-        
-        template<typename M, typename... P>
-        void executeDelayed(int32_t pThreadPoolId, uint64_t pDelayMs, M&& pMethod, P&&... pParameter)
-        {
             if (!mInitialized)
                 return;
-            
-            std::function<int32_t()> condition = createCondition(pThreadPoolId, pDelayMs);
+        
             std::function<void()> task = std::bind(std::forward<M>(pMethod), std::forward<P>(pParameter)...);
 
             if (pThreadPoolId < 0)
@@ -98,8 +91,21 @@ namespace hms
             {
                 auto threadPool = mThreadPool.find(pThreadPoolId);
                 assert(threadPool != mThreadPool.cend());
-                threadPool->second->push(std::make_pair(std::move(condition), std::move(task)));
+                threadPool->second->push(std::make_pair(nullptr, std::move(task)));
             }
+        }
+        
+        template<typename M, typename... P>
+        void executeDelayed(int32_t pThreadPoolId, int32_t pDelayMs, M&& pMethod, P&&... pParameter)
+        {
+            assert(pThreadPoolId >= 0 && pDelayMs > 0);
+            
+            if (!mInitialized)
+                return;
+
+            auto threadPool = mThreadPool.find(pThreadPoolId);
+            assert(threadPool != mThreadPool.cend());
+            threadPool->second->push(std::make_pair(createCondition(pDelayMs), std::bind(std::forward<M>(pMethod), std::forward<P>(pParameter)...)));
         }
 
     private:
@@ -116,7 +122,7 @@ namespace hms
 
         void enqueueMainThreadTask(std::function<void()> pTask);
         void dequeueMainThreadTask();
-        std::function<int32_t()> createCondition(int32_t& pThreadPoolId, uint64_t pDelayMs) const;
+        std::function<int32_t()> createCondition(int32_t pDelayMs) const;
 
 #if defined(ANDROID) || defined(__ANDROID__)
         static int32_t messageHandlerAndroid(int32_t pFd, int32_t pEvent, void* pData);
