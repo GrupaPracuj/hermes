@@ -1,10 +1,10 @@
 import os
 import shutil
 
-libraryVersion = '7.62.0'
+libraryVersion = '7.63.0'
 libraryName = 'curl-' + libraryVersion
 
-buildCommonFile = os.path.join('..', '..', 'build', 'build_common.py')
+buildCommonFile = os.path.join('..', '..', 'script', 'build_common.py')
 exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, mode = 'exec'))
 
 settings = Settings()

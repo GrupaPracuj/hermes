@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # User configuration
-LIBRARY_NAME="curl-7.62.0"
+LIBRARY_NAME="curl-7.63.0"
 
 # Check settings
 if [ -z "${HERMES_IOS_DEPLOYMENT_TARGET}" ]; then

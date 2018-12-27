@@ -100,7 +100,7 @@ namespace hms
             std::lock_guard<std::mutex> lock(mTaskMutex);
             if (!mTask.empty())
             {
-                condition = mTask.front().first == nullptr ? 1 : mTask.front().first();
+                condition = mTask.front().first == nullptr ? 0 : mTask.front().first();
                 if (condition != 0)
                 {
                     mProcessingTaskCount++;
@@ -124,46 +124,42 @@ namespace hms
     
     void ThreadPool::update(size_t pId)
     {
-        int32_t delay = -1;
-        std::list<std::pair<std::function<int32_t()>, std::function<void()>>> tasksDelayed;
+        std::list<std::pair<std::function<int32_t()>, std::function<void()>>> pausedTasks;
     
         while (mTerminate.load() == 0)
         {
             std::unique_lock<std::mutex> lock(mTaskMutex);
-            if (mTask.empty())
+            if (pausedTasks.size() == 0)
             {
-                if (delay == -1)
+                mTaskCondition.wait(lock, [this]
                 {
-                    mTaskCondition.wait(lock, [this]
-                    {
-                        return !mTask.empty() || mTerminate.load() > 0;
-                    });
-                }
-                else
+                    return !mTask.empty() || mTerminate.load() > 0;
+                });
+            }
+            else
+            {
+                int32_t delay = 0;
+                for (auto it = pausedTasks.begin(); it != pausedTasks.end(); ++it)
                 {
-                    const auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(delay + 1);
-                    mTaskCondition.wait_until(lock, timeout, [this]
+                    int32_t result = it->first();
+                    if (result == -1)
                     {
-                        return !mTask.empty() || mTerminate.load() > 0;
-                    });
-                    
-                    delay = -1;
-                    for (auto it = tasksDelayed.begin(); it != tasksDelayed.end(); ++it)
+                        mTask.push({[]() -> int32_t { return -1; }, std::move(it->second)});
+                        it = pausedTasks.erase(it);
+                    }
+                    else if (delay == 0 || result < delay)
                     {
-                        int32_t result = it->first();
-                        if (result == -1)
-                        {
-                            mTask.push({[]() -> int32_t { return -1; }, std::move(it->second)});
-                            it = tasksDelayed.erase(it);
-                        }
-                        else if (delay == -1 || result < delay)
-                        {
-                            delay = result;
-                        }
+                        delay = result;
                     }
                 }
-            }
             
+                const auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(delay);
+                mTaskCondition.wait_until(lock, timeout, [this]
+                {
+                    return !mTask.empty() || mTerminate.load() > 0;
+                });
+            }
+
             int32_t condition = 1;
             std::function<void()> task = nullptr;
 
@@ -177,7 +173,7 @@ namespace hms
                 }
                 else
                 {
-                    tasksDelayed.push_back(std::move(mTask.front()));
+                    pausedTasks.push_back(std::move(mTask.front()));
                 }
                 mTask.pop();
             }
