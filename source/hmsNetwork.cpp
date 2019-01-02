@@ -1068,8 +1068,9 @@ namespace hms
             
             taskManager->flush(mThreadPoolId, flushCallback);
             taskManager->flush(mSocketThreadPoolId, flushCallback);
+            const uint32_t loopInterrupt = mThreadPoolId != mSocketThreadPoolId ? 2 : 1;
             
-            while (flushStatus.load() < 2)
+            while (flushStatus.load() < loopInterrupt)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
             }
