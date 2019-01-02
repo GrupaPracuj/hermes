@@ -1063,13 +1063,13 @@ namespace hms
             std::atomic<uint32_t> flushStatus(0);
             auto flushCallback = [&flushStatus]() -> void
             {
-                flushStatus.store(0);
+                flushStatus++;
             };
             
             taskManager->flush(mThreadPoolId, flushCallback);
             taskManager->flush(mSocketThreadPoolId, flushCallback);
             
-            while (flushStatus.load() == 1)
+            while (flushStatus.load() < 2)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
             }
@@ -1970,7 +1970,7 @@ namespace hms
         }
     }
     
-    std::shared_ptr<NetworkSocketHandle> NetworkManager::createSocket(NetworkSocketParam pParam)
+    std::shared_ptr<NetworkSocketHandle> NetworkManager::connectSocket(NetworkSocketParam pParam)
     {
         std::shared_ptr<NetworkSocketHandle> handle(new NetworkSocketHandle(), [](NetworkSocketHandle* pThis) -> void { delete pThis; });
         handle->mWeakThis = handle;

@@ -399,7 +399,7 @@ namespace hms
         bool initCache(const std::string& pDirectoryPath, unsigned pFileCountLimit, unsigned pFileSizeLimit);
         void clearCache();
         
-        std::shared_ptr<NetworkSocketHandle> createSocket(NetworkSocketParam pParam);
+        std::shared_ptr<NetworkSocketHandle> connectSocket(NetworkSocketParam pParam);
         
     private:
         friend class Hermes;

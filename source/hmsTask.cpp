@@ -94,6 +94,7 @@ namespace hms
     {
         std::list<std::pair<std::function<int32_t()>, std::function<void()>>> taskPaused;
         std::list<std::pair<std::function<void()>, std::function<bool()>>> taskContinuous;
+        std::function<void()> flushCallback = nullptr;
 
         while (mTerminate.load() == 0)
         {
@@ -143,8 +144,8 @@ namespace hms
                 for (size_t i = 0; i < mThreads.size(); ++i)
                     executeCallback &= mThreads[i].second.mValue.load() == 0;
                 
-                if (executeCallback && mFlushCallback != nullptr)
-                    mFlushCallback();
+                if (executeCallback)
+                    flushCallback = std::move(mFlushCallback);
             }
 
             int32_t condition = 1;
@@ -188,6 +189,9 @@ namespace hms
                 else
                     it = taskContinuous.erase(it);
             }
+            
+            if (flushCallback != nullptr)
+                flushCallback();
         }
     }
     
