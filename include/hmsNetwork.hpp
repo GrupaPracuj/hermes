@@ -29,6 +29,8 @@ namespace hms
     {
         class URLTool;
     }
+    
+    class NetworkManager;
 
     enum class ENetworkCode : int
     {
@@ -111,15 +113,15 @@ namespace hms
         u_int32_t mCacheLifetime = 8640000;
     };
         
-    struct SimpleSocketRequestParam
+    struct NetworkSocketParam
     {
-        std::string mBaseURL;
+        std::string mUrl;
         std::vector<std::pair<std::string, std::string>> mParameter = {};
         std::vector<std::pair<std::string, std::string>> mHeader = {};
         std::chrono::milliseconds mTimeout = std::chrono::milliseconds(60000);
         std::function<void()> mConnectCallback;
-        std::function<void(std::string lpMessage, bool lpTextData)> mMessageCallback;
         std::function<void(ESocketDisconnectCause lpCause, std::chrono::milliseconds lpMiliseconds)> mDisconnectCallback;
+        std::function<void(std::string lpMessage, bool lpTextData)> mMessageCallback;
     };
         
     class NetworkRequestHandle
@@ -138,7 +140,53 @@ namespace hms
     private:
         std::atomic<uint32_t> mCancel = {0};
     };
+    
+    class NetworkSocketHandle
+    {
+    public:
+        void terminate();
+
+    private:
+        friend NetworkManager;
+    
+        class Frame
+        {
+        public:
+            uint8_t mCode = 0;
+            uint8_t mPayloadLength = 0;
+            uint64_t mPayloadLengthExtended = 0;
+            uint8_t mMaskingKey[4] = {0};
+            std::string mPayload;
+        };
+
+        NetworkSocketHandle() = default;
+        NetworkSocketHandle(const NetworkSocketHandle& pOther) = delete;
+        NetworkSocketHandle(NetworkSocketHandle&& pOther) = delete;
+        ~NetworkSocketHandle();
         
+        NetworkSocketHandle& operator=(const NetworkSocketHandle& pOther) = delete;
+        NetworkSocketHandle& operator=(NetworkSocketHandle&& pOther) = delete;
+        
+        void initialize(int32_t pThreadPoolId, NetworkSocketParam pParam, std::weak_ptr<NetworkManager> pWeakNetworkManager);
+    
+        int32_t sendUpgradeHeader(const tools::URLTool& pUrl, const std::vector<std::pair<std::string, std::string>>& pHeader, std::string& pSecAccept) const;
+        std::string packMessage(const std::string& pMessage, ESocketOpCode pOpCode = ESocketOpCode::Text) const;
+        std::vector<Frame> unpackMessage(const std::string& pMessage) const;
+        bool handleFrame(std::vector<Frame>& pNewFrame, std::vector<Frame>& pOldFrame, std::function<void(std::string lpMessage, bool lpTextData)> pMessageCallback) const;
+    
+        std::string mSecSocketAccept;
+        std::vector<Frame> mFrames;
+        ESocketDisconnectCause mDisconnectReason = ESocketDisconnectCause::User;
+        bool mHeaderCheck = true;
+        std::pair<std::chrono::time_point<std::chrono::steady_clock>, std::chrono::time_point<std::chrono::steady_clock>> mTime = {};
+
+        void* mHandle = nullptr;
+        bool mInitialized = false;
+        std::atomic<uint32_t> mTerminate = {0};
+
+        std::weak_ptr<NetworkSocketHandle> mWeakThis;
+    };
+    
     class NetworkRecovery
     {
     public:
@@ -301,7 +349,7 @@ namespace hms
             std::atomic<uint32_t>* mTerminateAbort = nullptr;
         };
     
-        bool initialize(long pTimeout, int pThreadPoolID, std::pair<int, int> pHttpCodeSuccess = {200, 299});
+        bool initialize(long pTimeout, int pThreadPoolId, int pSocketThreadPoolId, std::pair<int, int> pHttpCodeSuccess = {200, 299});
         bool terminate();
 
         std::shared_ptr<NetworkAPI> add(size_t pId, std::string pName, std::string pUrl);
@@ -351,13 +399,11 @@ namespace hms
         bool initCache(const std::string& pDirectoryPath, unsigned pFileCountLimit, unsigned pFileSizeLimit);
         void clearCache();
         
-        bool initSimpleSocket(int pThreadPoolID);
-        void requestSimpleSocket(SimpleSocketRequestParam pParam);
-        void sendSimpleSocketMessage(const std::string& pMessage, std::function<void(ENetworkCode)> pCallback);
-        void closeSimpleSocket();
+        std::shared_ptr<NetworkSocketHandle> createSocket(NetworkSocketParam pParam);
         
     private:
         friend class Hermes;
+        friend NetworkSocketHandle;
 
         struct MultiRequestData
         {
@@ -385,16 +431,6 @@ namespace hms
             std::string mUrl;
         };
         
-        struct SocketFrame
-        {
-            uint8_t mCode = 0;
-            uint8_t mPayloadLength = 0;
-            uint64_t mPayloadLengthExtended = 0;
-            uint8_t mMaskingKey[4];
-            
-            std::string mPayload;
-        };
-        
         struct RequestSettings
         {
             std::pair<int, int> mHttpCodeSuccess = {200, 299};
@@ -417,21 +453,14 @@ namespace hms
         
         std::vector<std::pair<std::string, std::string>> createUniqueHeader(const std::vector<std::pair<std::string, std::string>>& pHeader) const;
 
-        void configureHandle(void* pHandle, ENetworkRequestType pRequestType, ENetworkResponseType pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody,
-            std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader,
-            long pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer, const std::string pCACertificatePath) const;
+        void configureHandle(void* pHandle, ENetworkRequestType pRequestType, ENetworkResponseType pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody, std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader, long pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer, const std::string pCACertificatePath) const;
         
         void resetHandle(void* pHandle) const;
         
         CacheFileData decodeCacheHeader(const std::string& pFilePath) const;
         NetworkResponse getResponseFromCache(const std::string& pUrl, int pHttpCodeSuccess);
         bool cacheResponse(const NetworkResponse& pResponse, const std::string& pUrl, u_int32_t pLifetime);
-        
-        int sendUpgradeHeader(void* const pCurl, const tools::URLTool& pURL, const std::vector<std::pair<std::string, std::string>>& pHeader, std::string& pSecAccept) const;
-        std::string packSimpleSocketMessage(const std::string& pMessage, ESocketOpCode pOpCode = ESocketOpCode::Text) const;
-        std::vector<SocketFrame> unpackSimpleSocketMessage(const std::string& pMessage) const;
-        bool handleSimpleSocketFrame(void* const pCurl, std::vector<SocketFrame>& pNewFrame, std::vector<SocketFrame>& pOldFrame, std::function<void(std::string lpMessage, bool lpTextData)> pMessageCallback) const;
-        
+
         std::weak_ptr<NetworkManager> mWeakThis;
         
         std::vector<std::shared_ptr<NetworkAPI>> mApi;
@@ -445,16 +474,12 @@ namespace hms
         std::mutex mHandleMutex;
         std::unordered_map<std::thread::id, void*> mMultiHandle;
         std::mutex mMultiHandleMutex;
-        void* mSimpleSocketCURL = nullptr;
 
-        int mThreadPoolID = -1;
-        int mThreadPoolSimpleSocketID = -1;
+        int mThreadPoolId = -1;
+        int mSocketThreadPoolId = -1;
 
         std::atomic<uint32_t> mInitialized {0};
         std::atomic<uint32_t> mCacheInitialized {0};
-        std::atomic<uint32_t> mSimpleSocketInitialized {0};
-        std::atomic<uint32_t> mStopSimpleSocketLoop {0};
-        std::atomic<uint32_t> mSimpleSocketActive {0};
         std::atomic<uint32_t> mTerminateAbort {0};
         
         unsigned mCacheFileCountLimit = 0;
@@ -464,8 +489,7 @@ namespace hms
         const char mCacheMagicWord[5] = { 'Y', 'G', 'G', '_', 'H'};
         
         std::mt19937 mRandomGenerator;
-        const long mSocketWaitTimeout = 1000;
-        
+
         RequestSettings mRequestSettings;
         mutable std::mutex mRequestSettingsMutex;
     };
