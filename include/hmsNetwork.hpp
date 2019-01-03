@@ -57,7 +57,7 @@ namespace hms
         RawData
     };
         
-    enum class ESocketDisconnectCause : int
+    enum class ENetworkWebSocketDisconnect : int
     {
         User = 0,
         InitialConnection,
@@ -68,7 +68,7 @@ namespace hms
         Other
     };
         
-    enum class ESocketOpCode : uint8_t
+    enum class ENetworkWebSocketOpCode : uint8_t
     {
         Continue = 0,
         Text = 0x1,
@@ -113,14 +113,14 @@ namespace hms
         u_int32_t mCacheLifetime = 8640000;
     };
         
-    struct NetworkSocketParam
+    struct NetworkWebSocketParam
     {
         std::string mUrl;
         std::vector<std::pair<std::string, std::string>> mParameter = {};
         std::vector<std::pair<std::string, std::string>> mHeader = {};
         std::chrono::milliseconds mTimeout = std::chrono::milliseconds(60000);
         std::function<void()> mConnectCallback;
-        std::function<void(ESocketDisconnectCause lpCause, std::chrono::milliseconds lpMiliseconds)> mDisconnectCallback;
+        std::function<void(ENetworkWebSocketDisconnect lpDisconnect, std::chrono::milliseconds lpMiliseconds)> mDisconnectCallback;
         std::function<void(std::string lpMessage, bool lpTextData)> mMessageCallback;
     };
         
@@ -141,7 +141,7 @@ namespace hms
         std::atomic<uint32_t> mCancel = {0};
     };
     
-    class NetworkSocketHandle
+    class NetworkWebSocketHandle
     {
     public:
         void sendMessage(const std::string& pMessage, std::function<void(ENetworkCode)> pCallback);
@@ -154,7 +154,7 @@ namespace hms
         public:
             ~ControlBlock();
         
-            ESocketDisconnectCause mDisconnectReason = ESocketDisconnectCause::User;
+            ENetworkWebSocketDisconnect mDisconnect = ENetworkWebSocketDisconnect::User;
             std::pair<std::chrono::time_point<std::chrono::steady_clock>, std::chrono::time_point<std::chrono::steady_clock>> mTime = {};
             void* mHandle = nullptr;
             bool mInitialized = false;
@@ -171,29 +171,29 @@ namespace hms
             std::string mPayload;
         };
 
-        NetworkSocketHandle() = default;
-        NetworkSocketHandle(const NetworkSocketHandle& pOther) = delete;
-        NetworkSocketHandle(NetworkSocketHandle&& pOther) = delete;
-        ~NetworkSocketHandle();
+        NetworkWebSocketHandle() = default;
+        NetworkWebSocketHandle(const NetworkWebSocketHandle& pOther) = delete;
+        NetworkWebSocketHandle(NetworkWebSocketHandle&& pOther) = delete;
+        ~NetworkWebSocketHandle();
         
-        NetworkSocketHandle& operator=(const NetworkSocketHandle& pOther) = delete;
-        NetworkSocketHandle& operator=(NetworkSocketHandle&& pOther) = delete;
+        NetworkWebSocketHandle& operator=(const NetworkWebSocketHandle& pOther) = delete;
+        NetworkWebSocketHandle& operator=(NetworkWebSocketHandle&& pOther) = delete;
         
-        void initialize(int32_t pThreadPoolId, NetworkSocketParam pParam, NetworkManager* pNetworkManager);
+        void initialize(int32_t pThreadPoolId, NetworkWebSocketParam pParam, NetworkManager* pNetworkManager);
     
         int32_t sendUpgradeHeader(const tools::URLTool& pUrl, const std::vector<std::pair<std::string, std::string>>& pHeader, std::string& pSecAccept) const;
-        std::string packMessage(const std::string& pMessage, ESocketOpCode pOpCode = ESocketOpCode::Text) const;
+        std::string packMessage(const std::string& pMessage, ENetworkWebSocketOpCode pOpCode = ENetworkWebSocketOpCode::Text) const;
         std::vector<Frame> unpackMessage(const std::string& pMessage) const;
         bool handleFrame(std::vector<Frame>& pNewFrame, std::vector<Frame>& pOldFrame, std::function<void(std::string lpMessage, bool lpTextData)> pMessageCallback) const;
     
-        std::string mSecSocketAccept;
+        std::string mSecWebSocketAccept;
         std::vector<Frame> mFrames;
         bool mHeaderCheck = true;
-        std::pair<std::queue<std::function<void()>>, std::mutex> mSendMessage = {};
+        std::pair<std::queue<std::function<void()>>, std::mutex> mMessage = {};
         
         std::shared_ptr<ControlBlock> mControlBlock;
 
-        std::weak_ptr<NetworkSocketHandle> mWeakThis;
+        std::weak_ptr<NetworkWebSocketHandle> mWeakThis;
     };
     
     class NetworkRecovery
@@ -358,7 +358,7 @@ namespace hms
             std::atomic<uint32_t>* mTerminateAbort = nullptr;
         };
     
-        bool initialize(long pTimeout, int pThreadPoolId, int pSocketThreadPoolId, std::pair<int, int> pHttpCodeSuccess = {200, 299});
+        bool initialize(long pTimeout, int pThreadPoolId, int pWebSocketThreadPoolId, std::pair<int, int> pHttpCodeSuccess = {200, 299});
         bool terminate();
 
         std::shared_ptr<NetworkAPI> add(size_t pId, std::string pName, std::string pUrl);
@@ -408,11 +408,11 @@ namespace hms
         bool initCache(const std::string& pDirectoryPath, unsigned pFileCountLimit, unsigned pFileSizeLimit);
         void clearCache();
         
-        std::shared_ptr<NetworkSocketHandle> connectSocket(NetworkSocketParam pParam);
+        std::shared_ptr<NetworkWebSocketHandle> connectWebSocket(NetworkWebSocketParam pParam);
         
     private:
         friend class Hermes;
-        friend NetworkSocketHandle;
+        friend NetworkWebSocketHandle;
 
         struct MultiRequestData
         {
@@ -485,7 +485,7 @@ namespace hms
         std::mutex mMultiHandleMutex;
 
         int mThreadPoolId = -1;
-        int mSocketThreadPoolId = -1;
+        int mWebSocketThreadPoolId = -1;
 
         std::atomic<uint32_t> mInitialized {0};
         std::atomic<uint32_t> mCacheInitialized {0};

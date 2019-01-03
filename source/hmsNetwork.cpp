@@ -171,28 +171,28 @@ namespace hms
         return static_cast<bool>(mCancel.load());
     }
     
-    /* NetworkSocketHandle::ControlBlock */
+    /* NetworkWebSocketHandle::ControlBlock */
     
-    NetworkSocketHandle::ControlBlock::~ControlBlock()
+    NetworkWebSocketHandle::ControlBlock::~ControlBlock()
     {
         if (mHandle != nullptr)
             curl_easy_cleanup(mHandle);
     }
     
-    /* NetworkSocketHandle */
+    /* NetworkWebSocketHandle */
     
-    NetworkSocketHandle::~NetworkSocketHandle()
+    NetworkWebSocketHandle::~NetworkWebSocketHandle()
     {
         uint32_t terminated = 0;
         mControlBlock->mTerminate.compare_exchange_strong(terminated, 1);
     }
     
-    void NetworkSocketHandle::sendMessage(const std::string& pMessage, std::function<void(ENetworkCode)> pCallback)
+    void NetworkWebSocketHandle::sendMessage(const std::string& pMessage, std::function<void(ENetworkCode)> pCallback)
     {
         std::string message = packMessage(pMessage);
         
         auto controlBlock = mControlBlock;
-        auto sendMessageTask = [message = std::move(message), pCallback = std::move(pCallback), controlBlock]() mutable -> void
+        auto messageTask = [message = std::move(message), pCallback = std::move(pCallback), controlBlock]() mutable -> void
         {
             if (controlBlock->mHandle != nullptr)
             {
@@ -241,11 +241,11 @@ namespace hms
             }
         };
 
-        std::lock_guard<std::mutex> lock(mSendMessage.second);
-        mSendMessage.first.push(std::move(sendMessageTask));
+        std::lock_guard<std::mutex> lock(mMessage.second);
+        mMessage.first.push(std::move(messageTask));
     }
     
-    void NetworkSocketHandle::initialize(int32_t pThreadPoolId, NetworkSocketParam pParam, NetworkManager* pNetworkManager)
+    void NetworkWebSocketHandle::initialize(int32_t pThreadPoolId, NetworkWebSocketParam pParam, NetworkManager* pNetworkManager)
     {
         assert(pNetworkManager != nullptr);
         
@@ -291,7 +291,7 @@ namespace hms
                             result = curl_easy_getinfo(controlBlock->mHandle, CURLINFO_LASTSOCKET, &socketfd);
                             if (result == CURLE_OK)
                             {
-                                result = static_cast<CURLcode>(strongThis->sendUpgradeHeader(url, pParam.mHeader, strongThis->mSecSocketAccept));
+                                result = static_cast<CURLcode>(strongThis->sendUpgradeHeader(url, pParam.mHeader, strongThis->mSecWebSocketAccept));
                                 if (result == CURLE_OK)
                                 {
                                     controlBlock->mInitialized = true;
@@ -299,28 +299,28 @@ namespace hms
                                 else
                                 {
                                     Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket header message fail for url '%'. CURL CODE %, message: '%'", url.getURL(), result, curl_easy_strerror(result));
-                                    controlBlock->mDisconnectReason = ESocketDisconnectCause::Header;
+                                    controlBlock->mDisconnect = ENetworkWebSocketDisconnect::Header;
                                     controlBlock->mTerminate.store(1);
                                 }
                             }
                             else
                             {
                                 Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket get info failure for url '%'. CURL CODE %, message: '%'", pParam.mUrl, result, curl_easy_strerror(result));
-                                controlBlock->mDisconnectReason = ESocketDisconnectCause::InitialConnection;
+                                controlBlock->mDisconnect = ENetworkWebSocketDisconnect::InitialConnection;
                                 controlBlock->mTerminate.store(1);
                             }
                         }
                         else
                         {
                             Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket connection failure for url '%'. CURL CODE %, message: '%'", pParam.mUrl, result, curl_easy_strerror(result));
-                            controlBlock->mDisconnectReason = ESocketDisconnectCause::InitialConnection;
+                            controlBlock->mDisconnect = ENetworkWebSocketDisconnect::InitialConnection;
                             controlBlock->mTerminate.store(1);
                         }
                     }
                     else
                     {
                         Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Curl easy init fail for socket.");
-                        controlBlock->mDisconnectReason = ESocketDisconnectCause::InitialConnection;
+                        controlBlock->mDisconnect = ENetworkWebSocketDisconnect::InitialConnection;
                         controlBlock->mTerminate.store(1);
                     }
                 }
@@ -339,7 +339,7 @@ namespace hms
                         if (result != CURLE_OK && result != CURLE_AGAIN)
                         {
                             Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket read fail for url '%'. CURL CODE %, message: '%'", url.getURL(), result, curl_easy_strerror(result));
-                            controlBlock->mDisconnectReason = ESocketDisconnectCause::Other;
+                            controlBlock->mDisconnect = ENetworkWebSocketDisconnect::Other;
                             controlBlock->mTerminate.store(1);
                             error = true;
                             
@@ -371,7 +371,7 @@ namespace hms
                                 size_t keyPos = data.find(acceptKey);
                                 size_t codePos = data.find("HTTP/1.1 101 Switching Protocols");
                                 
-                                if (codePos != std::string::npos && keyPos != std::string::npos && data.length() >= keyPos + acceptKey.length() + strongThis->mSecSocketAccept.length() && data.substr(keyPos + acceptKey.length(), strongThis->mSecSocketAccept.length()).compare(strongThis->mSecSocketAccept) == 0)
+                                if (codePos != std::string::npos && keyPos != std::string::npos && data.length() >= keyPos + acceptKey.length() + strongThis->mSecWebSocketAccept.length() && data.substr(keyPos + acceptKey.length(), strongThis->mSecWebSocketAccept.length()).compare(strongThis->mSecWebSocketAccept) == 0)
                                 {
                                     if (pParam.mConnectCallback != nullptr)
                                     {
@@ -384,7 +384,7 @@ namespace hms
                                 else
                                 {
                                     Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket invalid handshake.");
-                                    controlBlock->mDisconnectReason = ESocketDisconnectCause::Handshake;
+                                    controlBlock->mDisconnect = ENetworkWebSocketDisconnect::Handshake;
                                     controlBlock->mTerminate.store(1);
                                     error = true;
                                 }
@@ -395,7 +395,7 @@ namespace hms
                                 if (!strongThis->handleFrame(frame, strongThis->mFrames, pParam.mMessageCallback))
                                 {
                                     
-                                    controlBlock->mDisconnectReason = ESocketDisconnectCause::Close;
+                                    controlBlock->mDisconnect = ENetworkWebSocketDisconnect::Close;
                                     controlBlock->mTerminate.store(1);
                                     error = true;
                                 }
@@ -408,18 +408,18 @@ namespace hms
                         }
                         else
                         {
-                            controlBlock->mDisconnectReason = ESocketDisconnectCause::Timeout;
+                            controlBlock->mDisconnect = ENetworkWebSocketDisconnect::Timeout;
                             controlBlock->mTerminate.store(1);
                             error = true;
                         }
                         
                         if (!error)
                         {
-                            std::lock_guard<std::mutex> lock(strongThis->mSendMessage.second);
-                            while (!strongThis->mSendMessage.first.empty())
+                            std::lock_guard<std::mutex> lock(strongThis->mMessage.second);
+                            while (!strongThis->mMessage.first.empty())
                             {
-                                strongThis->mSendMessage.first.front();
-                                strongThis->mSendMessage.first.pop();
+                                strongThis->mMessage.first.front();
+                                strongThis->mMessage.first.pop();
                             }
                         }
                     }
@@ -430,7 +430,7 @@ namespace hms
             {
                 if (controlBlock->mInitialized)
                 {
-                    std::string message = strongThis->packMessage("", ESocketOpCode::Close);
+                    std::string message = strongThis->packMessage("", ENetworkWebSocketOpCode::Close);
 
                     size_t readCount = 0;
                     CURLcode result = curl_easy_send(controlBlock->mHandle, message.c_str(), message.length(), &readCount);
@@ -440,11 +440,11 @@ namespace hms
             
                 if (pParam.mDisconnectCallback != nullptr)
                 {
-                    auto disconnectReason = controlBlock->mDisconnectReason;
+                    auto disconnect = controlBlock->mDisconnect;
                     auto difference = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - controlBlock->mTime.second);
-                    Hermes::getInstance()->getTaskManager()->execute(-1, [disconnectCallback = std::move(pParam.mDisconnectCallback), disconnectReason, difference]() mutable -> void
+                    Hermes::getInstance()->getTaskManager()->execute(-1, [disconnectCallback = std::move(pParam.mDisconnectCallback), disconnect, difference]() mutable -> void
                     {
-                        disconnectCallback(disconnectReason, difference);
+                        disconnectCallback(disconnect, difference);
                     });
                 }
                 
@@ -453,7 +453,7 @@ namespace hms
         });
     }
 
-    int32_t NetworkSocketHandle::sendUpgradeHeader(const tools::URLTool& pUrl, const std::vector<std::pair<std::string, std::string>>& pHeader, std::string& pSecAccept) const
+    int32_t NetworkWebSocketHandle::sendUpgradeHeader(const tools::URLTool& pUrl, const std::vector<std::pair<std::string, std::string>>& pHeader, std::string& pSecAccept) const
     {
         CURLcode code = CURLE_OK;
         
@@ -490,7 +490,7 @@ namespace hms
         return code;
     }
     
-    std::string NetworkSocketHandle::packMessage(const std::string& pMessage, ESocketOpCode pOpCode) const
+    std::string NetworkWebSocketHandle::packMessage(const std::string& pMessage, ENetworkWebSocketOpCode pOpCode) const
     {
         std::string message;
         
@@ -548,7 +548,7 @@ namespace hms
         return message;
     }
     
-    std::vector<NetworkSocketHandle::Frame> NetworkSocketHandle::unpackMessage(const std::string& pMessage) const
+    std::vector<NetworkWebSocketHandle::Frame> NetworkWebSocketHandle::unpackMessage(const std::string& pMessage) const
     {
         std::vector<Frame> frames;
     
@@ -664,7 +664,7 @@ namespace hms
         return frames;
     }
     
-    bool NetworkSocketHandle::handleFrame(std::vector<Frame>& pNewFrame, std::vector<Frame>& pOldFrame, std::function<void(std::string lpMessage, bool lpTextData)> pMessageCallback) const
+    bool NetworkWebSocketHandle::handleFrame(std::vector<Frame>& pNewFrame, std::vector<Frame>& pOldFrame, std::function<void(std::string lpMessage, bool lpTextData)> pMessageCallback) const
     {
         bool endSent = false;
         
@@ -672,13 +672,13 @@ namespace hms
         {
             uint8_t opCode = pNewFrame[i-1].mCode & 0x0F;
             
-            if (static_cast<ESocketOpCode>(opCode) == ESocketOpCode::Ping)
+            if (static_cast<ENetworkWebSocketOpCode>(opCode) == ENetworkWebSocketOpCode::Ping)
             {
                 pNewFrame.erase(pNewFrame.begin() + static_cast<ptrdiff_t>(i - 1));
                 
                 if (!endSent)
                 {
-                    std::string message = packMessage("", ESocketOpCode::Pong);
+                    std::string message = packMessage("", ENetworkWebSocketOpCode::Pong);
                     size_t sendCount = 0;
                     
                     if (mControlBlock->mHandle != nullptr)
@@ -690,11 +690,11 @@ namespace hms
                     }
                 }
             }
-            else if (static_cast<ESocketOpCode>(opCode) == ESocketOpCode::Close)
+            else if (static_cast<ENetworkWebSocketOpCode>(opCode) == ENetworkWebSocketOpCode::Close)
             {
                 pNewFrame.erase(pNewFrame.begin() + static_cast<ptrdiff_t>(i - 1));
                 
-                std::string message = packMessage("", ESocketOpCode::Close);
+                std::string message = packMessage("", ENetworkWebSocketOpCode::Close);
                 
                 if (mControlBlock->mHandle != nullptr)
                 {
@@ -706,7 +706,7 @@ namespace hms
                 }
                 endSent = true;
             }
-            else if (opCode > static_cast<uint8_t>(ESocketOpCode::Binary))
+            else if (opCode > static_cast<uint8_t>(ENetworkWebSocketOpCode::Binary))
             {
                 pNewFrame.erase(pNewFrame.begin() + static_cast<ptrdiff_t>(i - 1));
             }
@@ -714,8 +714,8 @@ namespace hms
         
         pOldFrame.insert(pOldFrame.end(), pNewFrame.begin(), pNewFrame.end());
         
-        ESocketOpCode multiFrameOpCode = ESocketOpCode::Continue;
-        std::vector<NetworkSocketHandle::Frame>::iterator firstFrameIt;
+        ENetworkWebSocketOpCode multiFrameOpCode = ENetworkWebSocketOpCode::Continue;
+        std::vector<NetworkWebSocketHandle::Frame>::iterator firstFrameIt;
         std::string multiMessage;
         
         for (auto it = pOldFrame.begin(); it != pOldFrame.end();)
@@ -725,15 +725,15 @@ namespace hms
             
             if (!fin)
             {
-                multiFrameOpCode = static_cast<ESocketOpCode>(opCode);
+                multiFrameOpCode = static_cast<ENetworkWebSocketOpCode>(opCode);
                 multiMessage += std::move(it->mPayload);
                 
                 firstFrameIt = it++;
             }
-            else if (static_cast<ESocketOpCode>(opCode) != ESocketOpCode::Continue)
+            else if (static_cast<ENetworkWebSocketOpCode>(opCode) != ENetworkWebSocketOpCode::Continue)
             {
                 if (pMessageCallback != nullptr)
-                    Hermes::getInstance()->getTaskManager()->execute(-1, std::move(pMessageCallback), std::move(it->mPayload), static_cast<ESocketOpCode>(opCode) == ESocketOpCode::Text);
+                    Hermes::getInstance()->getTaskManager()->execute(-1, std::move(pMessageCallback), std::move(it->mPayload), static_cast<ENetworkWebSocketOpCode>(opCode) == ENetworkWebSocketOpCode::Text);
                 
                 it = pOldFrame.erase(it);
             }
@@ -742,7 +742,7 @@ namespace hms
                 multiMessage += std::move(it->mPayload);
                 
                 if (pMessageCallback != nullptr)
-                    Hermes::getInstance()->getTaskManager()->execute(-1, std::move(pMessageCallback), std::move(multiMessage), multiFrameOpCode == ESocketOpCode::Text);
+                    Hermes::getInstance()->getTaskManager()->execute(-1, std::move(pMessageCallback), std::move(multiMessage), multiFrameOpCode == ENetworkWebSocketOpCode::Text);
                 
                 multiMessage = "";
                 
@@ -1100,7 +1100,7 @@ namespace hms
                 }
                 
                 mThreadPoolId = pThreadPoolId;
-                mSocketThreadPoolId = pSocketThreadPoolId;
+                mWebSocketThreadPoolId = pSocketThreadPoolId;
 
                 mInitialized.store(2);
             }
@@ -1130,8 +1130,8 @@ namespace hms
             };
             
             taskManager->flush(mThreadPoolId, flushCallback);
-            taskManager->flush(mSocketThreadPoolId, flushCallback);
-            const uint32_t loopInterrupt = mThreadPoolId != mSocketThreadPoolId ? 2 : 1;
+            taskManager->flush(mWebSocketThreadPoolId, flushCallback);
+            const uint32_t loopInterrupt = mThreadPoolId != mWebSocketThreadPoolId ? 2 : 1;
             
             while (flushStatus.load() < loopInterrupt)
             {
@@ -1190,7 +1190,7 @@ namespace hms
             }
 
             mThreadPoolId = -1;
-            mSocketThreadPoolId = -1;
+            mWebSocketThreadPoolId = -1;
             
             mCacheInitialized.store(0);
             mTerminateAbort.store(0);
@@ -2034,15 +2034,15 @@ namespace hms
         }
     }
     
-    std::shared_ptr<NetworkSocketHandle> NetworkManager::connectSocket(NetworkSocketParam pParam)
+    std::shared_ptr<NetworkWebSocketHandle> NetworkManager::connectWebSocket(NetworkWebSocketParam pParam)
     {
-        std::shared_ptr<NetworkSocketHandle> handle = nullptr;
+        std::shared_ptr<NetworkWebSocketHandle> handle = nullptr;
         
         if (mInitialized.load() == 2)
         {
-            handle = std::shared_ptr<NetworkSocketHandle>(new NetworkSocketHandle(), [](NetworkSocketHandle* pThis) -> void { delete pThis; });
+            handle = std::shared_ptr<NetworkWebSocketHandle>(new NetworkWebSocketHandle(), [](NetworkWebSocketHandle* pThis) -> void { delete pThis; });
             handle->mWeakThis = handle;
-            handle->initialize(mSocketThreadPoolId, std::move(pParam), this);
+            handle->initialize(mWebSocketThreadPoolId, std::move(pParam), this);
         }
         
         return handle;
