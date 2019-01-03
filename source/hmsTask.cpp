@@ -104,7 +104,7 @@ namespace hms
             {
                 mCondition.wait(lock, [this, pIndex, &taskContinuous]
                 {
-                    return !mTask.empty() || !taskContinuous.empty() || mThreads[pIndex].second.mValue.load() > 0 || mTerminate.load() > 0;
+                    return !mTask.empty() || !mTaskContinuous.empty() || !taskContinuous.empty() || mThreads[pIndex].second.mValue.load() > 0 || mTerminate.load() > 0;
                 });
             }
             else
@@ -127,7 +127,7 @@ namespace hms
                 const auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(delay);
                 mCondition.wait_until(lock, timeout, [this, pIndex, &taskContinuous]
                 {
-                    return !mTask.empty() || !taskContinuous.empty() || mThreads[pIndex].second.mValue.load() > 0 || mTerminate.load() > 0;
+                    return !mTask.empty() || !mTaskContinuous.empty() || !taskContinuous.empty() || mThreads[pIndex].second.mValue.load() > 0 || mTerminate.load() > 0;
                 });
             }
             
