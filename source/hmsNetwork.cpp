@@ -179,18 +179,82 @@ namespace hms
             curl_easy_cleanup(mHandle);
     }
     
-    void NetworkSocketHandle::initialize(int32_t pThreadPoolId, NetworkSocketParam pParam, std::weak_ptr<NetworkManager> pWeakNetworkManager)
+    void NetworkSocketHandle::sendMessage(const std::string& pMessage, std::function<void(ENetworkCode)> pCallback)
     {
-        auto strongNetworkManager = pWeakNetworkManager.lock();
+        std::string message = packMessage(pMessage);
+        
+        auto weakThis = mWeakThis;
+        auto sendMessageTask = [message = std::move(message), pCallback = std::move(pCallback), weakThis]() mutable -> void
+        {
+            auto strongThis = weakThis.lock();
+            if (strongThis != nullptr && strongThis->mHandle != nullptr)
+            {
+                unsigned tryCount = 0;                
+                curl_socket_t socketfd;
+                CURLcode cCode = curl_easy_getinfo(strongThis->mHandle, CURLINFO_ACTIVESOCKET, &socketfd);
+                
+                if (cCode != CURLE_OK)
+                {
+                    if (pCallback != nullptr)
+                    {
+                        Hermes::getInstance()->getTaskManager()->execute(-1, [lpCallback = std::move(pCallback), cCode]() -> void
+                        {
+                            lpCallback(static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(cCode)));
+                        });
+                    }
 
-        strongNetworkManager->appendParameter(pParam.mUrl, pParam.mParameter);
+                    return;
+                }
+                
+                uint32_t terminateAbort = 0;
+                
+                do
+                {
+                    if (tryCount != 0)
+                        CURL_WAIT_ON_SOCKET(socketfd, 1, 1000);
+                    
+                    size_t sendCount = 0;
+                    cCode = curl_easy_send(strongThis->mHandle, message.c_str(), message.size(), &sendCount);
+                    
+                    tryCount++;
+                }
+                while ((terminateAbort = strongThis->mTerminate.load()) == 0 && cCode == CURLE_AGAIN && tryCount < 3);
+                
+                if (terminateAbort == 0)
+                {
+                    if (pCallback != nullptr)
+                    {
+                        ENetworkCode code = cCode == CURLE_OK ? ENetworkCode::OK : static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(cCode));
+                        Hermes::getInstance()->getTaskManager()->execute(-1, [lpCallback = std::move(pCallback), code]() -> void
+                        {
+                            lpCallback(code);
+                        });
+                    }
+                }
+            }
+        };
+
+        std::lock_guard<std::mutex> lock(mSendMessage.second);
+        mSendMessage.first = std::move(sendMessageTask);
+    }
+    
+    void NetworkSocketHandle::terminate()
+    {
+        mTerminate.store(1);
+    }
+    
+    void NetworkSocketHandle::initialize(int32_t pThreadPoolId, NetworkSocketParam pParam, NetworkManager* pNetworkManager)
+    {
+        assert(pNetworkManager != nullptr);
+        
+        pNetworkManager->appendParameter(pParam.mUrl, pParam.mParameter);
         tools::URLTool url(pParam.mUrl);
         curl_socket_t socketfd = 0;
 
         NetworkManager::RequestSettings requestSettings;
         {
-            std::lock_guard<std::mutex> lock(strongNetworkManager->mRequestSettingsMutex);
-            requestSettings = strongNetworkManager->mRequestSettings;
+            std::lock_guard<std::mutex> lock(pNetworkManager->mRequestSettingsMutex);
+            requestSettings = pNetworkManager->mRequestSettings;
         }
         
         auto weakThis = mWeakThis;
@@ -203,11 +267,10 @@ namespace hms
                 status = strongThis->mTerminate.load() == 2;
             
             return status;
-        }, [pParam = std::move(pParam), pWeakNetworkManager, url, socketfd, requestSettings = std::move(requestSettings), weakThis]() mutable -> void
+        }, [pParam = std::move(pParam), url, socketfd, requestSettings = std::move(requestSettings), weakThis]() mutable -> void
         {
             auto strongThis = weakThis.lock();
-            auto strongNetworkManager = pWeakNetworkManager.lock();
-            if (strongThis != nullptr && strongNetworkManager != nullptr && strongNetworkManager->mInitialized.load() == 2)
+            if (strongThis != nullptr)
             {
                 if (!strongThis->mInitialized)
                 {
@@ -324,6 +387,7 @@ namespace hms
                                     Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Socket invalid handshake.");
                                     strongThis->mDisconnectReason = ESocketDisconnectCause::Handshake;
                                     strongThis->mTerminate.store(1);
+                                    error = true;
                                 }
                             }
                             else
@@ -334,6 +398,7 @@ namespace hms
                                     
                                     strongThis->mDisconnectReason = ESocketDisconnectCause::Close;
                                     strongThis->mTerminate.store(1);
+                                    error = true;
                                 }
                             }
                         }
@@ -346,6 +411,14 @@ namespace hms
                         {
                             strongThis->mDisconnectReason = ESocketDisconnectCause::Timeout;
                             strongThis->mTerminate.store(1);
+                            error = true;
+                        }
+                        
+                        std::lock_guard<std::mutex> lock(strongThis->mSendMessage.second);
+                        if (!error && strongThis->mSendMessage.first != nullptr)
+                        {
+                            strongThis->mSendMessage.first();
+                            strongThis->mSendMessage.first = nullptr;
                         }
                     }
                 }
@@ -382,11 +455,6 @@ namespace hms
                 strongThis->mTerminate.store(2);
             }
         });
-    }
-    
-    void NetworkSocketHandle::terminate()
-    {
-        mTerminate.store(1);
     }
 
     int32_t NetworkSocketHandle::sendUpgradeHeader(const tools::URLTool& pUrl, const std::vector<std::pair<std::string, std::string>>& pHeader, std::string& pSecAccept) const
@@ -1973,9 +2041,14 @@ namespace hms
     
     std::shared_ptr<NetworkSocketHandle> NetworkManager::connectSocket(NetworkSocketParam pParam)
     {
-        std::shared_ptr<NetworkSocketHandle> handle(new NetworkSocketHandle(), [](NetworkSocketHandle* pThis) -> void { delete pThis; });
-        handle->mWeakThis = handle;
-        handle->initialize(mSocketThreadPoolId, std::move(pParam), mWeakThis);
+        std::shared_ptr<NetworkSocketHandle> handle = nullptr;
+        
+        if (mInitialized.load() == 2)
+        {
+            handle = std::shared_ptr<NetworkSocketHandle>(new NetworkSocketHandle(), [](NetworkSocketHandle* pThis) -> void { delete pThis; });
+            handle->mWeakThis = handle;
+            handle->initialize(mSocketThreadPoolId, std::move(pParam), this);
+        }
         
         return handle;
     }

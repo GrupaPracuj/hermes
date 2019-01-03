@@ -144,6 +144,7 @@ namespace hms
     class NetworkSocketHandle
     {
     public:
+        void sendMessage(const std::string& pMessage, std::function<void(ENetworkCode)> pCallback);
         void terminate();
 
     private:
@@ -167,7 +168,7 @@ namespace hms
         NetworkSocketHandle& operator=(const NetworkSocketHandle& pOther) = delete;
         NetworkSocketHandle& operator=(NetworkSocketHandle&& pOther) = delete;
         
-        void initialize(int32_t pThreadPoolId, NetworkSocketParam pParam, std::weak_ptr<NetworkManager> pWeakNetworkManager);
+        void initialize(int32_t pThreadPoolId, NetworkSocketParam pParam, NetworkManager* pNetworkManager);
     
         int32_t sendUpgradeHeader(const tools::URLTool& pUrl, const std::vector<std::pair<std::string, std::string>>& pHeader, std::string& pSecAccept) const;
         std::string packMessage(const std::string& pMessage, ESocketOpCode pOpCode = ESocketOpCode::Text) const;
@@ -183,6 +184,7 @@ namespace hms
         void* mHandle = nullptr;
         bool mInitialized = false;
         std::atomic<uint32_t> mTerminate = {0};
+        std::pair<std::function<void()>, std::mutex> mSendMessage = {};
 
         std::weak_ptr<NetworkSocketHandle> mWeakThis;
     };
