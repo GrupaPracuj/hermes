@@ -242,7 +242,7 @@ namespace hms
         };
 
         std::lock_guard<std::mutex> lock(mSendMessage.second);
-        mSendMessage.first = std::move(sendMessageTask);
+        mSendMessage.first.push(std::move(sendMessageTask));
     }
     
     void NetworkSocketHandle::initialize(int32_t pThreadPoolId, NetworkSocketParam pParam, NetworkManager* pNetworkManager)
@@ -413,11 +413,14 @@ namespace hms
                             error = true;
                         }
                         
-                        std::lock_guard<std::mutex> lock(strongThis->mSendMessage.second);
-                        if (!error && strongThis->mSendMessage.first != nullptr)
+                        if (!error)
                         {
-                            strongThis->mSendMessage.first();
-                            strongThis->mSendMessage.first = nullptr;
+                            std::lock_guard<std::mutex> lock(strongThis->mSendMessage.second);
+                            while (!strongThis->mSendMessage.first.empty())
+                            {
+                                strongThis->mSendMessage.first.front();
+                                strongThis->mSendMessage.first.pop();
+                            }
                         }
                     }
                 }

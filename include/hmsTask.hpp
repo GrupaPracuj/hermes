@@ -70,7 +70,7 @@ namespace hms
 
             auto threadPool = mThreadPool.find(pThreadPoolId);
             assert(threadPool != mThreadPool.cend());
-            threadPool->second->pushContinuous(std::make_pair(std::move(task), std::move(pTerminateCondition)));
+            threadPool->second->pushContinuous(std::make_pair(std::move(pTerminateCondition), std::move(task)));
         }
         
         template<typename M, typename... P>
@@ -130,7 +130,7 @@ namespace hms
             void flush(std::function<void()> pCallback);
             
             void push(std::pair<std::function<int32_t()>, std::function<void()>> pTask);
-            void pushContinuous(std::pair<std::function<void()>, std::function<bool()>> pTask);
+            void pushContinuous(std::pair<std::function<bool()>, std::function<void()>> pTask);
             
             void update(size_t pIndex);
             void terminate();
@@ -140,7 +140,7 @@ namespace hms
             std::condition_variable mCondition;
             mutable std::mutex mMutex;
             std::queue<std::pair<std::function<int32_t()>, std::function<void()>>> mTask;
-            std::queue<std::pair<std::function<void()>, std::function<bool()>>> mTaskContinuous;
+            std::queue<std::pair<std::function<bool()>, std::function<void()>>> mTaskContinuous;
             std::atomic<uint32_t> mTerminate {0};
             std::function<void()> mFlushCallback;
             int32_t mId;

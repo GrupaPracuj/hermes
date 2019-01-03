@@ -77,7 +77,7 @@ namespace hms
         }
     }
     
-    void TaskManager::ThreadPool::pushContinuous(std::pair<std::function<void()>, std::function<bool()>> pTask)
+    void TaskManager::ThreadPool::pushContinuous(std::pair<std::function<bool()>, std::function<void()>> pTask)
     {
         if (mTerminate.load() == 0)
         {
@@ -93,7 +93,7 @@ namespace hms
     void TaskManager::ThreadPool::update(size_t pIndex)
     {
         std::list<std::pair<std::function<int32_t()>, std::function<void()>>> taskPaused;
-        std::list<std::pair<std::function<void()>, std::function<bool()>>> taskContinuous;
+        std::list<std::pair<std::function<bool()>, std::function<void()>>> taskContinuous;
         std::function<void()> flushCallback = nullptr;
 
         while (mTerminate.load() == 0)
@@ -134,7 +134,7 @@ namespace hms
             if (mThreads[pIndex].second.mValue.load() > 0)
             {
                 std::queue<std::pair<std::function<int32_t()>, std::function<void()>>>().swap(mTask);
-                std::queue<std::pair<std::function<void()>, std::function<bool()>>>().swap(mTaskContinuous);
+                std::queue<std::pair<std::function<bool()>, std::function<void()>>>().swap(mTaskContinuous);
                 taskPaused.clear();
                 taskContinuous.clear();
                 mThreads[pIndex].second.mValue.store(0);
@@ -184,8 +184,8 @@ namespace hms
             
             for (auto it = taskContinuous.begin(); it != taskContinuous.end(); ++it)
             {
-                if (!it->second())
-                    it->first();
+                if (!it->first())
+                    it->second();
                 else
                     it = taskContinuous.erase(it);
             }

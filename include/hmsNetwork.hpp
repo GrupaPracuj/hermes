@@ -189,7 +189,7 @@ namespace hms
         std::string mSecSocketAccept;
         std::vector<Frame> mFrames;
         bool mHeaderCheck = true;
-        std::pair<std::function<void()>, std::mutex> mSendMessage = {};
+        std::pair<std::queue<std::function<void()>>, std::mutex> mSendMessage = {};
         
         std::shared_ptr<ControlBlock> mControlBlock;
 
