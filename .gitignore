@@ -1,4 +1,5 @@
 .DS_Store
+build
 depend/jsoncpp/jsoncpp.xcodeproj/xcuserdata/*
 hermes.xcodeproj/project.xcworkspace/xcuserdata/*
 hermes.xcodeproj/xcuserdata/*

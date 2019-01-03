@@ -115,7 +115,7 @@ namespace ext
         void erase(int32_t pPrimaryIndex, int32_t pSecondaryIndex, size_t pCount = 1);
         void clear();
         
-        void setStackChangedCallback(std::function<void(int32_t pPrimaryStack, std::shared_ptr<ModuleShared> lpLastModule)> pCallback);
+        void setStackChangedCallback(std::function<void(int32_t lpPrimaryStack, std::shared_ptr<ModuleShared> lpLastModule)> pCallback);
         
         static ModuleHandler* getInstance();
         

@@ -5,6 +5,7 @@
 #include "hmsTask.hpp"
 
 #include <chrono>
+#include <list>
 #if defined(__APPLE__)
 #import <Foundation/Foundation.h>
 #elif defined(ANDROID) || defined(__ANDROID__)
@@ -34,130 +35,173 @@ namespace hms
         return !mFlag.test_and_set(std::memory_order_acquire);
     }
     
-    /* ThreadPool */
+    /* TaskManager::ThreadPool */
     
-    ThreadPool::ThreadPool(int32_t pId, size_t pThreadCount, TaskManager* pTaskManager) : mThreadCount(pThreadCount), mId(pId), mTaskManager(pTaskManager)
+    TaskManager::ThreadPool::ThreadPool(int32_t pId, size_t pThreadCount, TaskManager* pTaskManager) : mId(pId), mTaskManager(pTaskManager)
     {
-        mThread = new std::thread*[mThreadCount];
-
-        for (size_t i = 0; i < mThreadCount; ++i)
-            mThread[i] = new std::thread(&ThreadPool::update, this, i);
+        assert(pThreadCount > 0);
+        mThreads.reserve(pThreadCount);
+        for (size_t i = 0; i < pThreadCount; ++i)
+            mThreads.push_back({std::thread(&ThreadPool::update, this, i), 0});
     }
     
-    ThreadPool::~ThreadPool()
+    TaskManager::ThreadPool::~ThreadPool()
     {
-        mTerminate.store(1);
-        flush();
-        mTaskCondition.notify_all();
+        for (size_t i = 0; i < mThreads.size(); ++i)
+            mThreads[i].first.join();
+    }
+    
+    void TaskManager::ThreadPool::flush(std::function<void()> pCallback)
+    {
+        for (size_t i = 0; i < mThreads.size(); ++i)
+            mThreads[i].second.mValue.store(1);
         
-        for (size_t i = 0; i < mThreadCount; ++i)
         {
-            mThread[i]->join();
-            delete mThread[i];
+            std::lock_guard<std::mutex> lock(mMutex);
+            mFlushCallback = std::move(pCallback);
         }
         
-        delete[] mThread;
+        mCondition.notify_all();
     }
-
-    void ThreadPool::push(std::pair<std::function<int32_t()>, std::function<void()>> pTask)
+    
+    void TaskManager::ThreadPool::push(std::pair<std::function<int32_t()>, std::function<void()>> pTask)
     {
         if (mTerminate.load() == 0)
         {
             {
-                std::lock_guard<std::mutex> lock(mTaskMutex);
+                std::lock_guard<std::mutex> lock(mMutex);
                 mTask.push(std::move(pTask));
             }
 
-            mTaskCondition.notify_one();
+            mCondition.notify_one();
         }
     }
     
-    bool ThreadPool::hasTask() const
+    void TaskManager::ThreadPool::pushContinuous(std::pair<std::function<bool()>, std::function<void()>> pTask)
     {
-        size_t taskCount = 0;
-        
-        {    
-            std::lock_guard<std::mutex> lock(mTaskMutex);
-            taskCount = mTask.size();
-        }
-        
-        return taskCount > 0 || mProcessingTaskCount.load() > 0;
-    }
-    
-    void ThreadPool::flush()
-    {
-        std::lock_guard<std::mutex> lock(mTaskMutex);
-        std::queue<std::pair<std::function<int32_t()>, std::function<void()>>>().swap(mTask);
-    }
-    
-    void ThreadPool::performTaskIfExists()
-    {
-        int32_t condition = 0;
-        std::function<void()> task = nullptr;
-        
+        if (mTerminate.load() == 0)
         {
-            std::lock_guard<std::mutex> lock(mTaskMutex);
-            if (!mTask.empty())
             {
-                condition = mTask.front().first == nullptr ? 1 : mTask.front().first();
-                if (condition != 0)
-                {
-                    mProcessingTaskCount++;
-                    task = std::move(mTask.front().second);
-                    mTask.pop();
-                }
+                std::lock_guard<std::mutex> lock(mMutex);
+                mTaskContinuous.push(std::move(pTask));
             }
-        }
-        
-        if (condition == 1)
-        {
-            task();
-            mProcessingTaskCount--;
-        }
-        else if (condition > 1)
-        {
-            mTaskManager->enqueueMainThreadTask(std::move(task));
-            mProcessingTaskCount--;
+
+            mCondition.notify_one();
         }
     }
     
-    void ThreadPool::update(size_t pId)
+    void TaskManager::ThreadPool::update(size_t pIndex)
     {
+        std::list<std::pair<std::function<int32_t()>, std::function<void()>>> taskPaused;
+        std::list<std::pair<std::function<bool()>, std::function<void()>>> taskContinuous;
+        std::function<void()> flushCallback = nullptr;
+
         while (mTerminate.load() == 0)
         {
-            std::unique_lock<std::mutex> lock(mTaskMutex);
-            mTaskCondition.wait(lock, [this]
+            std::unique_lock<std::mutex> lock(mMutex);
+
+            if (taskPaused.size() == 0)
             {
-                return !mTask.empty() || mTerminate.load() > 0;
-            });
+                mCondition.wait(lock, [this, pIndex, &taskContinuous]
+                {
+                    return !mTask.empty() || !mTaskContinuous.empty() || !taskContinuous.empty() || mThreads[pIndex].second.mValue.load() > 0 || mTerminate.load() > 0;
+                });
+            }
+            else
+            {
+                int32_t delay = 0;
+                for (auto it = taskPaused.begin(); it != taskPaused.end(); ++it)
+                {
+                    int32_t result = it->first();
+                    if (result == -1)
+                    {
+                        mTask.push({[]() -> int32_t { return -1; }, std::move(it->second)});
+                        it = taskPaused.erase(it);
+                    }
+                    else if (delay == 0 || result < delay)
+                    {
+                        delay = result;
+                    }
+                }
             
-            int32_t condition = 0;
+                const auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(delay);
+                mCondition.wait_until(lock, timeout, [this, pIndex, &taskContinuous]
+                {
+                    return !mTask.empty() || !mTaskContinuous.empty() || !taskContinuous.empty() || mThreads[pIndex].second.mValue.load() > 0 || mTerminate.load() > 0;
+                });
+            }
+            
+            if (mThreads[pIndex].second.mValue.load() > 0)
+            {
+                std::queue<std::pair<std::function<int32_t()>, std::function<void()>>>().swap(mTask);
+                std::queue<std::pair<std::function<bool()>, std::function<void()>>>().swap(mTaskContinuous);
+                taskPaused.clear();
+                taskContinuous.clear();
+                mThreads[pIndex].second.mValue.store(0);
+                
+                bool executeCallback = true;
+                
+                for (size_t i = 0; i < mThreads.size(); ++i)
+                    executeCallback &= mThreads[i].second.mValue.load() == 0;
+                
+                if (executeCallback)
+                    flushCallback = std::move(mFlushCallback);
+            }
+
+            int32_t condition = 1;
             std::function<void()> task = nullptr;
 
             if (!mTask.empty())
             {
-                condition = mTask.front().first == nullptr ? 1 : mTask.front().first();
-                if (condition != 0)
+                condition = mTask.front().first == nullptr ? 0 : mTask.front().first();
+                if (condition <= 0)
                 {
-                    mProcessingTaskCount++;
                     task = std::move(mTask.front().second);
-                    mTask.pop();
                 }
+                else
+                {
+                    taskPaused.push_back(std::move(mTask.front()));
+                }
+                mTask.pop();
             }
             
+            while (!mTaskContinuous.empty())
+            {
+                taskContinuous.push_back(std::move(mTaskContinuous.front()));
+                mTaskContinuous.pop();
+            }
+
             lock.unlock();
-            
-            if (condition == 1)
+
+            if (condition == 0)
             {
                 task();
-                mProcessingTaskCount--;
             }
-            else if (condition > 1)
+            else if (condition < 0)
             {
                 mTaskManager->enqueueMainThreadTask(std::move(task));
-                mProcessingTaskCount--;
             }
+            
+            for (auto it = taskContinuous.begin(); it != taskContinuous.end(); ++it)
+            {
+                if (!it->first())
+                    it->second();
+                else
+                    it = taskContinuous.erase(it);
+            }
+            
+            if (flushCallback != nullptr)
+                flushCallback();
         }
+    }
+    
+    void TaskManager::ThreadPool::terminate()
+    {
+        for (size_t i = 0; i < mThreads.size(); ++i)
+            mThreads[i].second.mValue.store(1);
+            
+        mTerminate.store(1);
+        mCondition.notify_all();
     }
 
     /* TaskManager */
@@ -205,10 +249,7 @@ namespace hms
         mInitialized = 1;
         
         for (auto& currentPool : mThreadPool)
-        {
-            currentPool.second->mTerminate.store(1);
-            currentPool.second->flush();
-        }
+            currentPool.second->terminate();
         
         for (auto& currentPool : mThreadPool)
             delete currentPool.second;
@@ -225,78 +266,29 @@ namespace hms
 #endif
 
         mMainThreadHandler = nullptr;        
-        flush(-1);
+        flush(-1, nullptr);
 
         mInitialized = 0;
         
         return true;
     }
     
-    bool TaskManager::hasTask(int32_t pThreadPoolId) const
-    {
-        bool hasTask = false;
-    
-        if (pThreadPoolId < 0)
-        {
-            std::lock_guard<std::mutex> lock(mMainThreadMutex);
-            hasTask = !mMainThreadTask.empty();
-        }
-        else
-        {
-            auto threadPool = mThreadPool.find(pThreadPoolId);
-            assert(threadPool != mThreadPool.cend());
-            hasTask = threadPool->second->hasTask();
-        }
-        
-        return hasTask;
-    }
-    
-    void TaskManager::flush(int32_t pThreadPoolId)
+    void TaskManager::flush(int32_t pThreadPoolId, std::function<void()> pCallback)
     {
         if (pThreadPoolId < 0)
         {
             std::lock_guard<std::mutex> lock(mMainThreadMutex);
             std::queue<std::function<void()>>().swap(mMainThreadTask);
+            
+            if (pCallback != nullptr)
+                pCallback();
         }
         else
         {
             auto threadPool = mThreadPool.find(pThreadPoolId);
             assert(threadPool != mThreadPool.cend());
-            threadPool->second->flush();
+            threadPool->second->flush(std::move(pCallback));
         }
-    }
-    
-    size_t TaskManager::threadCountForPool(int32_t pThreadPoolId) const
-    {
-        if (pThreadPoolId < 0)
-            return 1;
-        
-        auto threadPool = mThreadPool.find(pThreadPoolId);
-        assert(threadPool != mThreadPool.cend());
-        
-        return threadPool->second->mThreadCount;
-    }
-    
-    bool TaskManager::canContinueTask(int32_t pThreadPoolId) const
-    {
-        if (pThreadPoolId < 0)
-            return false;
-        
-        auto threadPool = mThreadPool.find(pThreadPoolId);
-        assert(threadPool != mThreadPool.cend());
-        
-        return threadPool->second->mTerminate.load() == 0;
-    }
-    
-    void TaskManager::performTaskIfExists(int32_t pThreadPoolId) const
-    {
-        if (pThreadPoolId < 0)
-            return;
-        
-        auto threadPool = mThreadPool.find(pThreadPoolId);
-        assert(threadPool != mThreadPool.cend());
-        
-        threadPool->second->performTaskIfExists();
     }
 
     void TaskManager::enqueueMainThreadTask(std::function<void()> pTask)
@@ -366,21 +358,13 @@ namespace hms
         }
     }
     
-    std::function<int32_t()> TaskManager::createCondition(int32_t& pThreadPoolId, uint64_t pDelayMs) const
+    std::function<int32_t()> TaskManager::createCondition(int32_t pDelayMs) const
     {
-        std::function<int32_t()> condition = nullptr;
-        
-        if (pDelayMs > 0)
+        return [pDelayMs, startTime = std::chrono::steady_clock::now()]() -> int32_t
         {
-            condition = [pThreadPoolId, pDelayMs, startTime = std::chrono::steady_clock::now()]() -> int32_t
-            {
-                return std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(std::chrono::steady_clock::now() - startTime).count() >= pDelayMs ? pThreadPoolId < 0 ? 2 : 1 : 0;
-            };
-            
-            pThreadPoolId = 0;
-        }
-        
-        return condition;
+            auto difference = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(std::chrono::steady_clock::now() - startTime).count();
+            return difference >= pDelayMs ? -1 : pDelayMs - difference;
+        };
     }
 
 #if defined(ANDROID) || defined(__ANDROID__)
