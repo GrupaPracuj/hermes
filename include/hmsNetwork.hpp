@@ -145,10 +145,21 @@ namespace hms
     {
     public:
         void sendMessage(const std::string& pMessage, std::function<void(ENetworkCode)> pCallback);
-        void terminate();
 
     private:
         friend NetworkManager;
+        
+        class ControlBlock
+        {
+        public:
+            ~ControlBlock();
+        
+            ESocketDisconnectCause mDisconnectReason = ESocketDisconnectCause::User;
+            std::pair<std::chrono::time_point<std::chrono::steady_clock>, std::chrono::time_point<std::chrono::steady_clock>> mTime = {};
+            void* mHandle = nullptr;
+            bool mInitialized = false;
+            std::atomic<uint32_t> mTerminate = {0};
+        };
     
         class Frame
         {
@@ -177,14 +188,10 @@ namespace hms
     
         std::string mSecSocketAccept;
         std::vector<Frame> mFrames;
-        ESocketDisconnectCause mDisconnectReason = ESocketDisconnectCause::User;
         bool mHeaderCheck = true;
-        std::pair<std::chrono::time_point<std::chrono::steady_clock>, std::chrono::time_point<std::chrono::steady_clock>> mTime = {};
-
-        void* mHandle = nullptr;
-        bool mInitialized = false;
-        std::atomic<uint32_t> mTerminate = {0};
         std::pair<std::function<void()>, std::mutex> mSendMessage = {};
+        
+        std::shared_ptr<ControlBlock> mControlBlock;
 
         std::weak_ptr<NetworkSocketHandle> mWeakThis;
     };
