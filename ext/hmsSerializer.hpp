@@ -150,16 +150,16 @@ namespace ext
         bool assignOp<bool>(const Json::Value* pSource, bool& pDestination);
         
         template <>
-        bool assignOp<int>(const Json::Value* pSource, int& pDestination);
+        bool assignOp<int32_t>(const Json::Value* pSource, int& pDestination);
         
         template <>
-        bool assignOp<long long int>(const Json::Value* pSource, long long int& pDestination);
+        bool assignOp<int64_t>(const Json::Value* pSource, long long int& pDestination);
         
         template <>
-        bool assignOp<unsigned>(const Json::Value* pSource, unsigned& pDestination);
+        bool assignOp<uint32_t>(const Json::Value* pSource, unsigned& pDestination);
         
         template <>
-        bool assignOp<unsigned long long int>(const Json::Value* pSource, unsigned long long int& pDestination);
+        bool assignOp<uint64_t>(const Json::Value* pSource, unsigned long long int& pDestination);
         
         template <>
         bool assignOp<float>(const Json::Value* pSource, float& pDestination);

@@ -62,11 +62,11 @@ namespace json
     }
     
     template <>
-    bool assignOp<int>(const Json::Value* pSource, int& pDestination)
+    bool assignOp<int32_t>(const Json::Value* pSource, int& pDestination)
     {
         bool status = false;
         
-        if (pSource->isNumeric())
+        if (pSource->isInt())
         {
             pDestination = pSource->asInt();
             
@@ -77,11 +77,11 @@ namespace json
     }
     
     template <>
-    bool assignOp<long long int>(const Json::Value* pSource, long long int& pDestination)
+    bool assignOp<int64_t>(const Json::Value* pSource, long long int& pDestination)
     {
         bool status = false;
         
-        if (pSource->isNumeric())
+        if (pSource->isInt64())
         {
             pDestination = pSource->asInt64();
             
@@ -92,11 +92,11 @@ namespace json
     }
     
     template <>
-    bool assignOp<unsigned>(const Json::Value* pSource, unsigned& pDestination)
+    bool assignOp<uint32_t>(const Json::Value* pSource, unsigned& pDestination)
     {
         bool status = false;
         
-        if (pSource->isNumeric())
+        if (pSource->isUInt())
         {
             pDestination = pSource->asUInt();
             
@@ -107,11 +107,11 @@ namespace json
     }
     
     template <>
-    bool assignOp<unsigned long long int>(const Json::Value* pSource, unsigned long long int& pDestination)
+    bool assignOp<uint64_t>(const Json::Value* pSource, unsigned long long int& pDestination)
     {
         bool status = false;
         
-        if (pSource->isNumeric())
+        if (pSource->isUInt64())
         {
             pDestination = pSource->asUInt64();
             
@@ -126,7 +126,7 @@ namespace json
     {
         bool status = false;
         
-        if (pSource->isNumeric())
+        if (pSource->isDouble())
         {
             pDestination = pSource->asFloat();
             
@@ -141,7 +141,7 @@ namespace json
     {
         bool status = false;
         
-        if (pSource->isNumeric())
+        if (pSource->isDouble())
         {
             pDestination = pSource->asDouble();
             
