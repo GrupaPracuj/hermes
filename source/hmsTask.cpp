@@ -145,7 +145,10 @@ namespace hms
                     executeCallback &= mThreads[i].second.mValue.load() == 0;
                 
                 if (executeCallback)
+                {
                     flushCallback = std::move(mFlushCallback);
+                    mFlushCallback = nullptr;
+                }
             }
 
             int32_t condition = 1;
@@ -191,7 +194,10 @@ namespace hms
             }
             
             if (flushCallback != nullptr)
+            {
                 flushCallback();
+                flushCallback = nullptr;
+            }
         }
     }
     
