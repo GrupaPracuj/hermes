@@ -77,7 +77,7 @@ namespace json
     }
     
     template <>
-    bool assignOp<int64_t>(const Json::Value* pSource, long long int& pDestination)
+    bool assignOp<int64_t>(const Json::Value* pSource, int64_t& pDestination)
     {
         bool status = false;
         
@@ -92,7 +92,7 @@ namespace json
     }
     
     template <>
-    bool assignOp<uint32_t>(const Json::Value* pSource, unsigned& pDestination)
+    bool assignOp<uint32_t>(const Json::Value* pSource, uint32_t& pDestination)
     {
         bool status = false;
         
@@ -107,7 +107,7 @@ namespace json
     }
     
     template <>
-    bool assignOp<uint64_t>(const Json::Value* pSource, unsigned long long int& pDestination)
+    bool assignOp<uint64_t>(const Json::Value* pSource, uint64_t& pDestination)
     {
         bool status = false;
         

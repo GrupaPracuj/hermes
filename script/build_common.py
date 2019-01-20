@@ -1,5 +1,6 @@
 import os
 import platform
+import re
 import subprocess
 import shutil
 import sys
@@ -7,16 +8,13 @@ import sys
 class Settings:
     def __init__(self):
         self.mBuildTarget = ''
-        self.mHostName = ''
+        self.mPlatformName = ''
         self.mAndroidApi = ''
         self.mAndroidNdkDir = ''
         self.mCoreCount = ''
         self.mMake = ''
         self.mBuildDir = ''
-        self.mToolchainRemovable = False
-        self.mToolchainDir = ''
-        self.mToolchainArch = []
-        self.mToolchainName = []
+        self.mHostTag = []
         self.mArch = []
         self.mArchFlag = []
         self.mArchName = []
@@ -87,19 +85,19 @@ def configure(pSettings):
         print('Error: This script requires Python 3.0 or higher. Please use "python3" command instead of "python".')
         return False
     
-    if len(sys.argv) < 1 or sys.argv[1] is None or (sys.argv[1] != 'android' and sys.argv[1] != 'linux'):
+    if len(sys.argv) < 2 or sys.argv[1] is None or (sys.argv[1] != 'android' and sys.argv[1] != 'linux'):
         print('Error: Missing or wrong build target. Following targets are supported: "android", "linux".')
         return False
 
     workingDir = os.getcwd()
     pSettings.mBuildTarget = sys.argv[1]
-    pSettings.mHostName = platform.system()
+    pSettings.mPlatformName = platform.system()
     pSettings.mBuildDir = os.path.join(workingDir, 'build')
 
     if pSettings.mBuildTarget == 'android':
         hostDetected = False
         
-        if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
+        if pSettings.mPlatformName == 'Linux' or pSettings.mPlatformName == 'Darwin':
             hostDetected = True
             
             if os.path.isfile('/usr/bin/make'):
@@ -107,7 +105,7 @@ def configure(pSettings):
             else:
                 print('Error: /usr/bin/make not found.')
                 return False
-        elif pSettings.mHostName == 'Windows':
+        elif pSettings.mPlatformName == 'Windows':
             hostDetected = True
             
             if prepareMake(pSettings.mBuildDir):
@@ -146,10 +144,21 @@ def configure(pSettings):
                 else:
                     print('Error: Occurred problem related to ANDROID_HOME environment variable.')
                     return False
+
+            validNdk = True
+
+            try:
+                with open(os.path.join(pSettings.mAndroidNdkDir, 'source.properties'), 'r') as fileSourceProperties:
+                    if not re.compile(r'^Pkg\.Desc = Android NDK\nPkg\.Revision = (19|[2-9]\d|[1-9]\d{2,})\.([0-9]+)\.([0-9]+)(-beta([0-9]+))?').match(fileSourceProperties.read()):
+                        validNdk = False
+            except:
+                validNdk = False
+
+            if not validNdk:
+                print('Error: Android NDK 19 or newer is required.')
+                return False
             
-            pSettings.mToolchainDir = os.path.join(workingDir, 'toolchain')
-            pSettings.mToolchainArch = ['arm', 'arm64', 'x86', 'x86_64']
-            pSettings.mToolchainName = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
+            pSettings.mHostTag = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
             pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
             pSettings.mArchFlag = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
             pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
@@ -158,12 +167,12 @@ def configure(pSettings):
             print('Android API: "' + pSettings.mAndroidApi + '"')
             print('Android NDK path: "' + pSettings.mAndroidNdkDir + '"')
         else:
-            print('Error: Not supported host platform: ' + pSettings.mHostName + '.')
+            print('Error: Not supported host platform: ' + pSettings.mPlatformName + '.')
             return False
     elif pSettings.mBuildTarget == 'linux':
         hostDetected = False
         
-        if pSettings.mHostName == 'Linux':
+        if pSettings.mPlatformName == 'Linux':
             hostDetected = True
             
             if os.path.isfile('/usr/bin/make'):
@@ -178,7 +187,7 @@ def configure(pSettings):
             pSettings.mMakeFlag = ['', '']
             pSettings.mMakeFlag = ['', 'ARCH64=1']
         else:
-            print('Error: Not supported host platform: ' + pSettings.mHostName + '.')
+            print('Error: Not supported host platform: ' + pSettings.mPlatformName + '.')
             return False
     else:
         return False
@@ -188,22 +197,6 @@ def configure(pSettings):
     print('Available CPU cores: ' + pSettings.mCoreCount)
     
     return True
-         
-def prepareToolchain(pSettings):
-    if pSettings.mBuildTarget == 'android':
-        print('Preparing toolchains...')
-
-        for i in range(0, len(pSettings.mArch)):
-            destinationPath = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i])
-            if not os.path.isdir(destinationPath):
-                androidApi = pSettings.mAndroidApi
-                if (int(androidApi) < 21 and (pSettings.mToolchainArch[i] == 'arm64' or pSettings.mToolchainArch[i] == 'x86_64')):
-                    androidApi = '21'
-                    print('Force Android API: \"21\" for architecture \"' + pSettings.mToolchainArch[i] + '\".')
-                os.system(os.path.join(pSettings.mAndroidNdkDir, 'build', 'tools', 'make_standalone_toolchain.py') + ' --arch ' + pSettings.mToolchainArch[i] + ' --api ' + androidApi + ' --stl libc++ --install-dir ' + destinationPath)
-
-        pSettings.mToolchainRemovable = True
-        return
 
 def executeShellCommand(pCommandLine):
     process = subprocess.Popen(pCommandLine, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)        
@@ -244,14 +237,6 @@ def remove(pPath):
             
     return
 
-def cleanup(pSettings):
-    print('Cleaning...')
-
-    if pSettings.mToolchainRemovable:
-        remove(pSettings.mToolchainDir)
-        
-    return
-
 def buildMake(pRootDir, pLibraryName, pSettings, pMakeFlag):
     status = False
     if pSettings.mBuildTarget == 'android':
@@ -264,14 +249,22 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
     print('Building...')
     status = False
     workingDir = os.getcwd()
+    toolchainDir = os.path.join(pSettings.mAndroidNdkDir, 'toolchains', 'llvm', 'prebuilt')
     
-    if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
+    if pSettings.mPlatformName == 'Linux':
         executeShellCommand(pSettings.mMake + ' clean')
-    elif pSettings.mHostName == 'Windows':
+        toolchainDir = os.path.join(toolchainDir, 'linux-x86_64', 'bin')
+    elif pSettings.mPlatformName == 'Darwin':
+        executeShellCommand(pSettings.mMake + ' clean')
+        toolchainDir = os.path.join(toolchainDir, 'darwin-x86_64', 'bin')
+    elif pSettings.mPlatformName == 'Windows':
         executeCmdCommand(pSettings.mMake + ' clean', workingDir)
+        if platform.machine().endswith('64'):
+            toolchainDir = os.path.join(toolchainDir, 'windows-x86_64', 'bin')
+        else:
+            toolchainDir = os.path.join(toolchainDir, 'windows', 'bin')
 
     for i in range(0, len(pSettings.mArchName)):
-        toolchainBinDir = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i], 'bin')
         libraryDir = os.path.join(pRootDir, 'lib', 'android', pSettings.mArchName[i])
 
         if not os.path.isdir(libraryDir):
@@ -283,23 +276,27 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
                 if os.path.isfile(libraryFilepath):
                     os.remove(libraryFilepath)
         
-        if os.path.isdir(toolchainBinDir):
-            executablePrefix = os.path.join(toolchainBinDir, pSettings.mToolchainName[i])
-        
-            os.environ['CXX'] = executablePrefix + '-clang++'
-            os.environ['CC'] = executablePrefix + '-clang'
+        if os.path.isdir(toolchainDir):
+            executablePrefix = os.path.join(toolchainDir, pSettings.mHostTag[i])
+
+            androidApi = pSettings.mAndroidApi
+            if (int(androidApi) < 21 and (pSettings.mArchName[i] == 'arm64-v8a' or pSettings.mArchName[i] == 'x86_64')):
+                androidApi = '21'
+                print('Force Android API: \"21\" for architecture \"' + pSettings.mArchName[i] + '\".')
+
             os.environ['LD'] = executablePrefix + '-ld'
             os.environ['AR'] = executablePrefix + '-ar'
             os.environ['RANLIB'] = executablePrefix + '-ranlib'
             os.environ['STRIP'] = executablePrefix + '-strip'
-            
-            envSYSROOT = os.path.join(pSettings.mToolchainDir, pSettings.mToolchainArch[i], 'sysroot')        
-            envCXXFLAGS = pSettings.mArchFlag[i] + ' --sysroot=' + envSYSROOT
-            envCFLAGS = pSettings.mArchFlag[i] + ' --sysroot=' + envSYSROOT
 
-            os.environ['SYSROOT'] = envSYSROOT
-            os.environ['CXXFLAGS'] = envCXXFLAGS
-            os.environ['CFLAGS'] = envCFLAGS
+            if pSettings.mHostTag[i] == 'arm-linux-androideabi':
+                executablePrefix = os.path.join(toolchainDir, 'armv7a-linux-androideabi')
+
+            os.environ['CXX'] = executablePrefix + androidApi + '-clang++'
+            os.environ['CC'] = executablePrefix + androidApi + '-clang'
+
+            os.environ['CXXFLAGS'] = pSettings.mArchFlag[i]
+            os.environ['CFLAGS'] = pSettings.mArchFlag[i]
 
             makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
             
@@ -317,9 +314,9 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
                 
             buildSuccess = False
 
-            if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
+            if pSettings.mPlatformName == 'Linux' or pSettings.mPlatformName == 'Darwin':
                 buildSuccess = executeShellCommand(makeCommand) == 0
-            elif pSettings.mHostName == 'Windows':
+            elif pSettings.mPlatformName == 'Windows':
                 buildSuccess = executeCmdCommand(makeCommand, workingDir) == 0
                 
             if buildSuccess:
@@ -329,9 +326,9 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
                     except FileNotFoundError:
                         pass
 
-            if pSettings.mHostName == 'Linux' or pSettings.mHostName == 'Darwin':
+            if pSettings.mPlatformName == 'Linux' or pSettings.mPlatformName == 'Darwin':
                 executeShellCommand(pSettings.mMake + ' clean')
-            elif pSettings.mHostName == 'Windows':
+            elif pSettings.mPlatformName == 'Windows':
                 executeCmdCommand(pSettings.mMake + ' clean', workingDir)
                 
             print('Build status for ' + pSettings.mArchName[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')

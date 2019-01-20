@@ -11,7 +11,6 @@ settings = Settings()
 
 if configure(settings):
     if downloadAndExtract('https://github.com/open-source-parsers/jsoncpp/archive/' + libraryVersion + '.zip', '', libraryName + '.zip', ''):
-        prepareToolchain(settings)
         remove('include')
         shutil.copy2('Makefile.in', os.path.join(libraryName, 'Makefile'))
         os.chdir(libraryName)
@@ -19,4 +18,3 @@ if configure(settings):
             shutil.copytree(os.path.join('include', 'json'), os.path.join('..', 'include', 'json'))
         os.chdir('..')
         remove(libraryName)
-        cleanup(settings)
