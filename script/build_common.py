@@ -8,7 +8,6 @@ import sys
 class Settings:
     def __init__(self):
         self.mBuildTarget = ''
-        self.mPlatformName = ''
         self.mAndroidApi = ''
         self.mAndroidNdkDir = ''
         self.mCoreCount = ''
@@ -23,6 +22,7 @@ class Settings:
 def downloadAndExtract(pURL, pDestinationDir, pFileName, pExtractDir):
     import io
     import ssl
+    import tarfile
     import urllib.error
     import urllib.request
     import zipfile
@@ -35,23 +35,48 @@ def downloadAndExtract(pURL, pDestinationDir, pFileName, pExtractDir):
     try:
         context = ssl._create_unverified_context()
         downloadContent = urllib.request.urlopen(pURL, context = context).read()
-    except urllib.error.HTTPError as e:
-        print('Failed')
-    except urllib.error.URLError as e:
+    except:
         print('Failed')
     
     if downloadContent is not None and len(downloadContent) > 0:
-        archiveFile = zipfile.ZipFile(io.BytesIO(downloadContent), "r")
-        archiveFile.extractall(os.path.join(pDestinationDir, pExtractDir))
-        archiveFile.close()
-        status = True
+        if pFileName.endswith('.zip'):
+            archiveFile = zipfile.ZipFile(io.BytesIO(downloadContent), 'r')
+            archiveFile.extractall(os.path.join(pDestinationDir, pExtractDir))
+            archiveFile.close()
+            status = True
+        elif pFileName.endswith('.tar.gz'):
+            archiveFile = tarfile.open(fileobj = io.BytesIO(downloadContent), mode = 'r:gz')
+            archiveFile.extractall(os.path.join(pDestinationDir, pExtractDir))
+            archiveFile.close()
+            status = True
         
     return status
     
-def prepareMake(pDestinationDir):
-    print('Preparing \'make\'...')
+def prepareGo(pDestinationDir):
+    print('Preparing \'Go\'...')
 
     status = False
+    
+    if not os.path.isfile(pDestinationDir):
+        goPackageName = 'go1.11.4'
+        platformName = platform.system()
+
+        if platformName == 'Linux':
+            goPackageName += '.linux-amd64.tar.gz'
+        elif platformName == 'Darwin':
+            goPackageName += '.darwin-amd64.tar.gz'
+        elif platformName == 'Windows':
+            if platform.machine().endswith('64'):
+                goPackageName += '.windows-amd64.zip'
+            else:
+                goPackageName += '.windows-386.zip'
+
+        status = downloadAndExtract('https://dl.google.com/go/' + goPackageName, pDestinationDir, goPackageName, '')
+
+    return status
+
+def prepareMake(pDestinationDir):
+    print('Preparing \'make\'...')
 
     destinationMakePath = os.path.join(pDestinationDir, 'make.exe')
     destinationIconvPath = os.path.join(pDestinationDir, 'libiconv2.dll')
@@ -90,14 +115,14 @@ def configure(pSettings):
         return False
 
     workingDir = os.getcwd()
+    platformName = platform.system()
     pSettings.mBuildTarget = sys.argv[1]
-    pSettings.mPlatformName = platform.system()
     pSettings.mBuildDir = os.path.join(workingDir, 'build')
 
     if pSettings.mBuildTarget == 'android':
         hostDetected = False
         
-        if pSettings.mPlatformName == 'Linux' or pSettings.mPlatformName == 'Darwin':
+        if platformName == 'Linux' or platformName == 'Darwin':
             hostDetected = True
             
             if os.path.isfile('/usr/bin/make'):
@@ -105,7 +130,7 @@ def configure(pSettings):
             else:
                 print('Error: /usr/bin/make not found.')
                 return False
-        elif pSettings.mPlatformName == 'Windows':
+        elif platformName == 'Windows':
             hostDetected = True
             
             if prepareMake(pSettings.mBuildDir):
@@ -167,12 +192,12 @@ def configure(pSettings):
             print('Android API: "' + pSettings.mAndroidApi + '"')
             print('Android NDK path: "' + pSettings.mAndroidNdkDir + '"')
         else:
-            print('Error: Not supported host platform: ' + pSettings.mPlatformName + '.')
+            print('Error: Not supported host platform: ' + platformName + '.')
             return False
     elif pSettings.mBuildTarget == 'linux':
         hostDetected = False
         
-        if pSettings.mPlatformName == 'Linux':
+        if platformName == 'Linux':
             hostDetected = True
             
             if os.path.isfile('/usr/bin/make'):
@@ -187,7 +212,7 @@ def configure(pSettings):
             pSettings.mMakeFlag = ['', '']
             pSettings.mMakeFlag = ['', 'ARCH64=1']
         else:
-            print('Error: Not supported host platform: ' + pSettings.mPlatformName + '.')
+            print('Error: Not supported host platform: ' + platformName + '.')
             return False
     else:
         return False
@@ -249,15 +274,16 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
     print('Building...')
     status = False
     workingDir = os.getcwd()
+    platformName = platform.system()
     toolchainDir = os.path.join(pSettings.mAndroidNdkDir, 'toolchains', 'llvm', 'prebuilt')
     
-    if pSettings.mPlatformName == 'Linux':
+    if platformName == 'Linux':
         executeShellCommand(pSettings.mMake + ' clean')
         toolchainDir = os.path.join(toolchainDir, 'linux-x86_64', 'bin')
-    elif pSettings.mPlatformName == 'Darwin':
+    elif platformName == 'Darwin':
         executeShellCommand(pSettings.mMake + ' clean')
         toolchainDir = os.path.join(toolchainDir, 'darwin-x86_64', 'bin')
-    elif pSettings.mPlatformName == 'Windows':
+    elif platformName == 'Windows':
         executeCmdCommand(pSettings.mMake + ' clean', workingDir)
         if platform.machine().endswith('64'):
             toolchainDir = os.path.join(toolchainDir, 'windows-x86_64', 'bin')
@@ -314,9 +340,9 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
                 
             buildSuccess = False
 
-            if pSettings.mPlatformName == 'Linux' or pSettings.mPlatformName == 'Darwin':
+            if platformName == 'Linux' or platformName == 'Darwin':
                 buildSuccess = executeShellCommand(makeCommand) == 0
-            elif pSettings.mPlatformName == 'Windows':
+            elif platformName == 'Windows':
                 buildSuccess = executeCmdCommand(makeCommand, workingDir) == 0
                 
             if buildSuccess:
@@ -326,9 +352,9 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
                     except FileNotFoundError:
                         pass
 
-            if pSettings.mPlatformName == 'Linux' or pSettings.mPlatformName == 'Darwin':
+            if platformName == 'Linux' or platformName == 'Darwin':
                 executeShellCommand(pSettings.mMake + ' clean')
-            elif pSettings.mPlatformName == 'Windows':
+            elif platformName == 'Windows':
                 executeCmdCommand(pSettings.mMake + ' clean', workingDir)
                 
             print('Build status for ' + pSettings.mArchName[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
