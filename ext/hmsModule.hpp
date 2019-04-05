@@ -1,3 +1,7 @@
+// Copyright (C) 2017-2019 Grupa Pracuj Sp. z o.o.
+// This file is part of the "Hermes" library.
+// For conditions of distribution and use, see copyright notice in license.txt.
+
 #ifndef _HMS_MODULE_HPP_
 #define _HMS_MODULE_HPP_
 

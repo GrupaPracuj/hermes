@@ -1,3 +1,7 @@
+// Copyright (C) 2017-2019 Grupa Pracuj Sp. z o.o.
+// This file is part of the "Hermes" library.
+// For conditions of distribution and use, see copyright notice in license.txt.
+
 #include "hmsAAssetReader.hpp"
 
 namespace hms
