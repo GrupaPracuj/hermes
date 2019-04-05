@@ -16,31 +16,18 @@ namespace hms
 
     /* DataBuffer */
     
-    DataBuffer::DataBuffer(const DataBuffer& pOther)
+    DataBuffer::DataBuffer(size_t pCapacity) : mCapacity(pCapacity), mSize(0), mData(mCapacity > 0 ? new char[mCapacity] : nullptr)
     {
-        char* data = nullptr;
-        
-        if (pOther.mData != nullptr)
-        {
-            data = new char[pOther.mCapacity];
-            
-            memcpy(data, pOther.mData, pOther.mSize);
-        }
-        
-        mData = data;
-        mSize = pOther.mSize;
-        mCapacity = pOther.mCapacity;
     }
     
-    DataBuffer::DataBuffer(DataBuffer&& pOther)
+    DataBuffer::DataBuffer(const DataBuffer& pOther) : mCapacity(pOther.mCapacity), mSize(pOther.mSize), mData(mCapacity > 0 ? new char[mCapacity] : nullptr)
     {
-        mData = pOther.mData;
-        mSize = pOther.mSize;
-        mCapacity = pOther.mCapacity;
-        
-        pOther.mData = nullptr;
-        pOther.mSize = 0;
-        pOther.mCapacity = 0;
+        std::copy(pOther.mData, pOther.mData + mSize, mData);
+    }
+    
+    DataBuffer::DataBuffer(DataBuffer&& pOther) : DataBuffer()
+    {
+        swap(*this, pOther);
     }
     
     DataBuffer::~DataBuffer()
@@ -48,45 +35,16 @@ namespace hms
         delete[] mData;
     }
     
-    DataBuffer& DataBuffer::operator=(const DataBuffer& pOther)
+    DataBuffer& DataBuffer::operator=(DataBuffer pOther)
     {
-        if (&pOther == this)
-            return *this;
-        
-        char* data = nullptr;
-        
-        if (pOther.mData != nullptr)
-        {
-            data = new char[pOther.mCapacity];
-            
-            memcpy(data, pOther.mData, pOther.mSize);
-        }
-
-        delete[] mData;
-        
-        mData = data;
-        mSize = pOther.mSize;
-        mCapacity = pOther.mCapacity;
+        swap(*this, pOther);
         
         return *this;
     }
     
-    DataBuffer& DataBuffer::operator=(DataBuffer&& pOther)
+    void DataBuffer::clear()
     {
-        if (&pOther == this)
-            return *this;
-
-        delete[] mData;
-        
-        mData = pOther.mData;
-        mSize = pOther.mSize;
-        mCapacity = pOther.mCapacity;
-        
-        pOther.mData = nullptr;
-        pOther.mSize = 0;
-        pOther.mCapacity = 0;
-        
-        return *this;
+        mSize = 0;
     }
     
     const void* DataBuffer::data() const
@@ -98,7 +56,7 @@ namespace hms
     {
         if (pCount != 0)
         {
-            mSize = pCount > mSize ? 0 : mSize - pCount;
+            mSize = pCount < mSize ? mSize - pCount : 0;
             
             if (pShrinkToFit)
                 reallocate(mSize);
@@ -114,25 +72,23 @@ namespace hms
     {
         if (pCapacity != mCapacity)
         {
-            if (pCapacity != 0)
+            if (pCapacity > 0)
             {
                 char* data = new char[pCapacity];
+                const size_t size = std::min(mSize, pCapacity);
                 
-                if (mData != nullptr)
-                {
-                    if (mSize > 0)
-                        memcpy(data, mData, mSize);
-                    
-                    delete[] mData;
-                }
+                if (size > 0)
+                    std::copy(mData, mData + size, data);
                 
+                delete[] mData;
                 mData = data;
+                mSize = size;
             }
             else
             {
                 delete[] mData;
-                
                 mData = nullptr;
+                mSize = 0;
             }
             
             mCapacity = pCapacity;

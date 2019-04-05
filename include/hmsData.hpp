@@ -5,6 +5,7 @@
 #ifndef _DATA_HPP_
 #define _DATA_HPP_
 
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <string>
@@ -32,13 +33,23 @@ namespace hms
     class DataBuffer
     {
     public:
-        DataBuffer() = default;
+        DataBuffer(size_t pCapacity = 0);
         DataBuffer(const DataBuffer& pOther);
         DataBuffer(DataBuffer&& pOther);
         ~DataBuffer();
+
+        DataBuffer& operator=(DataBuffer pOther);
         
-        DataBuffer& operator=(const DataBuffer& pOther);
-        DataBuffer& operator=(DataBuffer&& pOther);
+        friend void swap(DataBuffer& pBufferA, DataBuffer& pBufferB) noexcept
+        {
+            using std::swap;
+            
+            swap(pBufferA.mCapacity, pBufferB.mCapacity);
+            swap(pBufferA.mSize, pBufferB.mSize);
+            swap(pBufferA.mData, pBufferB.mData);
+        }
+        
+        void clear();
         
         const void* data() const;
         
@@ -47,14 +58,13 @@ namespace hms
         {
             if (pData != nullptr && pCount > 0)
             {
-                if (mCapacity < mSize + pCount)
-                    reallocate(std::max(mSize + pCount, mCapacity * 2));
-                
-                const size_t copySize = sizeof(T) * pCount;
-                
-                memcpy(mData + mSize, pData, sizeof(T) * pCount);
-                
-                mSize += copySize;
+                const size_t count = sizeof(T) * pCount;
+            
+                if (mCapacity < mSize + count)
+                    reallocate(std::max(mSize + count, mCapacity * 2));
+
+                std::copy(pData, pData + pCount, mData + mSize);
+                mSize += count;
             }
         }
         
@@ -65,9 +75,9 @@ namespace hms
     private:
         void reallocate(size_t pCapacity);
         
-        char* mData = nullptr;
-        size_t mSize = 0;
-        size_t mCapacity = 0;
+        size_t mCapacity;
+        size_t mSize;
+        char* mData;
     };
     
     class DataShared

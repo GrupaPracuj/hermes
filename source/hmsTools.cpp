@@ -57,7 +57,7 @@ namespace tools
         
         if (mURL.length() == 0) return;
         
-        size_t protocolPos = mURL.find("://");
+        const size_t protocolPos = mURL.find("://");
         
         if (protocolPos != std::string::npos)
         {
@@ -65,10 +65,6 @@ namespace tools
             mProtocolLength = protocolPos;
             
             mSecure = (mProtocolLength == 3 && mURL.compare(0, mProtocolLength, "wss")) == 0 || (mProtocolLength == 5 && mURL.compare(0, mProtocolLength, "https") == 0);
-        }
-        else
-        {
-            protocolPos = 0;
         }
         
         size_t hostEndPos = mURL.find('/', mProtocolLength + protocolOffset);
