@@ -4,6 +4,8 @@
 
 #include "hmsModule.hpp"
 
+#include <limits>
+
 namespace hms
 {
 namespace ext
@@ -24,6 +26,8 @@ namespace ext
     }
     
     /* ModuleShared */
+
+    const size_t ModuleShared::npos = std::numeric_limits<size_t>::max();
     
     ModuleShared::ModuleShared() : mIndices({npos, npos}), mCallbacks(std::make_unique<Callbacks>())
     {

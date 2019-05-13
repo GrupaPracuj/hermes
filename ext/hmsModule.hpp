@@ -8,7 +8,6 @@
 #include <cassert>
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -69,7 +68,7 @@ namespace ext
             return static_cast<T&>(*mCallbacks.get());
         }
         
-        static const size_t npos = std::numeric_limits<size_t>::max();
+        static const size_t npos;
         
     protected:
         ModuleShared();
