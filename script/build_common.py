@@ -11,8 +11,10 @@ class Settings:
         self.mAndroidApi = ''
         self.mAndroidNdkDir = ''
         self.mCoreCount = ''
+        self.mCMake = ''
+        self.mGo = ''
         self.mMake = ''
-        self.mBuildDir = ''
+        self.mNinja = ''
         self.mHostTag = []
         self.mArch = []
         self.mArchFlag = []
@@ -51,6 +53,47 @@ def downloadAndExtract(pURL, pDestinationDir, pFileName, pExtractDir):
             status = True
         
     return status
+
+def checkCMake(pDestinationDir):
+    print('Check \'CMake\'...')
+
+    packageVersion = '3.14.4'
+    packageName = 'cmake-' + packageVersion
+    packageExtension = ''
+    applicationDir = ''
+    applicationName = ''
+    platformName = platform.system().lower()
+    destinationDir = os.path.join(pDestinationDir, platformName, 'cmake')
+
+    if platformName == 'linux':
+        packageName += '-Linux-x86_64'
+        packageExtension = '.tar.gz'
+        applicationDir = os.path.join(destinationDir, packageName, 'bin')
+        applicationName = 'cmake'
+    elif platformName == 'darwin':
+        packageName += '-Darwin-x86_64'
+        packageExtension = '.tar.gz'
+        applicationDir = os.path.join(destinationDir, packageName, 'CMake.app', 'Contents', 'bin')
+        applicationName = 'cmake'
+    elif platformName == 'windows':
+        packageExtension = '.zip'
+        if platform.machine().endswith('64'):
+            packageName += '-win64-x64'
+        else:
+            packageName += '-win32-x86'
+        applicationDir = os.path.join(destinationDir, packageName, 'bin')
+        applicationName = 'cmake'
+
+    result = ''
+    applicationPath = os.path.join(destinationDir, applicationName)
+    if os.path.isfile(applicationPath):
+        result = applicationPath
+    elif downloadAndExtract('https://github.com/Kitware/CMake/releases/download/v' + packageVersion + '/' + packageName + packageExtension, destinationDir, packageName + packageExtension, '') and os.path.isfile(os.path.join(applicationDir, applicationName)):
+        shutil.copy2(os.path.join(applicationDir, applicationName), destinationDir)
+        shutil.rmtree(os.path.join(destinationDir, packageName))
+        result = applicationPath
+
+    return result
     
 def prepareGo(pDestinationDir):
     print('Preparing \'Go\'...')
@@ -58,24 +101,25 @@ def prepareGo(pDestinationDir):
     status = False
     
     if not os.path.isfile(pDestinationDir):
-        goPackageName = 'go1.11.4'
+        packageVersion = '1.11.4'
+        packageName = 'go' + packageVersion
         platformName = platform.system()
 
         if platformName == 'Linux':
-            goPackageName += '.linux-amd64.tar.gz'
+            packageName += '.linux-amd64.tar.gz'
         elif platformName == 'Darwin':
-            goPackageName += '.darwin-amd64.tar.gz'
+            packageName += '.darwin-amd64.tar.gz'
         elif platformName == 'Windows':
             if platform.machine().endswith('64'):
-                goPackageName += '.windows-amd64.zip'
+                packageName += '.windows-amd64.zip'
             else:
-                goPackageName += '.windows-386.zip'
+                packageName += '.windows-386.zip'
 
-        status = downloadAndExtract('https://dl.google.com/go/' + goPackageName, pDestinationDir, goPackageName, '')
+        status = downloadAndExtract('https://dl.google.com/go/' + packageName, pDestinationDir, packageName, '')
 
     return status
 
-def prepareMake(pDestinationDir):
+def prepareMakeWin32(pDestinationDir):
     print('Preparing \'make\'...')
 
     destinationMakePath = os.path.join(pDestinationDir, 'make.exe')
@@ -88,7 +132,6 @@ def prepareMake(pDestinationDir):
             binDir = os.path.join(extractDir, 'bin')
             shutil.copy2(os.path.join(binDir, 'make.exe'), destinationMakePath)
             shutil.rmtree(extractDir)
-            os.remove(extractDir + '.zip')
      
     if not os.path.isfile(destinationIconvPath) or not os.path.isfile(destinationIntlPath):
         if downloadAndExtract('https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-dep.zip/download', pDestinationDir, 'make-3.81-dep.zip', 'make-3.81-dep'):
@@ -97,11 +140,10 @@ def prepareMake(pDestinationDir):
             shutil.copy2(os.path.join(binDir, 'libiconv2.dll'), destinationIconvPath)
             shutil.copy2(os.path.join(binDir, 'libintl3.dll'), destinationIntlPath)
             shutil.rmtree(extractDir)
-            os.remove(extractDir + '.zip')
 
     return os.path.isfile(destinationMakePath) and os.path.isfile(destinationIconvPath) and os.path.isfile(destinationIntlPath)
         
-def configure(pSettings):
+def configure(pSettings, pRelativeRootDir):
     import multiprocessing
 
     print('Configuring...')
@@ -115,26 +157,50 @@ def configure(pSettings):
         return False
 
     workingDir = os.getcwd()
-    platformName = platform.system()
+    platformName = platform.system().lower()
+    downloadDir = os.path.join(workingDir, pRelativeRootDir, 'download')
     pSettings.mBuildTarget = sys.argv[1]
-    pSettings.mBuildDir = os.path.join(workingDir, 'build')
+    
+    print(downloadDir)
 
     if pSettings.mBuildTarget == 'android':
         hostDetected = False
         
-        if platformName == 'Linux' or platformName == 'Darwin':
+        if platformName == 'linux' or platformName == 'darwin':
             hostDetected = True
-            
+
+            if os.path.isfile('/usr/bin/cmake'):
+                pSettings.mCMake = '/usr/bin/cmake'
+            else:
+                pSettings.mCMake = checkCMake(downloadDir)
+
+                if len(pSettings.mCMake) == 0:
+                    print('Error: cmake not found.')
+                    return False
+
+            if os.path.isfile('/usr/bin/go'):
+                pSettings.mGo = '/usr/bin/go'
+            else:
+                print('Error: go not found.')
+                return False
+
             if os.path.isfile('/usr/bin/make'):
                 pSettings.mMake = '/usr/bin/make'
             else:
-                print('Error: /usr/bin/make not found.')
+                print('Error: make not found.')
                 return False
-        elif platformName == 'Windows':
+
+            if os.path.isfile('/usr/bin/ninja'):
+                pSettings.mNinja = '/usr/bin/ninja'
+            else:
+                print('Error: ninja not found.')
+                return False
+        elif platformName == 'windows':
             hostDetected = True
             
-            if prepareMake(pSettings.mBuildDir):
-                pSettings.mMake = os.path.join(pSettings.mBuildDir, 'make.exe')
+            makeDir = os.path.join(downloadDir, 'make')
+            if prepareMakeWin32(makeDir):
+                pSettings.mMake = os.path.join(makeDir, 'make.exe')
             else:
                 print('Error: make.exe not found.')
                 return False
@@ -197,7 +263,7 @@ def configure(pSettings):
     elif pSettings.mBuildTarget == 'linux':
         hostDetected = False
         
-        if platformName == 'Linux':
+        if platformName == 'linux':
             hostDetected = True
             
             if os.path.isfile('/usr/bin/make'):

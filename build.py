@@ -5,5 +5,5 @@ exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, 
 
 settings = Settings()
 
-if configure(settings):
+if configure(settings, ''):
     buildMake('', ['hermes', 'hmsextmodule', 'hmsextjni', 'hmsextaassetreader', 'hmsextserializer', 'hmsextgzipreader'] if settings.mBuildTarget == 'android' else ['hermes', 'hmsextmodule', 'hmsextserializer', 'hmsextgzipreader'], settings, '')
