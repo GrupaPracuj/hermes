@@ -79,7 +79,7 @@ namespace ext
         return mModules[pPrimaryIndex].size();
     }
     
-    std::weak_ptr<ModuleShared> ModuleHandler::get(const std::pair<size_t, size_t>& pIndices) const
+    std::shared_ptr<ModuleShared> ModuleHandler::get(const std::pair<size_t, size_t>& pIndices) const
     {
         assert(pIndices.first < mModules.size() && pIndices.second < mModules[pIndices.first].size());
         return mModules[pIndices.first][pIndices.second];

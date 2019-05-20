@@ -130,11 +130,11 @@ namespace ext
         size_t countPrimary() const;
         size_t countSecondary(size_t pIndexPrimary) const;
         
-        std::weak_ptr<ModuleShared> get(const std::pair<size_t, size_t>& pIndices) const;
+        std::shared_ptr<ModuleShared> get(const std::pair<size_t, size_t>& pIndices) const;
         template <typename T, typename = typename std::enable_if<std::is_base_of<ModuleShared, T>::value>::type>
-        std::weak_ptr<T> get(const std::pair<size_t, size_t>& pIndices) const
+        std::shared_ptr<T> get(const std::pair<size_t, size_t>& pIndices) const
         {
-            return std::static_pointer_cast<T>(get(pIndices).lock());
+            return std::static_pointer_cast<T>(get(pIndices));
         }
         
         void push(size_t pIndexPrimary, std::shared_ptr<ModuleShared> pModule);
