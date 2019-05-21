@@ -165,7 +165,7 @@ namespace ext
         }
         mModules.clear();
         
-        for (size_t i = stacks.size(); i > 0; ++i)
+        for (size_t i = stacks.size(); i > 0; --i)
         {
             if (stacks[i - 1])
                 mCallbacks->mStackChanged(i - 1, nullptr);
