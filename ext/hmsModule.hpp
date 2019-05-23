@@ -26,14 +26,14 @@ namespace ext
         public:
             Callbacks() = default;
             virtual ~Callbacks() = default;
-        
-            void setAttach(std::function<void(std::shared_ptr<ModuleShared> lpModule)> pCallback);
+
+            void attach(std::function<void(std::shared_ptr<ModuleShared> lpModule)> pCallback);
             
             /*
              * lpInfo.first - how many modules will be erased
              * lpInfo.second - order in erase sequence of this module
             */
-            void setDetach(std::function<void(std::pair<size_t, size_t> lpInfo)> pCallback);
+            void detach(std::function<void(std::pair<size_t, size_t> lpInfo)> pCallback);
 
         private:
             friend class ModuleHandler;
@@ -53,25 +53,28 @@ namespace ext
         {
             std::shared_ptr<T> module(new T(std::forward<U>(pArgument)...), [](T* pThis) -> void { delete pThis; });
             module->mThis = module;
-            module->postCreate();
+            module->createPost();
             
             return module;
         }
 
-        std::pair<int32_t, int32_t> getIndices() const;
+        bool attached() const;
+        std::pair<size_t, size_t> indices() const;
         
         template <typename T, typename = typename std::enable_if<std::is_base_of<Callbacks, T>::value>::type>
-        T* getCallbacks() const
+        T& callbacks() const
         {
             assert(mCallbacks != nullptr);
-            return static_cast<T*>(mCallbacks.get());
+            return static_cast<T&>(*mCallbacks.get());
         }
+        
+        static const size_t npos;
         
     protected:
         ModuleShared();
         virtual ~ModuleShared() = default;
 
-        std::pair<int32_t, int32_t> mIndices;
+        std::pair<size_t, size_t> mIndices;
         std::unique_ptr<Callbacks> mCallbacks;
         std::weak_ptr<ModuleShared> mThis;
         
@@ -82,7 +85,7 @@ namespace ext
         ModuleShared& operator=(const ModuleShared& pOther) = delete;
         ModuleShared& operator=(ModuleShared&& pOther) = delete;
 
-        void postCreate()
+        void createPost()
         {
         }
     };
@@ -90,41 +93,59 @@ namespace ext
     class ModuleHandler
     {
     public:
-        std::shared_ptr<ModuleShared> getMain() const;
-        template <typename T, typename = typename std::enable_if<std::is_base_of<ModuleShared, T>::value>::type>
-        std::shared_ptr<T> getMain() const
+        class Callbacks
         {
-            return std::static_pointer_cast<T>(getMain());
+        public:
+            Callbacks() = default;
+            virtual ~Callbacks() = default;
+        
+            void stackChanged(std::function<void(size_t lpIndexPrimary, std::shared_ptr<ModuleShared> lpModuleLast)> pCallback);
+
+        private:
+            friend class ModuleHandler;
+        
+            Callbacks(const Callbacks& pOther) = delete;
+            Callbacks(Callbacks&& pOther) = delete;
+            
+            Callbacks& operator=(const Callbacks& pOther) = delete;
+            Callbacks& operator=(Callbacks&& pOther) = delete;
+            
+            std::function<void(size_t, std::shared_ptr<ModuleShared>)> mStackChanged = [](size_t, std::shared_ptr<ModuleShared>) -> void {};
+        };
+    
+        std::shared_ptr<ModuleShared> main() const;
+        template <typename T, typename = typename std::enable_if<std::is_base_of<ModuleShared, T>::value>::type>
+        std::shared_ptr<T> main() const
+        {
+            return std::static_pointer_cast<T>(main());
         }
         
-        void setMain(std::shared_ptr<ModuleShared> pModule);
+        void main(std::shared_ptr<ModuleShared> pModule);
         template <typename T, typename = typename std::enable_if<std::is_base_of<ModuleShared, T>::value>::type>
-        void setMain(std::shared_ptr<T> pModule)
+        void main(std::shared_ptr<T> pModule)
         {
-            return setMain(std::static_pointer_cast<ModuleShared>(pModule));
+            return main(std::static_pointer_cast<ModuleShared>(pModule));
         }
         
-        int32_t countPrimary() const;
-        int32_t countSecondary(int32_t pPrimaryIndex) const;
+        size_t countPrimary() const;
+        size_t countSecondary(size_t pIndexPrimary) const;
         
-        std::weak_ptr<ModuleShared> get(std::pair<int32_t, int32_t> pIndex) const;
+        std::shared_ptr<ModuleShared> get(const std::pair<size_t, size_t>& pIndices) const;
         template <typename T, typename = typename std::enable_if<std::is_base_of<ModuleShared, T>::value>::type>
-        std::weak_ptr<T> get(std::pair<int32_t, int32_t> pIndex) const
+        std::shared_ptr<T> get(const std::pair<size_t, size_t>& pIndices) const
         {
-            return std::static_pointer_cast<T>(get(pIndex));
+            return std::static_pointer_cast<T>(get(pIndices));
         }
         
-        void push(int32_t pPrimaryIndex, std::shared_ptr<ModuleShared> pModule);
-        void pop(int32_t pPrimaryIndex, size_t pCount = 1);
-        void erase(int32_t pPrimaryIndex, int32_t pSecondaryIndex, size_t pCount = 1);
+        void push(size_t pIndexPrimary, std::shared_ptr<ModuleShared> pModule);
+        void pop(size_t pIndexPrimary, size_t pCount = 1);
+        void erase(const std::pair<size_t, size_t>& pIndices, size_t pCount = 1);
         void clear();
-        
-        void setStackChangedCallback(std::function<void(int32_t lpPrimaryStack, std::shared_ptr<ModuleShared> lpLastModule)> pCallback);
-        
-        static ModuleHandler* getInstance();
+
+        static ModuleHandler& instance();
         
     private:
-        ModuleHandler() = default;
+        ModuleHandler();
         ~ModuleHandler() = default;
         ModuleHandler(const ModuleHandler& pOther) = delete;
         ModuleHandler(ModuleHandler&& pOther) = delete;
@@ -132,10 +153,9 @@ namespace ext
         ModuleHandler& operator=(const ModuleHandler& pOther) = delete;
         ModuleHandler& operator=(ModuleHandler&& pOther) = delete;
 
-        std::shared_ptr<ModuleShared> mMainModule;
+        std::shared_ptr<ModuleShared> mMain;
         std::vector<std::vector<std::shared_ptr<ModuleShared>>> mModules;
-        
-        std::function<void(int32_t, std::shared_ptr<ModuleShared>)> mStackChangedCallback;
+        std::unique_ptr<Callbacks> mCallbacks;
     };
 }
 }
