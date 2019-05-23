@@ -73,10 +73,10 @@ namespace ext
         return mModules.size();
     }
     
-    size_t ModuleHandler::countSecondary(size_t pPrimaryIndex) const
+    size_t ModuleHandler::countSecondary(size_t pIndexPrimary) const
     {
-        assert(pPrimaryIndex < mModules.size());
-        return mModules[pPrimaryIndex].size();
+        assert(pIndexPrimary < mModules.size());
+        return mModules[pIndexPrimary].size();
     }
     
     std::shared_ptr<ModuleShared> ModuleHandler::get(const std::pair<size_t, size_t>& pIndices) const
