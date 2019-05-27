@@ -59,7 +59,7 @@ namespace ext
         }
 
         bool attached() const;
-        std::pair<size_t, size_t> indices() const;
+        const std::pair<size_t, size_t>& indices() const;
         
         template <typename T, typename = typename std::enable_if<std::is_base_of<Callbacks, T>::value>::type>
         T& callbacks() const
@@ -139,7 +139,7 @@ namespace ext
         
         void push(size_t pIndexPrimary, std::shared_ptr<ModuleShared> pModule);
         void pop(size_t pIndexPrimary, size_t pCount = 1);
-        void erase(const std::pair<size_t, size_t>& pIndices, size_t pCount = 1);
+        void erase(std::pair<size_t, size_t> pIndices, size_t pCount = 1);
         void clear();
 
         static ModuleHandler& instance();

@@ -38,7 +38,7 @@ namespace ext
         return mIndices.first != npos && mIndices.second != npos;
     }
     
-    std::pair<size_t, size_t> ModuleShared::indices() const
+    const std::pair<size_t, size_t>& ModuleShared::indices() const
     {
         return mIndices;
     }
@@ -108,7 +108,7 @@ namespace ext
         erase({pIndexPrimary, mModules[pIndexPrimary].size() - count}, count);
     }
     
-    void ModuleHandler::erase(const std::pair<size_t, size_t>& pIndices, size_t pCount)
+    void ModuleHandler::erase(std::pair<size_t, size_t> pIndices, size_t pCount)
     {
         assert(pIndices.first < mModules.size() && pIndices.second < mModules[pIndices.first].size() && pCount > 0);
         auto* stackPrimary = &mModules[pIndices.first];
