@@ -91,10 +91,11 @@ namespace hms
     struct NetworkResponse
     {
         ENetworkCode mCode = ENetworkCode::Unknown;
-        int mHttpCode = -1;
+        int32_t mHttpCode = -1;
         std::vector<std::pair<std::string, std::string>> mHeader;
         std::string mMessage;
         DataBuffer mRawData;
+        std::string mMethod;
     };
         
     struct NetworkRequestParam
@@ -106,8 +107,8 @@ namespace hms
         std::vector<std::pair<std::string, std::string>> mHeader = {};
         std::string mRequestBody;
         std::function<void(NetworkResponse)> mCallback;
-        std::function<void(const long long&, const long long&, const long long&, const long long&)> mProgress;
-        unsigned mRepeatCount = 0;
+        std::function<void(int64_t, int64_t, int64_t, int64_t)> mProgress;
+        uint32_t mRepeatCount = 0;
         bool mAllowRecovery = true;        
         bool mAllowCache = false;
         u_int32_t mCacheLifetime = 8640000;
@@ -353,7 +354,7 @@ namespace hms
     public:
         struct ProgressData
         {
-            std::function<void(const long long& lpDN, const long long& lpDT, const long long& lpUN, const long long& lpUT)> mProgressTask = nullptr;
+            std::function<void(int64_t lpDN, int64_t lpDT, int64_t lpUN, int64_t lpUT)> mProgressTask = nullptr;
             std::shared_ptr<NetworkRequestHandle> mRequestHandle;
             std::atomic<uint32_t>* mTerminateAbort = nullptr;
         };
@@ -467,7 +468,7 @@ namespace hms
         void resetHandle(void* pHandle) const;
         
         CacheFileData decodeCacheHeader(const std::string& pFilePath) const;
-        NetworkResponse getResponseFromCache(const std::string& pUrl, int pHttpCodeSuccess);
+        NetworkResponse getResponseFromCache(const std::string& pUrl, int32_t pHttpCodeSuccess);
         bool cacheResponse(const NetworkResponse& pResponse, const std::string& pUrl, u_int32_t pLifetime);
 
         std::weak_ptr<NetworkManager> mWeakThis;
