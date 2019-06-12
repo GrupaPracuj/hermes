@@ -6,4 +6,11 @@ exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, 
 settings = Settings()
 
 if configure(settings):
-    buildMake('', ['hermes', 'hmsextmodule', 'hmsextjni', 'hmsextaassetreader', 'hmsextserializer', 'hmsextgzipreader'] if settings.mBuildTarget == 'android' else ['hermes', 'hmsextmodule', 'hmsextserializer', 'hmsextgzipreader'], settings, '')
+    libraries = ['hermes', 'hmsextmodule', 'hmsextserializer', 'hmsextgzipreader']
+    flags = ''
+
+    if settings.mBuildTarget == 'android':
+        libraries.extend(['hmsextjni', 'hmsextaassetreader'])
+        flags = 'DSYM=1'
+
+    buildMake('', libraries, settings, flags)
