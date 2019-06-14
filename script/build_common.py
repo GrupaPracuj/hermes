@@ -7,6 +7,7 @@ import sys
 
 class Settings:
     def __init__(self):
+        self.mRootDir = ''
         self.mBuildTarget = ''
         self.mAndroidApi = ''
         self.mAndroidNdkDir = ''
@@ -222,11 +223,12 @@ def configure(pSettings, pRelativeRootDir):
 
     workingDir = os.getcwd()
     platformName = platform.system().lower()
-    downloadDir = os.path.join(workingDir, pRelativeRootDir, 'download')
-    pSettings.mBuildTarget = sys.argv[1]
-    
+    pSettings.mRootDir = os.path.join(workingDir, pRelativeRootDir)
+    downloadDir = os.path.join(pSettings.mRootDir, 'download')
+
     print(downloadDir)
 
+    pSettings.mBuildTarget = sys.argv[1]
     if pSettings.mBuildTarget == 'android':
         hostDetected = False
         
@@ -394,15 +396,15 @@ def remove(pPath):
             
     return
 
-def buildMake(pRootDir, pLibraryName, pSettings, pMakeFlag):
+def buildMake(pLibraryName, pSettings, pMakeFlag):
     status = False
     if pSettings.mBuildTarget == 'android':
-        status = buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag)
+        status = buildMakeAndroid(pLibraryName, pSettings, pMakeFlag)
     elif pSettings.mBuildTarget == 'linux':
-        status = buildMakeLinux(pRootDir, pLibraryName, pSettings, pMakeFlag)
+        status = buildMakeLinux(pLibraryName, pSettings, pMakeFlag)
     return status
     
-def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
+def buildMakeAndroid(pLibraryName, pSettings, pMakeFlag):
     print('Building...')
     status = False
     workingDir = os.getcwd()
@@ -420,7 +422,7 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
         toolchainDir = os.path.join(toolchainDir, 'windows-x86_64', 'bin')
 
     for i in range(0, len(pSettings.mArchName)):
-        libraryDir = os.path.join(pRootDir, 'lib', 'android', pSettings.mArchName[i])
+        libraryDir = os.path.join(pSettings.mRootDir, 'lib', 'android', pSettings.mArchName[i])
 
         if not os.path.isdir(libraryDir):
             os.makedirs(libraryDir)
@@ -492,7 +494,7 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
         
     return status
     
-def buildMakeLinux(pRootDir, pLibraryName, pSettings, pMakeFlag):
+def buildMakeLinux(pLibraryName, pSettings, pMakeFlag):
     print('Building...')
     status = False
     workingDir = os.getcwd()
@@ -500,7 +502,7 @@ def buildMakeLinux(pRootDir, pLibraryName, pSettings, pMakeFlag):
     executeShellCommand(pSettings.mMake + ' clean')
 
     for i in range(0, len(pSettings.mArchName)):
-        libraryDir = os.path.join(pRootDir, 'lib', 'linux', pSettings.mArchName[i])
+        libraryDir = os.path.join(pSettings.mRootDir, 'lib', 'linux', pSettings.mArchName[i])
 
         if not os.path.isdir(libraryDir):
             os.makedirs(libraryDir)

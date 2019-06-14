@@ -9,7 +9,7 @@ exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, 
 
 settings = Settings()
 
-if configure(settings):
+if configure(settings, os.path.join('..', '..')):
     if downloadAndExtract('https://curl.haxx.se/download/' + libraryName + '.zip', '', libraryName + '.zip', ''):
         remove('include')
         shutil.copy2('Makefile.in', os.path.join(libraryName, 'Makefile'))
@@ -19,7 +19,7 @@ if configure(settings):
                 libraryPath = os.path.join('..', '..', 'lib', settings.mBuildTarget, settings.mArchName[i])
                 openSSL &= os.path.isfile(os.path.join(libraryPath, 'libcrypto.a')) and os.path.isfile(os.path.join(libraryPath, 'libssl.a'))
         os.chdir(libraryName)
-        if buildMake(os.path.join('..', '..', '..'), ['curl'], settings, 'CURL_OPENSSL=1' if openSSL else ''):
+        if buildMake(['curl'], settings, 'CURL_OPENSSL=1' if openSSL else ''):
             includePath = os.path.join('include', 'curl')
             shutil.copytree(includePath, os.path.join('..', includePath))
             remove(os.path.join('..', includePath, 'Makefile.am'))
