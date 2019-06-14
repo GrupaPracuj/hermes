@@ -128,7 +128,7 @@ namespace hms
             result = static_cast<int>(pUserData->mTerminateAbort->load()) + static_cast<int>(pUserData->mRequestHandle->isCancel());
 
             if (pUserData->mProgressTask != nullptr)
-                pUserData->mProgressTask(pDownloadNow, pDownloadTotal, pUploadNow, pUploadTotal);
+                pUserData->mProgressTask(static_cast<int64_t>(pDownloadNow), static_cast<int64_t>(pDownloadTotal), static_cast<int64_t>(pUploadNow), static_cast<int64_t>(pUploadTotal));
         }
         
         return result;
@@ -149,7 +149,7 @@ namespace hms
         
         FD_SET(pSockfd, &errfd); /* always check for error */
         
-        if(pForRecv)
+        if (pForRecv)
             FD_SET(pSockfd, &infd);
         else
             FD_SET(pSockfd, &outfd);
@@ -766,20 +766,12 @@ namespace hms
         auto callback = [lpCallback = std::move(pConfig.mCallback), internalData](NetworkResponse lpResponse) -> void
         {
             internalData->mActive = false;
-
-            Hermes::getInstance()->getLogger()->print(ELogLevel::Info, "Recovery: %, code: %, http: %, message: %", (lpResponse.mCode == ENetworkCode::OK) ? "passed" : "failed", static_cast<unsigned>(lpResponse.mCode), lpResponse.mHttpCode, lpResponse.mMessage);
+            
+            const ENetworkCode code = lpResponse.mCode;
+            Hermes::getInstance()->getLogger()->print(ELogLevel::Info, "Recovery: %, code: %, http: %, message: %", (code == ENetworkCode::OK) ? "passed" : "failed", static_cast<unsigned>(code), lpResponse.mHttpCode, lpResponse.mMessage);
 
             if (lpCallback != nullptr)
-            {
-                NetworkResponse response;
-                response.mCode = lpResponse.mCode;
-                response.mHttpCode = lpResponse.mHttpCode;
-                response.mHeader = std::move(lpResponse.mHeader);
-                response.mMessage = std::move(lpResponse.mMessage);
-                response.mRawData = std::move(lpResponse.mRawData);
-
-                lpCallback(std::move(response));
-            }
+                lpCallback(std::move(lpResponse));
             
             while (internalData->mReceiver.size() != 0)
             {
@@ -787,7 +779,7 @@ namespace hms
                 auto networkManager = Hermes::getInstance()->getNetworkManager();
                 auto networkAPI = (std::get<0>(*receiver) < networkManager->count()) ? networkManager->get(std::get<0>(*receiver)) : nullptr;
 
-                if (networkAPI != nullptr && lpResponse.mCode == ENetworkCode::OK)
+                if (networkAPI != nullptr && code == ENetworkCode::OK)
                 {
                     NetworkRequestParam* param = &std::get<1>(*receiver);
 
@@ -924,16 +916,7 @@ namespace hms
             }
             
             if (responseCallback != nullptr)
-            {
-                NetworkResponse response;
-                response.mCode = lpResponse.mCode;
-                response.mHttpCode = lpResponse.mHttpCode;
-                response.mHeader = std::move(lpResponse.mHeader);
-                response.mMessage = std::move(lpResponse.mMessage);
-                response.mRawData = std::move(lpResponse.mRawData);
-                
-                responseCallback(std::move(response));
-            }
+                responseCallback(std::move(lpResponse));
         };
 
         std::string url = mUrl + pParam.mMethod;
@@ -1266,7 +1249,6 @@ namespace hms
                 if (lpParam.mAllowCache)
                 {
                     NetworkResponse response = strongThis->getResponseFromCache(lpParam.mMethod, lpRequestSettings.mHttpCodeSuccess.first);
-                    
                     if (response.mCode == ENetworkCode::OK)
                     {
                         if (lpParam.mCallback != nullptr)
@@ -1327,8 +1309,7 @@ namespace hms
                     decltype(lpParam.mProgress) progress = std::move(lpParam.mProgress);
                     decltype(lpRequestSettings.mProgressTimePeriod) progressTimePeriod = lpRequestSettings.mProgressTimePeriod;
                     auto lastTick = std::chrono::system_clock::now();
-                    progressData.mProgressTask = [progressTimePeriod, progress, lastTick]
-                        (const long long& lpDN, const long long& lpDT, const long long& lpUN, const long long& lpUT) mutable -> void
+                    progressData.mProgressTask = [progressTimePeriod, progress, lastTick](int64_t lpDN, int64_t lpDT, int64_t lpUN, int64_t lpUT) mutable -> void
                     {
                         auto thisTick = std::chrono::system_clock::now();
                         const auto difference = std::chrono::duration_cast<std::chrono::milliseconds>(thisTick - lastTick).count();
@@ -1341,7 +1322,7 @@ namespace hms
                     };
                 }
                 
-                std::string requestUrl = std::move(lpParam.mMethod);
+                std::string requestUrl = lpParam.mMethod;
                 strongThis->appendParameter(requestUrl, lpParam.mParameter);
                 
                 strongThis->configureHandle(handle, lpParam.mRequestType, lpParam.mResponseType, requestUrl, lpParam.mRequestBody, &responseMessage, &responseRawData, &responseHeader, header,
@@ -1372,19 +1353,19 @@ namespace hms
                         break;
                     case CURLE_COULDNT_RESOLVE_HOST:
                         code = ENetworkCode::LostConnection;
-                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Lost connection: %", requestUrl);
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Lost connection: %", lpParam.mMethod);
                         break;
                     case CURLE_OPERATION_TIMEDOUT:
                         code = ENetworkCode::Timeout;
-                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Timeout: %", requestUrl);
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Timeout: %", lpParam.mMethod);
                         break;
                     case CURLE_ABORTED_BY_CALLBACK:
                         code = ENetworkCode::Cancel;
-                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Cancel: %", requestUrl);
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Cancel: %", lpParam.mMethod);
                         break;
                     default:
                         code = static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(curlCode));
-                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "CURL code: %. URL: %", curl_easy_strerror(curlCode), requestUrl);
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "CURL code: %. URL: %", curl_easy_strerror(curlCode), lpParam.mMethod);
                         break;
                     }
 
@@ -1392,13 +1373,14 @@ namespace hms
                     {
                         NetworkResponse response;
                         response.mCode = code;
-                        response.mHttpCode = static_cast<int>(httpCode);
+                        response.mHttpCode = static_cast<int32_t>(httpCode);
                         response.mHeader = std::move(responseHeader);
                         response.mMessage = curlCode == CURLE_OK ? std::move(responseMessage) : errorBuffer;
                         response.mRawData = std::move(responseRawData);
+                        response.mMethod = lpParam.mMethod;
 
                         if (response.mCode == ENetworkCode::OK && lpParam.mAllowCache)
-                            strongThis->cacheResponse(response, requestUrl, lpParam.mCacheLifetime);
+                            strongThis->cacheResponse(response, lpParam.mMethod, lpParam.mCacheLifetime);
 
                         Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(lpParam.mCallback), response = std::move(response)]() mutable -> void
                         {
@@ -1460,7 +1442,6 @@ namespace hms
                     else
                     {
                         NetworkResponse response = strongThis->getResponseFromCache(it->mMethod, lpRequestSettings.mHttpCodeSuccess.first);
-                        
                         if (response.mCode != ENetworkCode::OK)
                         {
                             param.push_back(std::move(*it));
@@ -1528,8 +1509,7 @@ namespace hms
                         decltype(param[i].mProgress) progress = std::move(param[i].mProgress);
                         decltype(lpRequestSettings.mProgressTimePeriod) progressTimePeriod = lpRequestSettings.mProgressTimePeriod;
                         auto lastTick = std::chrono::system_clock::now();
-                        multiRequestData[i].mProgressData.mProgressTask = [progressTimePeriod, progress, lastTick]
-                            (const long long& lpDN, const long long& lpDT, const long long& lpUN, const long long& lpUT) mutable -> void
+                        multiRequestData[i].mProgressData.mProgressTask = [progressTimePeriod, progress, lastTick](int64_t lpDN, int64_t lpDT, int64_t lpUN, int64_t lpUT) mutable -> void
                         {
                             auto thisTick = std::chrono::system_clock::now();
                             const auto difference = std::chrono::duration_cast<std::chrono::milliseconds>(thisTick - lastTick).count();
@@ -1656,12 +1636,12 @@ namespace hms
                             if (requestData != nullptr && requestData->mParam->mCallback != nullptr)
                             {
                                 NetworkResponse response;
-
                                 response.mCode = code;
-                                response.mHttpCode = static_cast<int>(httpCode);
+                                response.mHttpCode = static_cast<int32_t>(httpCode);
                                 response.mHeader = std::move(requestData->mResponseHeader);
                                 response.mMessage = curlCode == CURLE_OK ? std::move(requestData->mResponseMessage) : &requestData->mErrorBuffer[0];
                                 response.mRawData = std::move(requestData->mResponseRawData);
+                                response.mMethod = requestData->mParam->mMethod;
                                 
                                 if (response.mCode == ENetworkCode::OK && requestData->mParam->mAllowCache)
                                     strongThis->cacheResponse(response, requestData->mParam->mMethod, requestData->mParam->mCacheLifetime);
@@ -2102,7 +2082,7 @@ namespace hms
         return info;
     }
     
-    NetworkResponse NetworkManager::getResponseFromCache(const std::string& pUrl, int pHttpCodeSuccess)
+    NetworkResponse NetworkManager::getResponseFromCache(const std::string& pUrl, int32_t pHttpCodeSuccess)
     {
         NetworkResponse response;
         CacheFileData info;
@@ -2143,6 +2123,7 @@ namespace hms
                     
                     response.mCode = ENetworkCode::OK;
                     response.mHttpCode = pHttpCodeSuccess;
+                    response.mMethod = pUrl;
                 }
             }
         }

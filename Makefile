@@ -27,6 +27,9 @@ CXXFLAGS += -pipe -std=c++14 -fPIC -fno-strict-aliasing -fstack-protector -Iincl
 ifndef NDEBUG
 CXXFLAGS += -g -D_DEBUG=1 -DDEBUG=1
 else
+ifdef DSYM
+CXXFLAGS += -g
+endif
 CXXFLAGS += -DNDEBUG=1 -O2
 endif
 
