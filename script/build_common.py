@@ -143,20 +143,22 @@ def checkMake(pDestinationDir):
     if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/make'):
         return '/usr/bin/make'
 
-    destinationMakePath = os.path.join(pDestinationDir, 'make.exe')
-    destinationIconvPath = os.path.join(pDestinationDir, 'libiconv2.dll')
-    destinationIntlPath = os.path.join(pDestinationDir, 'libintl3.dll')
+    destinationDir = os.path.join(pDestinationDir, platformName, 'make')
+
+    destinationMakePath = os.path.join(destinationDir, 'make.exe')
+    destinationIconvPath = os.path.join(destinationDir, 'libiconv2.dll')
+    destinationIntlPath = os.path.join(destinationDir, 'libintl3.dll')
     
     if not os.path.isfile(destinationMakePath):
-        if downloadAndExtract('https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-bin.zip/download', pDestinationDir, 'make-3.81-bin.zip', 'make-3.81-bin'):
-            extractDir = os.path.join(pDestinationDir, 'make-3.81-bin')
+        if downloadAndExtract('https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-bin.zip/download', destinationDir, 'make-3.81-bin.zip', 'make-3.81-bin'):
+            extractDir = os.path.join(destinationDir, 'make-3.81-bin')
             binDir = os.path.join(extractDir, 'bin')
             shutil.copy2(os.path.join(binDir, 'make.exe'), destinationMakePath)
             shutil.rmtree(extractDir)
      
     if not os.path.isfile(destinationIconvPath) or not os.path.isfile(destinationIntlPath):
-        if downloadAndExtract('https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-dep.zip/download', pDestinationDir, 'make-3.81-dep.zip', 'make-3.81-dep'):
-            extractDir = os.path.join(pDestinationDir, 'make-3.81-dep')
+        if downloadAndExtract('https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81-dep.zip/download', destinationDir, 'make-3.81-dep.zip', 'make-3.81-dep'):
+            extractDir = os.path.join(destinationDir, 'make-3.81-dep')
             binDir = os.path.join(extractDir, 'bin')
             shutil.copy2(os.path.join(binDir, 'libiconv2.dll'), destinationIconvPath)
             shutil.copy2(os.path.join(binDir, 'libintl3.dll'), destinationIntlPath)
@@ -164,7 +166,9 @@ def checkMake(pDestinationDir):
 
     result = ''
     if os.path.isfile(destinationMakePath) and os.path.isfile(destinationIconvPath) and os.path.isfile(destinationIntlPath):
-        result = os.path.join(pDestinationDir, 'make.exe')
+        result = os.path.join(destinationDir, 'make.exe')
+    elif os.path.isdir(destinationDir):
+        shutil.rmtree(destinationDir)
 
     return result
 
@@ -408,16 +412,16 @@ def buildMakeAndroid(pLibraryName, pSettings, pMakeFlag):
     print('Building...')
     status = False
     workingDir = os.getcwd()
-    platformName = platform.system()
+    platformName = platform.system().lower()
     toolchainDir = os.path.join(pSettings.mAndroidNdkDir, 'toolchains', 'llvm', 'prebuilt')
     
-    if platformName == 'Linux':
+    if platformName == 'linux':
         executeShellCommand(pSettings.mMake + ' clean')
         toolchainDir = os.path.join(toolchainDir, 'linux-x86_64', 'bin')
-    elif platformName == 'Darwin':
+    elif platformName == 'darwin':
         executeShellCommand(pSettings.mMake + ' clean')
         toolchainDir = os.path.join(toolchainDir, 'darwin-x86_64', 'bin')
-    elif platformName == 'Windows':
+    elif platformName == 'windows':
         executeCmdCommand(pSettings.mMake + ' clean', workingDir)
         toolchainDir = os.path.join(toolchainDir, 'windows-x86_64', 'bin')
 
@@ -449,8 +453,14 @@ def buildMakeAndroid(pLibraryName, pSettings, pMakeFlag):
             if pSettings.mHostTag[i] == 'arm-linux-androideabi':
                 executablePrefix = os.path.join(toolchainDir, 'armv7a-linux-androideabi')
 
-            os.environ['CXX'] = executablePrefix + androidApi + '-clang++'
-            os.environ['CC'] = executablePrefix + androidApi + '-clang'
+            cxxSuffix = '-clang++'
+            ccSuffix = '-clang'
+            if platformName == 'windows':
+                cxxSuffix += '.cmd'
+                ccSuffix += '.cmd'
+
+            os.environ['CXX'] = executablePrefix + androidApi + cxxSuffix
+            os.environ['CC'] = executablePrefix + androidApi + ccSuffix
 
             os.environ['CXXFLAGS'] = pSettings.mArchFlag[i]
             os.environ['CFLAGS'] = pSettings.mArchFlag[i]
@@ -471,9 +481,9 @@ def buildMakeAndroid(pLibraryName, pSettings, pMakeFlag):
                 
             buildSuccess = False
 
-            if platformName == 'Linux' or platformName == 'Darwin':
+            if platformName == 'linux' or platformName == 'darwin':
                 buildSuccess = executeShellCommand(makeCommand) == 0
-            elif platformName == 'Windows':
+            elif platformName == 'windows':
                 buildSuccess = executeCmdCommand(makeCommand, workingDir) == 0
                 
             if buildSuccess:
@@ -483,9 +493,9 @@ def buildMakeAndroid(pLibraryName, pSettings, pMakeFlag):
                     except FileNotFoundError:
                         pass
 
-            if platformName == 'Linux' or platformName == 'Darwin':
+            if platformName == 'linux' or platformName == 'darwin':
                 executeShellCommand(pSettings.mMake + ' clean')
-            elif platformName == 'Windows':
+            elif platformName == 'windows':
                 executeCmdCommand(pSettings.mMake + ' clean', workingDir)
                 
             print('Build status for ' + pSettings.mArchName[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
