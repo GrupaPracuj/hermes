@@ -79,11 +79,8 @@ def checkCMake(pDestinationDir):
         applicationDir = os.path.join(destinationDir, packageName, 'CMake.app', 'Contents', 'bin')
         applicationName = 'cmake'
     elif platformName == 'windows':
+        packageName += '-win64-x64'
         packageExtension = '.zip'
-        if platform.machine().endswith('64'):
-            packageName += '-win64-x64'
-        else:
-            packageName += '-win32-x86'
         applicationDir = os.path.join(destinationDir, packageName, 'bin')
         applicationName = 'cmake.exe'
 
@@ -123,11 +120,8 @@ def checkGo(pDestinationDir):
         packageExtension = '.tar.gz'
         applicationName = 'go'
     elif platformName == 'windows':
+        packageName += '.windows-amd64'
         packageExtension = '.zip'
-        if platform.machine().endswith('64'):
-            packageName += '.windows-amd64'
-        else:
-            packageName += '.windows-386'
         applicationName = 'go.exe'
 
     result = ''
@@ -141,8 +135,12 @@ def checkGo(pDestinationDir):
 
     return result
 
-def checkMakeWin32(pDestinationDir):
+def checkMake(pDestinationDir):
     print('Check \'Make\'...')
+
+    platformName = platform.system().lower()
+    if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/make'):
+        return '/usr/bin/make'
 
     destinationMakePath = os.path.join(pDestinationDir, 'make.exe')
     destinationIconvPath = os.path.join(pDestinationDir, 'libiconv2.dll')
@@ -166,6 +164,46 @@ def checkMakeWin32(pDestinationDir):
     result = ''
     if os.path.isfile(destinationMakePath) and os.path.isfile(destinationIconvPath) and os.path.isfile(destinationIntlPath):
         result = os.path.join(pDestinationDir, 'make.exe')
+
+    return result
+
+def checkNinja(pDestinationDir):
+    print('Check \'Ninja\'...')
+
+    platformName = platform.system().lower()
+    if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/go'):
+        return '/usr/bin/ninja'
+
+    packageVersion = '1.9.0'
+    packageName = 'ninja'
+    packageExtension = ''
+    applicationName = ''
+    destinationDir = os.path.join(pDestinationDir, platformName, 'ninja')
+
+    if platformName == 'linux':
+        packageName += '-linux'
+        packageExtension = '.zip'
+        applicationName = 'ninja'
+    elif platformName == 'darwin':
+        packageName += '-mac'
+        packageExtension = '.zip'
+        applicationName = 'ninja'
+    elif platformName == 'windows':
+        packageName += '-win'
+        packageExtension = '.zip'
+        applicationName = 'ninja.exe'
+
+    result = ''
+    applicationPath = os.path.join(destinationDir, applicationName)
+    if os.path.isfile(applicationPath):
+        result = applicationPath
+    elif downloadAndExtract('https://github.com/ninja-build/ninja/releases/download/v' + packageVersion + '/' + packageName + packageExtension, destinationDir, packageName + packageExtension, '') and os.path.isfile(applicationPath):
+        if platformName == 'linux' or platformName == 'darwin':
+            executeShellCommand('chmod +x ' + applicationPath)
+
+        result = applicationPath
+    elif os.path.isdir(destinationDir):
+        shutil.rmtree(destinationDir)
 
     return result
         
@@ -192,21 +230,13 @@ def configure(pSettings, pRelativeRootDir):
     if pSettings.mBuildTarget == 'android':
         hostDetected = False
         
-        if platformName == 'linux' or platformName == 'darwin' or platformName == 'windows':
+        if (platformName == 'linux' or platformName == 'darwin' or platformName == 'windows') and platform.machine().endswith('64'):
             hostDetected = True
 
-            if platformName != 'windows':
-                print('Check \'Make\'...')
-                if os.path.isfile('/usr/bin/make'):
-                    pSettings.mMake = '/usr/bin/make'
-                else:
-                    print('Error: \'Make\' not found.')
-                    return False
-            else:
-                pSettings.mMake = checkMakeWin32(downloadDir)
-                if len(pSettings.mMake) == 0:
-                    print('Error: \'Make\' not found.')
-                    return False
+            pSettings.mMake = checkMake(downloadDir)
+            if len(pSettings.mMake) == 0:
+                print('Error: \'Make\' not found.')
+                return False
 
             pSettings.mCMake = checkCMake(downloadDir)
             if len(pSettings.mCMake) == 0:
@@ -221,13 +251,6 @@ def configure(pSettings, pRelativeRootDir):
             pSettings.mNinja = checkNinja(downloadDir)
             if len(pSettings.mNinja) == 0:
                 print('Error: \'Ninja\' not found.')
-                return False
-
-            print('Check \'Make\'...')
-            if os.path.isfile('/usr/bin/make'):
-                pSettings.mMake = '/usr/bin/make'
-            else:
-                print('Error: make not found.')
                 return False
 
         if hostDetected:
@@ -283,18 +306,32 @@ def configure(pSettings, pRelativeRootDir):
             print('Android API: "' + pSettings.mAndroidApi + '"')
             print('Android NDK path: "' + pSettings.mAndroidNdkDir + '"')
         else:
-            print('Error: Not supported host platform: ' + platformName + '.')
+            print('Error: Not supported host platform: ' + platformName + ' x86-64' if platform.machine().endswith('64') else ' x86')
             return False
     elif pSettings.mBuildTarget == 'linux':
         hostDetected = False
         
-        if platformName == 'linux':
+        if platformName == 'linux' and platform.machine().endswith('64'):
             hostDetected = True
             
-            if os.path.isfile('/usr/bin/make'):
-                pSettings.mMake = '/usr/bin/make'
-            else:
-                print('Error: /usr/bin/make not found.')
+            pSettings.mMake = checkMake(downloadDir)
+            if len(pSettings.mMake) == 0:
+                print('Error: \'Make\' not found.')
+                return False
+
+            pSettings.mCMake = checkCMake(downloadDir)
+            if len(pSettings.mCMake) == 0:
+                print('Error: \'CMake\' not found.')
+                return False
+
+            pSettings.mGo = checkGo(downloadDir)
+            if len(pSettings.mGo) == 0:
+                print('Error: \'Go\' not found.')
+                return False
+
+            pSettings.mNinja = checkNinja(downloadDir)
+            if len(pSettings.mNinja) == 0:
+                print('Error: \'Ninja\' not found.')
                 return False
 
         if hostDetected:
@@ -303,7 +340,7 @@ def configure(pSettings, pRelativeRootDir):
             pSettings.mMakeFlag = ['', '']
             pSettings.mMakeFlag = ['', 'ARCH64=1']
         else:
-            print('Error: Not supported host platform: ' + platformName + '.')
+            print('Error: Not supported host platform: ' + platformName + ' x86-64' if platform.machine().endswith('64') else ' x86')
             return False
     else:
         return False
@@ -319,7 +356,9 @@ def executeShellCommand(pCommandLine):
     output, error = process.communicate()
     returnCode = process.wait()
     
-    print(output.decode())
+    returnText = output.decode()
+    if len(returnText) > 0:
+        print(returnText)
 
     if returnCode != 0:
         print('Error message:\n' + error.decode("utf-8"))
@@ -337,7 +376,9 @@ def executeCmdCommand(pCommandLine, pWorkingDir):
     output, error = process.communicate()
     returnCode = process.wait()
     
-    print(output.decode())
+    returnText = output.decode()
+    if len(returnText) > 0:
+        print(returnText)
 
     if returnCode != 0:
         print('Error message:\n' + error.decode("utf-8"))
@@ -376,10 +417,7 @@ def buildMakeAndroid(pRootDir, pLibraryName, pSettings, pMakeFlag):
         toolchainDir = os.path.join(toolchainDir, 'darwin-x86_64', 'bin')
     elif platformName == 'Windows':
         executeCmdCommand(pSettings.mMake + ' clean', workingDir)
-        if platform.machine().endswith('64'):
-            toolchainDir = os.path.join(toolchainDir, 'windows-x86_64', 'bin')
-        else:
-            toolchainDir = os.path.join(toolchainDir, 'windows', 'bin')
+        toolchainDir = os.path.join(toolchainDir, 'windows-x86_64', 'bin')
 
     for i in range(0, len(pSettings.mArchName)):
         libraryDir = os.path.join(pRootDir, 'lib', 'android', pSettings.mArchName[i])
