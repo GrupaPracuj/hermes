@@ -57,12 +57,15 @@ def downloadAndExtract(pURL, pDestinationDir, pFileName, pExtractDir):
 def checkCMake(pDestinationDir):
     print('Check \'CMake\'...')
 
+    platformName = platform.system().lower()
+    if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/cmake'):
+        return '/usr/bin/cmake'
+
     packageVersion = '3.14.4'
     packageName = 'cmake-' + packageVersion
     packageExtension = ''
     applicationDir = ''
     applicationName = ''
-    platformName = platform.system().lower()
     destinationDir = os.path.join(pDestinationDir, platformName, 'cmake')
 
     if platformName == 'linux':
@@ -82,7 +85,7 @@ def checkCMake(pDestinationDir):
         else:
             packageName += '-win32-x86'
         applicationDir = os.path.join(destinationDir, packageName, 'bin')
-        applicationName = 'cmake'
+        applicationName = 'cmake.exe'
 
     result = ''
     applicationPath = os.path.join(destinationDir, applicationName)
@@ -92,35 +95,54 @@ def checkCMake(pDestinationDir):
         shutil.copy2(os.path.join(applicationDir, applicationName), destinationDir)
         shutil.rmtree(os.path.join(destinationDir, packageName))
         result = applicationPath
+    elif os.path.isdir(destinationDir):
+        shutil.rmtree(destinationDir)
 
     return result
-    
-def prepareGo(pDestinationDir):
-    print('Preparing \'Go\'...')
 
-    status = False
-    
-    if not os.path.isfile(pDestinationDir):
-        packageVersion = '1.11.4'
-        packageName = 'go' + packageVersion
-        platformName = platform.system()
+def checkGo(pDestinationDir):
+    print('Check \'Go\'...')
 
-        if platformName == 'Linux':
-            packageName += '.linux-amd64.tar.gz'
-        elif platformName == 'Darwin':
-            packageName += '.darwin-amd64.tar.gz'
-        elif platformName == 'Windows':
-            if platform.machine().endswith('64'):
-                packageName += '.windows-amd64.zip'
-            else:
-                packageName += '.windows-386.zip'
+    platformName = platform.system().lower()
+    if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/go'):
+        return '/usr/bin/go'
 
-        status = downloadAndExtract('https://dl.google.com/go/' + packageName, pDestinationDir, packageName, '')
+    packageVersion = '1.12.6'
+    packageName = 'go' + packageVersion
+    packageExtension = ''
+    applicationName = ''
+    destinationDir = os.path.join(pDestinationDir, platformName)
+    applicationDir = os.path.join(destinationDir, 'go')
 
-    return status
+    if platformName == 'linux':
+        packageName += '.linux-amd64'
+        packageExtension = '.tar.gz'
+        applicationName = 'go'
+    elif platformName == 'darwin':
+        packageName += '.darwin-amd64'
+        packageExtension = '.tar.gz'
+        applicationName = 'go'
+    elif platformName == 'windows':
+        packageExtension = '.zip'
+        if platform.machine().endswith('64'):
+            packageName += '.windows-amd64'
+        else:
+            packageName += '.windows-386'
+        applicationName = 'go.exe'
 
-def prepareMakeWin32(pDestinationDir):
-    print('Preparing \'make\'...')
+    result = ''
+    applicationPath = os.path.join(destinationDir, 'go', 'bin', applicationName)
+    if os.path.isfile(applicationPath):
+        result = applicationPath
+    elif downloadAndExtract('https://dl.google.com/go/' + packageName + packageExtension, destinationDir, packageName + packageExtension, '') and os.path.isfile(applicationPath):
+        result = applicationPath
+    elif os.path.isdir(applicationDir):
+        shutil.rmtree(applicationDir)
+
+    return result
+
+def checkMakeWin32(pDestinationDir):
+    print('Check \'Make\'...')
 
     destinationMakePath = os.path.join(pDestinationDir, 'make.exe')
     destinationIconvPath = os.path.join(pDestinationDir, 'libiconv2.dll')
@@ -141,7 +163,11 @@ def prepareMakeWin32(pDestinationDir):
             shutil.copy2(os.path.join(binDir, 'libintl3.dll'), destinationIntlPath)
             shutil.rmtree(extractDir)
 
-    return os.path.isfile(destinationMakePath) and os.path.isfile(destinationIconvPath) and os.path.isfile(destinationIntlPath)
+    result = ''
+    if os.path.isfile(destinationMakePath) and os.path.isfile(destinationIconvPath) and os.path.isfile(destinationIntlPath):
+        result = os.path.join(pDestinationDir, 'make.exe')
+
+    return result
         
 def configure(pSettings, pRelativeRootDir):
     import multiprocessing
@@ -166,45 +192,44 @@ def configure(pSettings, pRelativeRootDir):
     if pSettings.mBuildTarget == 'android':
         hostDetected = False
         
-        if platformName == 'linux' or platformName == 'darwin':
+        if platformName == 'linux' or platformName == 'darwin' or platformName == 'windows':
             hostDetected = True
 
-            if os.path.isfile('/usr/bin/cmake'):
-                pSettings.mCMake = '/usr/bin/cmake'
+            if platformName != 'windows':
+                print('Check \'Make\'...')
+                if os.path.isfile('/usr/bin/make'):
+                    pSettings.mMake = '/usr/bin/make'
+                else:
+                    print('Error: \'Make\' not found.')
+                    return False
             else:
-                pSettings.mCMake = checkCMake(downloadDir)
-
-                if len(pSettings.mCMake) == 0:
-                    print('Error: cmake not found.')
+                pSettings.mMake = checkMakeWin32(downloadDir)
+                if len(pSettings.mMake) == 0:
+                    print('Error: \'Make\' not found.')
                     return False
 
-            if os.path.isfile('/usr/bin/go'):
-                pSettings.mGo = '/usr/bin/go'
-            else:
-                print('Error: go not found.')
+            pSettings.mCMake = checkCMake(downloadDir)
+            if len(pSettings.mCMake) == 0:
+                print('Error: \'CMake\' not found.')
                 return False
 
+            pSettings.mGo = checkGo(downloadDir)
+            if len(pSettings.mGo) == 0:
+                print('Error: \'Go\' not found.')
+                return False
+
+            pSettings.mNinja = checkNinja(downloadDir)
+            if len(pSettings.mNinja) == 0:
+                print('Error: \'Ninja\' not found.')
+                return False
+
+            print('Check \'Make\'...')
             if os.path.isfile('/usr/bin/make'):
                 pSettings.mMake = '/usr/bin/make'
             else:
                 print('Error: make not found.')
                 return False
 
-            if os.path.isfile('/usr/bin/ninja'):
-                pSettings.mNinja = '/usr/bin/ninja'
-            else:
-                print('Error: ninja not found.')
-                return False
-        elif platformName == 'windows':
-            hostDetected = True
-            
-            makeDir = os.path.join(downloadDir, 'make')
-            if prepareMakeWin32(makeDir):
-                pSettings.mMake = os.path.join(makeDir, 'make.exe')
-            else:
-                print('Error: make.exe not found.')
-                return False
-    
         if hostDetected:
             androidApi = os.getenv('HERMES_ANDROID_API')
            
