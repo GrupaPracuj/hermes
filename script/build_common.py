@@ -56,6 +56,8 @@ def downloadAndExtract(pURL, pDestinationDir, pFileName, pExtractDir):
     return status
 
 def checkCMake(pDestinationDir):
+    from distutils.dir_util import copy_tree
+
     print('Check \'CMake\'...')
 
     platformName = platform.system().lower()
@@ -65,34 +67,41 @@ def checkCMake(pDestinationDir):
     packageVersion = '3.14.4'
     packageName = 'cmake-' + packageVersion
     packageExtension = ''
-    applicationDir = ''
     applicationName = ''
+    applicationSourcePath = ''
+    applicationCopyPath = ''
     destinationDir = os.path.join(pDestinationDir, platformName, 'cmake')
 
     if platformName == 'linux':
         packageName += '-Linux-x86_64'
         packageExtension = '.tar.gz'
-        applicationDir = os.path.join(destinationDir, packageName, 'bin')
         applicationName = 'cmake'
+        applicationSourcePath = os.path.join(destinationDir, packageName, 'bin', applicationName)
+        applicationCopyPath = applicationSourcePath
     elif platformName == 'darwin':
         packageName += '-Darwin-x86_64'
         packageExtension = '.tar.gz'
-        applicationDir = os.path.join(destinationDir, packageName, 'CMake.app', 'Contents', 'bin')
         applicationName = 'cmake'
+        applicationSourcePath = os.path.join(destinationDir, packageName, 'CMake.app', 'Contents', 'bin', applicationName)
+        applicationCopyPath = os.path.join(destinationDir, packageName)
     elif platformName == 'windows':
         packageName += '-win64-x64'
         packageExtension = '.zip'
-        applicationDir = os.path.join(destinationDir, packageName, 'bin')
         applicationName = 'cmake.exe'
+        applicationSourcePath = os.path.join(destinationDir, packageName, 'bin', applicationName)
+        applicationCopyPath = applicationSourcePath
 
     result = ''
-    applicationPath = os.path.join(destinationDir, applicationName)
-    if os.path.isfile(applicationPath):
-        result = applicationPath
-    elif downloadAndExtract('https://github.com/Kitware/CMake/releases/download/v' + packageVersion + '/' + packageName + packageExtension, destinationDir, packageName + packageExtension, '') and os.path.isfile(os.path.join(applicationDir, applicationName)):
-        shutil.copy2(os.path.join(applicationDir, applicationName), destinationDir)
+    applicationDestinationPath = os.path.join(destinationDir, applicationName)
+    if os.path.isfile(applicationDestinationPath):
+        result = applicationDestinationPath
+    elif downloadAndExtract('https://github.com/Kitware/CMake/releases/download/v' + packageVersion + '/' + packageName + packageExtension, destinationDir, packageName + packageExtension, '') and os.path.isfile(applicationSourcePath):
+        if os.path.isfile(applicationCopyPath):
+            shutil.copy2(applicationCopyPath, destinationDir)
+        else:
+            copy_tree(applicationCopyPath, destinationDir)
         shutil.rmtree(os.path.join(destinationDir, packageName))
-        result = applicationPath
+        result = applicationDestinationPath
     elif os.path.isdir(destinationDir):
         shutil.rmtree(destinationDir)
 
@@ -110,7 +119,6 @@ def checkGo(pDestinationDir):
     packageExtension = ''
     applicationName = ''
     destinationDir = os.path.join(pDestinationDir, platformName)
-    applicationDir = os.path.join(destinationDir, 'go')
 
     if platformName == 'linux':
         packageName += '.linux-amd64'
@@ -126,13 +134,13 @@ def checkGo(pDestinationDir):
         applicationName = 'go.exe'
 
     result = ''
-    applicationPath = os.path.join(destinationDir, 'go', 'bin', applicationName)
-    if os.path.isfile(applicationPath):
-        result = applicationPath
-    elif downloadAndExtract('https://dl.google.com/go/' + packageName + packageExtension, destinationDir, packageName + packageExtension, '') and os.path.isfile(applicationPath):
-        result = applicationPath
-    elif os.path.isdir(applicationDir):
-        shutil.rmtree(applicationDir)
+    applicationDestinationPath = os.path.join(destinationDir, 'go', 'bin', applicationName)
+    if os.path.isfile(applicationDestinationPath):
+        result = applicationDestinationPath
+    elif downloadAndExtract('https://dl.google.com/go/' + packageName + packageExtension, destinationDir, packageName + packageExtension, '') and os.path.isfile(applicationDestinationPath):
+        result = applicationDestinationPath
+    elif os.path.isdir(os.path.join(destinationDir, 'go')):
+        shutil.rmtree(os.path.join(destinationDir, 'go'))
 
     return result
 
@@ -199,14 +207,14 @@ def checkNinja(pDestinationDir):
         applicationName = 'ninja.exe'
 
     result = ''
-    applicationPath = os.path.join(destinationDir, applicationName)
-    if os.path.isfile(applicationPath):
-        result = applicationPath
-    elif downloadAndExtract('https://github.com/ninja-build/ninja/releases/download/v' + packageVersion + '/' + packageName + packageExtension, destinationDir, packageName + packageExtension, '') and os.path.isfile(applicationPath):
+    applicationDestinationPath = os.path.join(destinationDir, applicationName)
+    if os.path.isfile(applicationDestinationPath):
+        result = applicationDestinationPath
+    elif downloadAndExtract('https://github.com/ninja-build/ninja/releases/download/v' + packageVersion + '/' + packageName + packageExtension, destinationDir, packageName + packageExtension, '') and os.path.isfile(applicationDestinationPath):
         if platformName == 'linux' or platformName == 'darwin':
-            executeShellCommand('chmod +x ' + applicationPath)
+            executeShellCommand('chmod +x ' + applicationDestinationPath)
 
-        result = applicationPath
+        result = applicationDestinationPath
     elif os.path.isdir(destinationDir):
         shutil.rmtree(destinationDir)
 
