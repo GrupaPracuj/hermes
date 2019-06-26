@@ -68,6 +68,7 @@ def checkCMake(pDestinationDir):
     packageName = 'cmake-' + packageVersion
     packageExtension = ''
     applicationName = ''
+    applicationDestinationPath = ''
     applicationSourcePath = ''
     applicationCopyPath = ''
     destinationDir = os.path.join(pDestinationDir, platformName, 'cmake')
@@ -76,23 +77,26 @@ def checkCMake(pDestinationDir):
         packageName += '-Linux-x86_64'
         packageExtension = '.tar.gz'
         applicationName = 'cmake'
+        applicationDestinationPath = os.path.join(destinationDir, applicationName)
         applicationSourcePath = os.path.join(destinationDir, packageName, 'bin', applicationName)
         applicationCopyPath = applicationSourcePath
     elif platformName == 'darwin':
         packageName += '-Darwin-x86_64'
         packageExtension = '.tar.gz'
         applicationName = 'cmake'
+        applicationDestinationPath = os.path.join(destinationDir, 'CMake.app', 'Contents', 'bin', applicationName)
         applicationSourcePath = os.path.join(destinationDir, packageName, 'CMake.app', 'Contents', 'bin', applicationName)
         applicationCopyPath = os.path.join(destinationDir, packageName)
     elif platformName == 'windows':
         packageName += '-win64-x64'
         packageExtension = '.zip'
         applicationName = 'cmake.exe'
+        applicationDestinationPath = os.path.join(destinationDir, applicationName)
         applicationSourcePath = os.path.join(destinationDir, packageName, 'bin', applicationName)
         applicationCopyPath = applicationSourcePath
 
     result = ''
-    applicationDestinationPath = os.path.join(destinationDir, applicationName)
+    
     if os.path.isfile(applicationDestinationPath):
         result = applicationDestinationPath
     elif downloadAndExtract('https://github.com/Kitware/CMake/releases/download/v' + packageVersion + '/' + packageName + packageExtension, destinationDir, packageName + packageExtension, '') and os.path.isfile(applicationSourcePath):
@@ -351,7 +355,6 @@ def configure(pSettings, pRelativeRootDir):
         if hostDetected:
             pSettings.mArchFlag = ['-m32', '-m64']
             pSettings.mArchName = ['x86', 'x86_64']
-            pSettings.mMakeFlag = ['', '']
             pSettings.mMakeFlag = ['', 'ARCH64=1']
         else:
             print('Error: Not supported host platform: ' + platformName + ' x86-64' if platform.machine().endswith('64') else ' x86')
@@ -408,33 +411,33 @@ def remove(pPath):
             
     return
 
-def buildMake(pLibraryName, pSettings, pMakeFlag):
-    status = False
-    if pSettings.mBuildTarget == 'android':
-        status = buildMakeAndroid(pLibraryName, pSettings, pMakeFlag)
-    elif pSettings.mBuildTarget == 'linux':
-        status = buildMakeLinux(pLibraryName, pSettings, pMakeFlag)
-    return status
-    
-def buildMakeAndroid(pLibraryName, pSettings, pMakeFlag):
+def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM):
     print('Building...')
     status = False
     workingDir = os.getcwd()
     platformName = platform.system().lower()
-    toolchainDir = os.path.join(pSettings.mAndroidNdkDir, 'toolchains', 'llvm', 'prebuilt')
     
-    if platformName == 'linux':
-        executeShellCommand(pSettings.mMake + ' clean')
-        toolchainDir = os.path.join(toolchainDir, 'linux-x86_64', 'bin')
-    elif platformName == 'darwin':
-        executeShellCommand(pSettings.mMake + ' clean')
-        toolchainDir = os.path.join(toolchainDir, 'darwin-x86_64', 'bin')
-    elif platformName == 'windows':
-        executeCmdCommand(pSettings.mMake + ' clean', workingDir)
-        toolchainDir = os.path.join(toolchainDir, 'windows-x86_64', 'bin')
+    buildDir = os.path.join(workingDir, 'build_cmake')
+    remove(buildDir)
+
+    releaseBuild = False
+    for j in range(2, len(sys.argv)):
+        if sys.argv[j] == 'NDEBUG=1':
+            releaseBuild = True
+
+    if (len(pCMakeFlag) > 0):
+        pCMakeFlag += ' '
+
+    if releaseBuild:
+        if pDSYM:
+            pCMakeFlag += '-DCMAKE_BUILD_TYPE=RelWithDebInfo'
+        else:
+            pCMakeFlag += '-DCMAKE_BUILD_TYPE=MinSizeRel'
+    else:
+        pCMakeFlag += '-DCMAKE_BUILD_TYPE=Debug'
 
     for i in range(0, len(pSettings.mArchName)):
-        libraryDir = os.path.join(pSettings.mRootDir, 'lib', 'android', pSettings.mArchName[i])
+        libraryDir = os.path.join(pSettings.mRootDir, 'lib', pSettings.mBuildTarget, pSettings.mArchName[i])
 
         if not os.path.isdir(libraryDir):
             os.makedirs(libraryDir)
@@ -444,83 +447,91 @@ def buildMakeAndroid(pLibraryName, pSettings, pMakeFlag):
                 
                 if os.path.isfile(libraryFilepath):
                     os.remove(libraryFilepath)
+
+        os.makedirs(buildDir)
+        os.chdir(buildDir)
         
-        if os.path.isdir(toolchainDir):
-            executablePrefix = os.path.join(toolchainDir, pSettings.mHostTag[i])
+        buildSuccess = False
+        if pSettings.mBuildTarget == 'android':
+            buildSuccess = buildCMakeAndroid(i, pSettings, pCMakeFlag)
+        elif pSettings.mBuildTarget == 'linux':
+            buildSuccess = buildCMakeLinux(i, pSettings, pCMakeFlag)
+        
+        if buildSuccess:
+            if platformName == 'linux' or platformName == 'darwin':
+                buildSuccess = executeShellCommand(pSettings.mNinja) == 0
+            elif platformName == 'windows':
+                buildSuccess = executeCmdCommand(pSettings.mNinja, buildDir) == 0
 
-            androidApi = pSettings.mAndroidApi
-            if (int(androidApi) < 21 and (pSettings.mArchName[i] == 'arm64-v8a' or pSettings.mArchName[i] == 'x86_64')):
-                androidApi = '21'
-                print('Force Android API: \"21\" for architecture \"' + pSettings.mArchName[i] + '\".')
-
-            os.environ['LD'] = executablePrefix + '-ld'
-            os.environ['AR'] = executablePrefix + '-ar'
-            os.environ['RANLIB'] = executablePrefix + '-ranlib'
-            os.environ['STRIP'] = executablePrefix + '-strip'
-
-            if pSettings.mHostTag[i] == 'arm-linux-androideabi':
-                executablePrefix = os.path.join(toolchainDir, 'armv7a-linux-androideabi')
-
-            cxxSuffix = '-clang++'
-            ccSuffix = '-clang'
-            if platformName == 'windows':
-                cxxSuffix += '.cmd'
-                ccSuffix += '.cmd'
-
-            os.environ['CXX'] = executablePrefix + androidApi + cxxSuffix
-            os.environ['CC'] = executablePrefix + androidApi + ccSuffix
-
-            os.environ['CXXFLAGS'] = pSettings.mArchFlag[i]
-            os.environ['CFLAGS'] = pSettings.mArchFlag[i]
-
-            makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
-            
             for j in range(0, len(pLibraryName)):
-                makeCommand += ' lib' + pLibraryName[j] + '.a'
- 
-            if len(pSettings.mMakeFlag[i]) > 0:
-                makeCommand += ' ' + pSettings.mMakeFlag[i]
-                
-            if pMakeFlag is not None and len(pMakeFlag) > 0:
-                makeCommand += ' ' + pMakeFlag
-                
-            for j in range(2, len(sys.argv)):
-                makeCommand += ' ' + sys.argv[j]
-                
-            buildSuccess = False
+                try:
+                    shutil.copy2(os.path.join(buildDir, pLibraryName[j], 'lib' + pLibraryName[j] + '.a'), os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a'))
+                except FileNotFoundError:
+                    pass
 
-            if platformName == 'linux' or platformName == 'darwin':
-                buildSuccess = executeShellCommand(makeCommand) == 0
-            elif platformName == 'windows':
-                buildSuccess = executeCmdCommand(makeCommand, workingDir) == 0
-                
-            if buildSuccess:
-                for j in range(0, len(pLibraryName)):
-                    try:
-                        shutil.copy2(os.path.join(workingDir, 'lib' + pLibraryName[j] + '.a'), os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a'))
-                    except FileNotFoundError:
-                        pass
-
-            if platformName == 'linux' or platformName == 'darwin':
-                executeShellCommand(pSettings.mMake + ' clean')
-            elif platformName == 'windows':
-                executeCmdCommand(pSettings.mMake + ' clean', workingDir)
-                
-            print('Build status for ' + pSettings.mArchName[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
+        os.chdir('..')
+        remove(buildDir)
             
-            status |= buildSuccess
+        print('Build status for ' + pSettings.mArchName[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
+        
+        status |= buildSuccess
         
     return status
-    
-def buildMakeLinux(pLibraryName, pSettings, pMakeFlag):
-    print('Building...')
+
+def buildCMakeAndroid(pIndex, pSettings, pCMakeFlag):
+    status = False
+    platformName = platform.system().lower()
+
+    cmakeToolchainFile = os.path.join(pSettings.mAndroidNdkDir, 'build', 'cmake', 'android.toolchain.cmake')
+    if os.path.isfile(cmakeToolchainFile):
+        androidApi = pSettings.mAndroidApi
+        if (int(androidApi) < 21 and (pSettings.mArchName[pIndex] == 'arm64-v8a' or pSettings.mArchName[pIndex] == 'x86_64')):
+            androidApi = '21'
+            print('Force Android API: \"21\" for architecture \"' + pSettings.mArchName[pIndex] + '\".')
+
+        cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DANDROID_ABI=' + pSettings.mArchName[pIndex] + ' -DANDROID_NATIVE_API_LEVEL=' + androidApi + ' -DCMAKE_TOOLCHAIN_FILE=' + cmakeToolchainFile + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
+
+        if platformName == 'linux' or platformName == 'darwin':
+            status = executeShellCommand(cmakeCommand) == 0
+        elif platformName == 'windows':
+            status = executeCmdCommand(cmakeCommand, workingDir) == 0
+
+    return status
+
+def buildCMakeLinux(pIndex, pSettings, pCMakeFlag):
+    status = False
+    platformName = platform.system().lower()
+
+    cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DANDROID_ABI=' + pSettings.mArchName[pIndex] + ' -DANDROID_NATIVE_API_LEVEL=' + androidApi + ' -DCMAKE_TOOLCHAIN_FILE=' + cmakeToolchainFile + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
+
+    if platformName == 'linux' or platformName == 'darwin':
+        status = executeShellCommand(cmakeCommand) == 0
+    elif platformName == 'windows':
+        status = executeCmdCommand(cmakeCommand, workingDir) == 0
+
+    return status
+
+def buildMake(pLibraryName, pSettings, pMakeFlag):
     status = False
     workingDir = os.getcwd()
+    platformName = platform.system().lower()
 
-    executeShellCommand(pSettings.mMake + ' clean')
+    for j in range(2, len(sys.argv)):
+        if sys.argv[j] == 'NDEBUG=1':
+            if (len(pMakeFlag) > 0):
+                pMakeFlag += ' '
+
+            pMakeFlag += 'NDEBUG=1'
+
+    if platformName == 'linux':
+        executeShellCommand(pSettings.mMake + ' clean')
+    elif platformName == 'darwin':
+        executeShellCommand(pSettings.mMake + ' clean')
+    elif platformName == 'windows':
+        executeCmdCommand(pSettings.mMake + ' clean', workingDir)
 
     for i in range(0, len(pSettings.mArchName)):
-        libraryDir = os.path.join(pSettings.mRootDir, 'lib', 'linux', pSettings.mArchName[i])
+        libraryDir = os.path.join(pSettings.mRootDir, 'lib', pSettings.mBuildTarget, pSettings.mArchName[i])
 
         if not os.path.isdir(libraryDir):
             os.makedirs(libraryDir)
@@ -530,29 +541,13 @@ def buildMakeLinux(pLibraryName, pSettings, pMakeFlag):
                 
                 if os.path.isfile(libraryFilepath):
                     os.remove(libraryFilepath)
-      
-        envCXXFLAGS = pSettings.mArchFlag[i]
-        envCFLAGS = pSettings.mArchFlag[i]
 
-        os.environ['CXXFLAGS'] = envCXXFLAGS
-        os.environ['CFLAGS'] = envCFLAGS
+        buildSuccess = False
+        if pSettings.mBuildTarget == 'android':
+            buildSuccess = buildMakeAndroid(i, pLibraryName, pSettings, pMakeFlag)
+        elif pSettings.mBuildTarget == 'linux':
+            buildSuccess = buildMakeLinux(i, pLibraryName, pSettings, pMakeFlag)
 
-        makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
-        
-        for j in range(0, len(pLibraryName)):
-            makeCommand += ' lib' + pLibraryName[j] + '.a'
-
-        if len(pSettings.mMakeFlag[i]) > 0:
-            makeCommand += ' ' + pSettings.mMakeFlag[i]
-            
-        if pMakeFlag is not None and len(pMakeFlag) > 0:
-            makeCommand += ' ' + pMakeFlag
-            
-        for j in range(2, len(sys.argv)):
-            makeCommand += ' ' + sys.argv[j]
-            
-        buildSuccess = executeShellCommand(makeCommand) == 0
-            
         if buildSuccess:
             for j in range(0, len(pLibraryName)):
                 try:
@@ -560,11 +555,98 @@ def buildMakeLinux(pLibraryName, pSettings, pMakeFlag):
                 except FileNotFoundError:
                     pass
 
-        executeShellCommand(pSettings.mMake + ' clean')
+        if platformName == 'linux' or platformName == 'darwin':
+            executeShellCommand(pSettings.mMake + ' clean')
+        elif platformName == 'windows':
+            executeCmdCommand(pSettings.mMake + ' clean', workingDir)
             
         print('Build status for ' + pSettings.mArchName[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
         
         status |= buildSuccess
+
+    return status
+    
+def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
+    print('Building...')
+    status = False
+    workingDir = os.getcwd()
+    platformName = platform.system().lower()
+    toolchainDir = os.path.join(pSettings.mAndroidNdkDir, 'toolchains', 'llvm', 'prebuilt')
+    
+    if platformName == 'linux':
+        toolchainDir = os.path.join(toolchainDir, 'linux-x86_64', 'bin')
+    elif platformName == 'darwin':
+        toolchainDir = os.path.join(toolchainDir, 'darwin-x86_64', 'bin')
+    elif platformName == 'windows':
+        toolchainDir = os.path.join(toolchainDir, 'windows-x86_64', 'bin')
+
+    if os.path.isdir(toolchainDir):
+        executablePrefix = os.path.join(toolchainDir, pSettings.mHostTag[pIndex])
+
+        androidApi = pSettings.mAndroidApi
+        if (int(androidApi) < 21 and (pSettings.mArchName[pIndex] == 'arm64-v8a' or pSettings.mArchName[pIndex] == 'x86_64')):
+            androidApi = '21'
+            print('Force Android API: \"21\" for architecture \"' + pSettings.mArchName[pIndex] + '\".')
+
+        os.environ['LD'] = executablePrefix + '-ld'
+        os.environ['AR'] = executablePrefix + '-ar'
+        os.environ['RANLIB'] = executablePrefix + '-ranlib'
+        os.environ['STRIP'] = executablePrefix + '-strip'
+
+        if pSettings.mHostTag[pIndex] == 'arm-linux-androideabi':
+            executablePrefix = os.path.join(toolchainDir, 'armv7a-linux-androideabi')
+
+        cxxSuffix = '-clang++'
+        ccSuffix = '-clang'
+        if platformName == 'windows':
+            cxxSuffix += '.cmd'
+            ccSuffix += '.cmd'
+
+        os.environ['CXX'] = executablePrefix + androidApi + cxxSuffix
+        os.environ['CC'] = executablePrefix + androidApi + ccSuffix
+
+        os.environ['CXXFLAGS'] = pSettings.mArchFlag[pIndex]
+        os.environ['CFLAGS'] = pSettings.mArchFlag[pIndex]
+
+        makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
+        
+        for j in range(0, len(pLibraryName)):
+            makeCommand += ' lib' + pLibraryName[j] + '.a'
+
+        if len(pSettings.mMakeFlag[pIndex]) > 0:
+            makeCommand += ' ' + pSettings.mMakeFlag[pIndex]
+
+        if len(pMakeFlag) > 0:
+            makeCommand += ' ' + pMakeFlag
+            
+        if len(pMakeFlag) > 0:
+            makeCommand += ' ' + pMakeFlag
+
+        if platformName == 'linux' or platformName == 'darwin':
+            status = executeShellCommand(makeCommand) == 0
+        elif platformName == 'windows':
+            status = executeCmdCommand(makeCommand, workingDir) == 0
         
     return status
     
+def buildMakeLinux(pIndex, pLibraryName, pSettings, pMakeFlag):
+    print('Building...')
+
+    envCXXFLAGS = pSettings.mArchFlag[pIndex]
+    envCFLAGS = pSettings.mArchFlag[pIndex]
+
+    os.environ['CXXFLAGS'] = envCXXFLAGS
+    os.environ['CFLAGS'] = envCFLAGS
+
+    makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
+    
+    for j in range(0, len(pLibraryName)):
+        makeCommand += ' lib' + pLibraryName[j] + '.a'
+
+    if len(pSettings.mMakeFlag[pIndex]) > 0:
+        makeCommand += ' ' + pSettings.mMakeFlag[pIndex]
+        
+    if len(pMakeFlag) > 0:
+        makeCommand += ' ' + pMakeFlag
+
+    return executeShellCommand(makeCommand) == 0    

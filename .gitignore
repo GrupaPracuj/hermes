@@ -2,6 +2,7 @@
 .vscode/ipch
 build
 depend/jsoncpp/jsoncpp.xcodeproj/xcuserdata/*
+download
 hermes.xcodeproj/project.xcworkspace/xcuserdata/*
 hermes.xcodeproj/xcuserdata/*
 hermes.xcworkspace/xcuserdata/*
