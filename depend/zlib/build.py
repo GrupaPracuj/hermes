@@ -5,5 +5,5 @@ exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, 
 
 settings = Settings()
 
-if configure(settings):
-    buildMake(os.path.join('..', '..'), ['zlib'], settings, '')
+if configure(settings, os.path.join('..', '..')):
+    buildMake(['zlib'], settings, '')

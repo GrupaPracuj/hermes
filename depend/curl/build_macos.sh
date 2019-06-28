@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # User configuration
-LIBRARY_NAME="curl-7.63.0"
+LIBRARY_NAME="curl-7.65.1"
 
 # Check software and detect CPU cores
 CPU_CORE=1

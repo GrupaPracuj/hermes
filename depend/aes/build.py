@@ -5,5 +5,5 @@ exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, 
 
 settings = Settings()
 
-if configure(settings):
-    buildMake(os.path.join('..', '..'), ['aes'], settings, '')
+if configure(settings, os.path.join('..', '..')):
+    buildMake(['aes'], settings, '')

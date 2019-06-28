@@ -8,6 +8,9 @@ CFLAGS += -pipe -fPIC -fno-strict-aliasing -fstack-protector -Iinclude
 ifndef NDEBUG
 CFLAGS += -g -D_DEBUG=1 -DDEBUG=1
 else
+ifdef DSYM
+CFLAGS += -g
+endif
 CFLAGS += -DNDEBUG=1 -O2
 endif
 
