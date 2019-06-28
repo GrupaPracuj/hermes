@@ -13,7 +13,7 @@ if configure(settings, os.path.join('..', '..')):
     if downloadAndExtract('https://github.com/google/boringssl/archive/' + libraryVersion + '.zip', '', libraryName + '.zip', ''):
         remove('include')
         os.chdir(libraryName)
-        if buildCMake(['crypto', 'ssl'], settings, '-DGO_EXECUTABLE=' + settings.mGo, False):
+        if buildCMake(['crypto', 'ssl'], settings, '-DGO_EXECUTABLE=' + settings.mGo, False, '', ['crypto', 'ssl']):
             includePath = os.path.join('include', 'openssl')
             shutil.copytree(includePath, os.path.join('..', includePath))
         os.chdir('..')

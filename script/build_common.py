@@ -238,11 +238,13 @@ def configure(pSettings, pRelativeRootDir):
         return False
 
     workingDir = os.getcwd()
+    if workingDir.find(' ') != -1:
+        print('Error: Spaces in a project directory path are not allowed.')
+        return False
+
     platformName = platform.system().lower()
     pSettings.mRootDir = os.path.join(workingDir, pRelativeRootDir)
     downloadDir = os.path.join(pSettings.mRootDir, 'download')
-
-    print(downloadDir)
 
     pSettings.mBuildTarget = sys.argv[1]
     if pSettings.mBuildTarget == 'android':
@@ -319,7 +321,7 @@ def configure(pSettings, pRelativeRootDir):
             pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
             pSettings.mArchFlag = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
             pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
-            pSettings.mMakeFlag = ['', 'ARCH64=1', '', 'ARCH64=1']
+            pSettings.mMakeFlag = ['DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
 
             print('Android API: "' + pSettings.mAndroidApi + '"')
             print('Android NDK path: "' + pSettings.mAndroidNdkDir + '"')
@@ -411,7 +413,7 @@ def remove(pPath):
             
     return
 
-def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM):
+def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLibraryName):
     print('Building...')
     status = False
     workingDir = os.getcwd()
@@ -424,6 +426,7 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM):
     for j in range(2, len(sys.argv)):
         if sys.argv[j] == 'NDEBUG=1':
             releaseBuild = True
+            break
 
     if (len(pCMakeFlag) > 0):
         pCMakeFlag += ' '
@@ -463,11 +466,15 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM):
             elif platformName == 'windows':
                 buildSuccess = executeCmdCommand(pSettings.mNinja, buildDir) == 0
 
-            for j in range(0, len(pLibraryName)):
-                try:
-                    shutil.copy2(os.path.join(buildDir, pLibraryName[j], 'lib' + pLibraryName[j] + '.a'), os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a'))
-                except FileNotFoundError:
-                    pass
+            if (len(pLibraryName) == len(pOutputLibraryName)):
+                for j in range(0, len(pLibraryName)):
+                    try:
+                        shutil.copy2(os.path.join(buildDir, pLibraryName[j] if len(pOutputDir) == 0 else pOutputDir, 'lib' + pOutputLibraryName[j] + '.a'), os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a'))
+                    except FileNotFoundError:
+                        print('Error: system couldn\'t copy library')
+                        pass
+            else:
+                print('Error: system couldn\'t copy library')
 
         os.chdir('..')
         remove(buildDir)
@@ -522,6 +529,7 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
                 pMakeFlag += ' '
 
             pMakeFlag += 'NDEBUG=1'
+            break
 
     if platformName == 'linux':
         executeShellCommand(pSettings.mMake + ' clean')
@@ -553,6 +561,7 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
                 try:
                     shutil.copy2(os.path.join(workingDir, 'lib' + pLibraryName[j] + '.a'), os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a'))
                 except FileNotFoundError:
+                    print('Error: system couldn\'t copy library')
                     pass
 
         if platformName == 'linux' or platformName == 'darwin':
