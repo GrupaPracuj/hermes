@@ -20,7 +20,14 @@ if configure(settings, os.path.join('..', '..')):
                 enableSSL &= os.path.isfile(os.path.join(libraryPath, 'libcrypto.a')) and os.path.isfile(os.path.join(libraryPath, 'libssl.a'))
         flagSSL = ''
         if enableSSL and (settings.mBuildTarget == 'android' or settings.mBuildTarget == 'linux'):
-            flagSSL = '-DCMAKE_USE_OPENSSL=OFF -DSSL_ENABLED=ON -DUSE_OPENSSL=ON -DHAVE_LIBCRYPTO=ON -DHAVE_LIBSSL=ON -DCMAKE_C_FLAGS=-I' + os.path.join(os.getcwd(), '..', 'boringssl', 'include')
+            includeSSL = os.path.join(os.getcwd(), '..', 'boringssl', 'include')
+            for i in range(0, len(settings.mArchFlag)):
+                if len(settings.mArchFlag[i]) > 0:
+                    settings.mArchFlag[i] += ' '
+                
+                settings.mArchFlag[i] += '-I' + includeSSL
+
+            flagSSL = '-DCMAKE_USE_OPENSSL=OFF -DSSL_ENABLED=ON -DUSE_OPENSSL=ON -DHAVE_LIBCRYPTO=ON -DHAVE_LIBSSL=ON'
         elif settings.mBuildTarget == 'ios' or settings.mBuildTarget == 'macos':
             flagSSL = '-DCMAKE_USE_SECTRANSP=ON'
         else:

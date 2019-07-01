@@ -527,14 +527,14 @@ def buildCMakeAndroid(pIndex, pSettings, pCMakeFlag):
     status = False
     platformName = platform.system().lower()
 
-    cmakeToolchainFile = os.path.join(pSettings.mAndroidNdkDir, 'build', 'cmake', 'android.toolchain.cmake')
-    if os.path.isfile(cmakeToolchainFile):
+    toolchainPath = os.path.join(pSettings.mAndroidNdkDir, 'build', 'cmake', 'android.toolchain.cmake')
+    if os.path.isfile(toolchainPath):
         androidApi = pSettings.mAndroidApi
         if (int(androidApi) < 21 and (pSettings.mArchName[pIndex] == 'arm64-v8a' or pSettings.mArchName[pIndex] == 'x86_64')):
             androidApi = '21'
             print('Force Android API: \"21\" for architecture \"' + pSettings.mArchName[pIndex] + '\".')
 
-        cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DANDROID_ABI=' + pSettings.mArchName[pIndex] + ' -DANDROID_NATIVE_API_LEVEL=' + androidApi + ' -DCMAKE_TOOLCHAIN_FILE=' + cmakeToolchainFile + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
+        cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DANDROID_ABI=' + pSettings.mArchName[pIndex] + ' -DANDROID_NATIVE_API_LEVEL=' + androidApi + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
 
         if platformName == 'linux' or platformName == 'darwin':
             status = executeShellCommand(cmakeCommand) == 0
@@ -547,12 +547,15 @@ def buildCMakeGeneric(pIndex, pSettings, pCMakeFlag):
     status = False
     platformName = platform.system().lower()
 
-    cmakeToolchainFile = ''
-    if pSettings.mArchFlag[pIndex].find("-m32") != -1:
-        if pSettings.mBuildTarget == 'linux':
-            cmakeToolchainFile = ' -DCMAKE_TOOLCHAIN_FILE=' + os.path.join(pSettings.mRootDir, 'script', 'linux.toolchain.cmake')
+    if len(pSettings.mArchFlag[pIndex]) > 0:
+        pCMakeFlag += ' \"-DCMAKE_ASM_FLAGS=' + pSettings.mArchFlag[pIndex] + '\"' + ' \"-DCMAKE_C_FLAGS=' + pSettings.mArchFlag[pIndex] + '\"' + ' \"-DCMAKE_CXX_FLAGS=' + pSettings.mArchFlag[pIndex] + '\"'
 
-    cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + cmakeToolchainFile + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
+    toolchainPath = ''
+    if pSettings.mArchName[pIndex] == 'x86':
+        if pSettings.mBuildTarget == 'linux':
+            toolchainPath = ' -DCMAKE_TOOLCHAIN_FILE=' + os.path.join(pSettings.mRootDir, 'script', 'linux.toolchain.cmake')
+
+    cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + toolchainPath + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
 
     if platformName == 'linux' or platformName == 'darwin':
         status = executeShellCommand(cmakeCommand) == 0
