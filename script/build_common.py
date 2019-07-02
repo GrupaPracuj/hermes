@@ -395,7 +395,7 @@ def configure(pSettings, pRelativeRootDir):
                 return False
 
         if hostDetected:
-            pSettings.mArchFlagASM = ['-m64']
+            pSettings.mArchFlagASM = ['-m64 -mmacosx-version-min=10.7']
             pSettings.mArchFlagC = ['-m64 -ObjC -mmacosx-version-min=10.7']
             pSettings.mArchFlagCXX = ['-m64 -ObjC++ -stdlib=libc++ -mmacosx-version-min=10.7']
             pSettings.mArchName = ['x86_64']
@@ -561,7 +561,7 @@ def buildCMakeGeneric(pIndex, pSettings, pCMakeFlag):
     toolchainPath = ''
     if pSettings.mArchName[pIndex] == 'x86':
         if pSettings.mBuildTarget == 'linux':
-            toolchainPath = ' -DCMAKE_TOOLCHAIN_FILE=' + os.path.join(pSettings.mRootDir, 'script', 'linux.toolchain.cmake')
+            toolchainPath = ' -DCMAKE_TOOLCHAIN_FILE=' + os.path.join(pSettings.mRootDir, 'script', 'linux_x86.toolchain.cmake')
 
     cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + toolchainPath + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
 
