@@ -21,11 +21,11 @@ if configure(settings, os.path.join('..', '..')):
         flagSSL = ''
         if enableSSL and (settings.mBuildTarget == 'android' or settings.mBuildTarget == 'linux'):
             includeSSL = os.path.join(os.getcwd(), '..', 'boringssl', 'include')
-            for i in range(0, len(settings.mArchFlag)):
-                if len(settings.mArchFlag[i]) > 0:
-                    settings.mArchFlag[i] += ' '
+            for i in range(0, len(settings.mArchFlagC)):
+                if len(settings.mArchFlagC[i]) > 0:
+                    settings.mArchFlagC[i] += ' '
                 
-                settings.mArchFlag[i] += '-I' + includeSSL
+                settings.mArchFlagC[i] += '-I' + includeSSL
 
             flagSSL = '-DCMAKE_USE_OPENSSL=OFF -DSSL_ENABLED=ON -DUSE_OPENSSL=ON -DHAVE_LIBCRYPTO=ON -DHAVE_LIBSSL=ON'
         elif settings.mBuildTarget == 'ios' or settings.mBuildTarget == 'macos':

@@ -18,7 +18,9 @@ class Settings:
         self.mNinja = ''
         self.mHostTag = []
         self.mArch = []
-        self.mArchFlag = []
+        self.mArchFlagASM = []
+        self.mArchFlagC = []
+        self.mArchFlagCXX = []
         self.mArchName = []
         self.mMakeFlag = []
         
@@ -316,7 +318,9 @@ def configure(pSettings, pRelativeRootDir):
             
             pSettings.mHostTag = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
             pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
-            pSettings.mArchFlag = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
+            pSettings.mArchFlagASM = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
+            pSettings.mArchFlagC = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
+            pSettings.mArchFlagCXX = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
             pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
             pSettings.mMakeFlag = ['DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
 
@@ -352,7 +356,9 @@ def configure(pSettings, pRelativeRootDir):
                 return False
 
         if hostDetected:
-            pSettings.mArchFlag = ['-m32', '-m64']
+            pSettings.mArchFlagASM = ['-m32', '-m64']
+            pSettings.mArchFlagC = ['-m32', '-m64']
+            pSettings.mArchFlagCXX = ['-m32', '-m64']
             pSettings.mArchName = ['x86', 'x86_64']
             pSettings.mMakeFlag = ['', 'ARCH64=1']
         else:
@@ -389,7 +395,9 @@ def configure(pSettings, pRelativeRootDir):
                 return False
 
         if hostDetected:
-            pSettings.mArchFlag = ['-m64']
+            pSettings.mArchFlagASM = ['-m64']
+            pSettings.mArchFlagC = ['-m64 -ObjC -mmacosx-version-min=10.7']
+            pSettings.mArchFlagCXX = ['-m64 -ObjC++ -stdlib=libc++ -mmacosx-version-min=10.7']
             pSettings.mArchName = ['x86_64']
             pSettings.mMakeFlag = ['ARCH64=1']
         else:
@@ -547,8 +555,8 @@ def buildCMakeGeneric(pIndex, pSettings, pCMakeFlag):
     status = False
     platformName = platform.system().lower()
 
-    if len(pSettings.mArchFlag[pIndex]) > 0:
-        pCMakeFlag += ' \"-DCMAKE_ASM_FLAGS=' + pSettings.mArchFlag[pIndex] + '\"' + ' \"-DCMAKE_C_FLAGS=' + pSettings.mArchFlag[pIndex] + '\"' + ' \"-DCMAKE_CXX_FLAGS=' + pSettings.mArchFlag[pIndex] + '\"'
+    if len(pSettings.mArchFlagCXX[pIndex]) > 0:
+        pCMakeFlag += ' \"-DCMAKE_ASM_FLAGS=' + pSettings.mArchFlagASM[pIndex] + '\"' + ' \"-DCMAKE_C_FLAGS=' + pSettings.mArchFlagC[pIndex] + '\"' + ' \"-DCMAKE_CXX_FLAGS=' + pSettings.mArchFlagCXX[pIndex] + '\"'
 
     toolchainPath = ''
     if pSettings.mArchName[pIndex] == 'x86':
@@ -660,8 +668,8 @@ def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
         os.environ['CXX'] = executablePrefix + androidApi + cxxSuffix
         os.environ['CC'] = executablePrefix + androidApi + ccSuffix
 
-        os.environ['CXXFLAGS'] = pSettings.mArchFlag[pIndex]
-        os.environ['CFLAGS'] = pSettings.mArchFlag[pIndex]
+        os.environ['CXXFLAGS'] = pSettings.mArchFlagCXX[pIndex]
+        os.environ['CFLAGS'] = pSettings.mArchFlagC[pIndex]
 
         makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
         
@@ -687,8 +695,8 @@ def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
 def buildMakeGeneric(pIndex, pLibraryName, pSettings, pMakeFlag):
     print('Building...')
 
-    os.environ['CXXFLAGS'] = pSettings.mArchFlag[pIndex]
-    os.environ['CFLAGS'] = pSettings.mArchFlag[pIndex]
+    os.environ['CXXFLAGS'] = pSettings.mArchFlagCXX[pIndex]
+    os.environ['CFLAGS'] = pSettings.mArchFlagC[pIndex]
 
     makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
     
