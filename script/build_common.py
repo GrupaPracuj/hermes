@@ -319,8 +319,8 @@ def configure(pSettings, pRelativeRootDir):
             pSettings.mHostTag = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
             pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
             pSettings.mArchFlagASM = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
-            pSettings.mArchFlagC = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
-            pSettings.mArchFlagCXX = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
+            pSettings.mArchFlagC = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -pipe -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagCXX = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -pipe -fPIC -fno-strict-aliasing -fstack-protector']
             pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
             pSettings.mMakeFlag = ['DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
 
@@ -357,8 +357,8 @@ def configure(pSettings, pRelativeRootDir):
 
         if hostDetected:
             pSettings.mArchFlagASM = ['-m32', '-m64']
-            pSettings.mArchFlagC = ['-m32', '-m64']
-            pSettings.mArchFlagCXX = ['-m32', '-m64']
+            pSettings.mArchFlagC = ['-m32 -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-m64 -pipe -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagCXX = ['-m32 -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-m64 -pipe -fPIC -fno-strict-aliasing -fstack-protector']
             pSettings.mArchName = ['x86', 'x86_64']
             pSettings.mMakeFlag = ['', 'ARCH64=1']
         else:
@@ -396,8 +396,8 @@ def configure(pSettings, pRelativeRootDir):
 
         if hostDetected:
             pSettings.mArchFlagASM = ['-m64 -mmacosx-version-min=10.7']
-            pSettings.mArchFlagC = ['-m64 -ObjC -mmacosx-version-min=10.7']
-            pSettings.mArchFlagCXX = ['-m64 -ObjC++ -stdlib=libc++ -mmacosx-version-min=10.7']
+            pSettings.mArchFlagC = ['-m64 -ObjC -mmacosx-version-min=10.7 -pipe -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagCXX = ['-m64 -ObjC++ -stdlib=libc++ -mmacosx-version-min=10.7 -pipe -fPIC -fno-strict-aliasing -fstack-protector']
             pSettings.mArchName = ['x86_64']
             pSettings.mMakeFlag = ['ARCH64=1']
         else:
@@ -497,12 +497,20 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
 
         os.makedirs(buildDir)
         os.chdir(buildDir)
+
+        cmakeFlag = pCMakeFlag
+        if len(pSettings.mArchFlagASM[i]) > 0:
+            cmakeFlag += ' \"-DCMAKE_ASM_FLAGS=' + pSettings.mArchFlagASM[i] + '\"'
+        if len(pSettings.mArchFlagC[i]) > 0:
+            cmakeFlag += ' \"-DCMAKE_C_FLAGS=' + pSettings.mArchFlagC[i] + '\"'
+        if len(pSettings.mArchFlagCXX[i]) > 0:
+            cmakeFlag += ' \"-DCMAKE_CXX_FLAGS=' + pSettings.mArchFlagCXX[i] + '\"'
         
         buildSuccess = False
         if pSettings.mBuildTarget == 'android':
-            buildSuccess = buildCMakeAndroid(i, pSettings, pCMakeFlag)
+            buildSuccess = buildCMakeAndroid(i, pSettings, cmakeFlag)
         elif pSettings.mBuildTarget == 'linux' or pSettings.mBuildTarget == 'macos':
-            buildSuccess = buildCMakeGeneric(i, pSettings, pCMakeFlag)
+            buildSuccess = buildCMakeGeneric(i, pSettings, cmakeFlag)
         
         if buildSuccess:
             if platformName == 'linux' or platformName == 'darwin':
@@ -555,9 +563,6 @@ def buildCMakeGeneric(pIndex, pSettings, pCMakeFlag):
     status = False
     platformName = platform.system().lower()
 
-    if len(pSettings.mArchFlagCXX[pIndex]) > 0:
-        pCMakeFlag += ' \"-DCMAKE_ASM_FLAGS=' + pSettings.mArchFlagASM[pIndex] + '\"' + ' \"-DCMAKE_C_FLAGS=' + pSettings.mArchFlagC[pIndex] + '\"' + ' \"-DCMAKE_CXX_FLAGS=' + pSettings.mArchFlagCXX[pIndex] + '\"'
-
     toolchainPath = ''
     if pSettings.mArchName[pIndex] == 'x86':
         if pSettings.mBuildTarget == 'linux':
@@ -601,6 +606,9 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
                 
                 if os.path.isfile(libraryFilepath):
                     os.remove(libraryFilepath)
+
+        os.environ['CFLAGS'] = pSettings.mArchFlagC[i]
+        os.environ['CXXFLAGS'] = pSettings.mArchFlagCXX[i]
 
         buildSuccess = False
         if pSettings.mBuildTarget == 'android':
@@ -668,9 +676,6 @@ def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
         os.environ['CXX'] = executablePrefix + androidApi + cxxSuffix
         os.environ['CC'] = executablePrefix + androidApi + ccSuffix
 
-        os.environ['CXXFLAGS'] = pSettings.mArchFlagCXX[pIndex]
-        os.environ['CFLAGS'] = pSettings.mArchFlagC[pIndex]
-
         makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
         
         for j in range(0, len(pLibraryName)):
@@ -694,9 +699,6 @@ def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
     
 def buildMakeGeneric(pIndex, pLibraryName, pSettings, pMakeFlag):
     print('Building...')
-
-    os.environ['CXXFLAGS'] = pSettings.mArchFlagCXX[pIndex]
-    os.environ['CFLAGS'] = pSettings.mArchFlagC[pIndex]
 
     makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
     
