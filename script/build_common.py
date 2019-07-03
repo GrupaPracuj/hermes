@@ -18,7 +18,9 @@ class Settings:
         self.mNinja = ''
         self.mHostTag = []
         self.mArch = []
-        self.mArchFlag = []
+        self.mArchFlagASM = []
+        self.mArchFlagC = []
+        self.mArchFlagCXX = []
         self.mArchName = []
         self.mMakeFlag = []
         
@@ -230,8 +232,8 @@ def configure(pSettings, pRelativeRootDir):
         print('Error: This script requires Python 3.0 or higher. Please use "python3" command instead of "python".')
         return False
     
-    if len(sys.argv) < 2 or sys.argv[1] is None or (sys.argv[1] != 'android' and sys.argv[1] != 'linux'):
-        print('Error: Missing or wrong build target. Following targets are supported: "android", "linux".')
+    if len(sys.argv) < 2 or sys.argv[1] is None or (sys.argv[1] != 'android' and sys.argv[1] != 'linux' and sys.argv[1] != 'macos'):
+        print('Error: Missing or wrong build target. Following targets are supported: "android", "linux", "macos".')
         return False
 
     workingDir = os.getcwd()
@@ -316,7 +318,9 @@ def configure(pSettings, pRelativeRootDir):
             
             pSettings.mHostTag = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
             pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
-            pSettings.mArchFlag = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
+            pSettings.mArchFlagASM = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
+            pSettings.mArchFlagC = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -pipe -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagCXX = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -pipe -fPIC -fno-strict-aliasing -fstack-protector']
             pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
             pSettings.mMakeFlag = ['DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
 
@@ -352,9 +356,50 @@ def configure(pSettings, pRelativeRootDir):
                 return False
 
         if hostDetected:
-            pSettings.mArchFlag = ['-m32', '-m64']
+            pSettings.mArchFlagASM = ['-m32', '-m64']
+            pSettings.mArchFlagC = ['-m32 -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-m64 -pipe -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagCXX = ['-m32 -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-m64 -pipe -fPIC -fno-strict-aliasing -fstack-protector']
             pSettings.mArchName = ['x86', 'x86_64']
             pSettings.mMakeFlag = ['', 'ARCH64=1']
+        else:
+            print('Error: Not supported host platform: ' + platformName + ' x86-64' if platform.machine().endswith('64') else ' x86')
+            return False
+    elif pSettings.mBuildTarget == 'macos':
+        hostDetected = False
+        
+        if platformName == 'darwin' and platform.machine().endswith('64'):
+            hostDetected = True
+
+            if executeShellCommand('xcode-select -p', False) != 0:
+                print('Error: \'XCode\' not found.')
+                return False
+            
+            pSettings.mMake = checkMake(downloadDir)
+            if len(pSettings.mMake) == 0:
+                print('Error: \'Make\' not found.')
+                return False
+
+            pSettings.mCMake = checkCMake(downloadDir)
+            if len(pSettings.mCMake) == 0:
+                print('Error: \'CMake\' not found.')
+                return False
+
+            pSettings.mGo = checkGo(downloadDir)
+            if len(pSettings.mGo) == 0:
+                print('Error: \'Go\' not found.')
+                return False
+
+            pSettings.mNinja = checkNinja(downloadDir)
+            if len(pSettings.mNinja) == 0:
+                print('Error: \'Ninja\' not found.')
+                return False
+
+        if hostDetected:
+            pSettings.mArchFlagASM = ['-m64 -mmacosx-version-min=10.7']
+            pSettings.mArchFlagC = ['-m64 -ObjC -mmacosx-version-min=10.7 -pipe -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagCXX = ['-m64 -ObjC++ -stdlib=libc++ -mmacosx-version-min=10.7 -pipe -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchName = ['x86_64']
+            pSettings.mMakeFlag = ['ARCH64=1']
         else:
             print('Error: Not supported host platform: ' + platformName + ' x86-64' if platform.machine().endswith('64') else ' x86')
             return False
@@ -367,21 +412,22 @@ def configure(pSettings, pRelativeRootDir):
     
     return True
 
-def executeShellCommand(pCommandLine):
+def executeShellCommand(pCommandLine, pShowOutput = True):
     process = subprocess.Popen(pCommandLine, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)        
     output, error = process.communicate()
     returnCode = process.wait()
     
-    returnText = output.decode()
-    if len(returnText) > 0:
-        print(returnText)
+    if pShowOutput:
+        returnText = output.decode()
+        if len(returnText) > 0:
+            print(returnText)
 
-    if returnCode != 0:
-        print('Error message:\n' + error.decode("utf-8"))
+        if returnCode != 0:
+            print('Error message:\n' + error.decode("utf-8"))
     
     return returnCode
     
-def executeCmdCommand(pCommandLine, pWorkingDir):
+def executeCmdCommand(pCommandLine, pWorkingDir, pShowOutput = True):
     commandLine = pCommandLine.encode()    
     commandLine += b"""
     exit
@@ -392,12 +438,13 @@ def executeCmdCommand(pCommandLine, pWorkingDir):
     output, error = process.communicate()
     returnCode = process.wait()
     
-    returnText = output.decode()
-    if len(returnText) > 0:
-        print(returnText)
+    if pShowOutput:
+        returnText = output.decode()
+        if len(returnText) > 0:
+            print(returnText)
 
-    if returnCode != 0:
-        print('Error message:\n' + error.decode("utf-8"))
+        if returnCode != 0:
+            print('Error message:\n' + error.decode("utf-8"))
     
     return returnCode
     
@@ -450,12 +497,20 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
 
         os.makedirs(buildDir)
         os.chdir(buildDir)
+
+        cmakeFlag = pCMakeFlag
+        if len(pSettings.mArchFlagASM[i]) > 0:
+            cmakeFlag += ' \"-DCMAKE_ASM_FLAGS=' + pSettings.mArchFlagASM[i] + '\"'
+        if len(pSettings.mArchFlagC[i]) > 0:
+            cmakeFlag += ' \"-DCMAKE_C_FLAGS=' + pSettings.mArchFlagC[i] + '\"'
+        if len(pSettings.mArchFlagCXX[i]) > 0:
+            cmakeFlag += ' \"-DCMAKE_CXX_FLAGS=' + pSettings.mArchFlagCXX[i] + '\"'
         
         buildSuccess = False
         if pSettings.mBuildTarget == 'android':
-            buildSuccess = buildCMakeAndroid(i, pSettings, pCMakeFlag)
-        elif pSettings.mBuildTarget == 'linux':
-            buildSuccess = buildCMakeLinux(i, pSettings, pCMakeFlag)
+            buildSuccess = buildCMakeAndroid(i, pSettings, cmakeFlag)
+        elif pSettings.mBuildTarget == 'linux' or pSettings.mBuildTarget == 'macos':
+            buildSuccess = buildCMakeGeneric(i, pSettings, cmakeFlag)
         
         if buildSuccess:
             if platformName == 'linux' or platformName == 'darwin':
@@ -479,6 +534,8 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
         print('Build status for ' + pSettings.mArchName[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
         
         status |= buildSuccess
+
+    executeLipo(pLibraryName, pSettings)
         
     return status
 
@@ -486,14 +543,14 @@ def buildCMakeAndroid(pIndex, pSettings, pCMakeFlag):
     status = False
     platformName = platform.system().lower()
 
-    cmakeToolchainFile = os.path.join(pSettings.mAndroidNdkDir, 'build', 'cmake', 'android.toolchain.cmake')
-    if os.path.isfile(cmakeToolchainFile):
+    toolchainPath = os.path.join(pSettings.mAndroidNdkDir, 'build', 'cmake', 'android.toolchain.cmake')
+    if os.path.isfile(toolchainPath):
         androidApi = pSettings.mAndroidApi
         if (int(androidApi) < 21 and (pSettings.mArchName[pIndex] == 'arm64-v8a' or pSettings.mArchName[pIndex] == 'x86_64')):
             androidApi = '21'
             print('Force Android API: \"21\" for architecture \"' + pSettings.mArchName[pIndex] + '\".')
 
-        cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DANDROID_ABI=' + pSettings.mArchName[pIndex] + ' -DANDROID_NATIVE_API_LEVEL=' + androidApi + ' -DCMAKE_TOOLCHAIN_FILE=' + cmakeToolchainFile + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
+        cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DANDROID_ABI=' + pSettings.mArchName[pIndex] + ' -DANDROID_NATIVE_API_LEVEL=' + androidApi + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
 
         if platformName == 'linux' or platformName == 'darwin':
             status = executeShellCommand(cmakeCommand) == 0
@@ -502,11 +559,16 @@ def buildCMakeAndroid(pIndex, pSettings, pCMakeFlag):
 
     return status
 
-def buildCMakeLinux(pIndex, pSettings, pCMakeFlag):
+def buildCMakeGeneric(pIndex, pSettings, pCMakeFlag):
     status = False
     platformName = platform.system().lower()
 
-    cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
+    toolchainPath = ''
+    if pSettings.mArchName[pIndex] == 'x86':
+        if pSettings.mBuildTarget == 'linux':
+            toolchainPath = ' -DCMAKE_TOOLCHAIN_FILE=' + os.path.join(pSettings.mRootDir, 'script', 'linux_x86.toolchain.cmake')
+
+    cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + toolchainPath + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
 
     if platformName == 'linux' or platformName == 'darwin':
         status = executeShellCommand(cmakeCommand) == 0
@@ -528,9 +590,7 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
             pMakeFlag += 'NDEBUG=1'
             break
 
-    if platformName == 'linux':
-        executeShellCommand(pSettings.mMake + ' clean')
-    elif platformName == 'darwin':
+    if platformName == 'linux' or platformName == 'darwin':
         executeShellCommand(pSettings.mMake + ' clean')
     elif platformName == 'windows':
         executeCmdCommand(pSettings.mMake + ' clean', workingDir)
@@ -547,11 +607,14 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
                 if os.path.isfile(libraryFilepath):
                     os.remove(libraryFilepath)
 
+        os.environ['CFLAGS'] = pSettings.mArchFlagC[i]
+        os.environ['CXXFLAGS'] = pSettings.mArchFlagCXX[i]
+
         buildSuccess = False
         if pSettings.mBuildTarget == 'android':
             buildSuccess = buildMakeAndroid(i, pLibraryName, pSettings, pMakeFlag)
-        elif pSettings.mBuildTarget == 'linux':
-            buildSuccess = buildMakeLinux(i, pLibraryName, pSettings, pMakeFlag)
+        elif pSettings.mBuildTarget == 'linux' or pSettings.mBuildTarget == 'macos':
+            buildSuccess = buildMakeGeneric(i, pLibraryName, pSettings, pMakeFlag)
 
         if buildSuccess:
             for j in range(0, len(pLibraryName)):
@@ -565,10 +628,12 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
             executeShellCommand(pSettings.mMake + ' clean')
         elif platformName == 'windows':
             executeCmdCommand(pSettings.mMake + ' clean', workingDir)
-            
+
         print('Build status for ' + pSettings.mArchName[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
         
         status |= buildSuccess
+
+    executeLipo(pLibraryName, pSettings)
 
     return status
     
@@ -611,9 +676,6 @@ def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
         os.environ['CXX'] = executablePrefix + androidApi + cxxSuffix
         os.environ['CC'] = executablePrefix + androidApi + ccSuffix
 
-        os.environ['CXXFLAGS'] = pSettings.mArchFlag[pIndex]
-        os.environ['CFLAGS'] = pSettings.mArchFlag[pIndex]
-
         makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
         
         for j in range(0, len(pLibraryName)):
@@ -635,14 +697,8 @@ def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
         
     return status
     
-def buildMakeLinux(pIndex, pLibraryName, pSettings, pMakeFlag):
+def buildMakeGeneric(pIndex, pLibraryName, pSettings, pMakeFlag):
     print('Building...')
-
-    envCXXFLAGS = pSettings.mArchFlag[pIndex]
-    envCFLAGS = pSettings.mArchFlag[pIndex]
-
-    os.environ['CXXFLAGS'] = envCXXFLAGS
-    os.environ['CFLAGS'] = envCFLAGS
 
     makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
     
@@ -655,4 +711,25 @@ def buildMakeLinux(pIndex, pLibraryName, pSettings, pMakeFlag):
     if len(pMakeFlag) > 0:
         makeCommand += ' ' + pMakeFlag
 
-    return executeShellCommand(makeCommand) == 0    
+    return executeShellCommand(makeCommand) == 0
+
+def executeLipo(pLibraryName, pSettings):
+    if pSettings.mBuildTarget == 'macos':
+        libraryDir = os.path.join(pSettings.mRootDir, 'lib', pSettings.mBuildTarget)
+
+        for i in range(0, len(pLibraryName)):
+            remove(os.path.join(libraryDir, 'lib' + pLibraryName[i] + '.a'))
+
+            lipoCommand = 'lipo -create -output ' + os.path.join(libraryDir, 'lib' + pLibraryName[i] + '.a')
+            lipoLibraries = ''
+
+            for j in range(0, len(pSettings.mArchName)):
+                libraryFile = os.path.join(libraryDir, pSettings.mArchName[j], 'lib' + pLibraryName[i] + '.a')                
+                if os.path.isfile(libraryFile):
+                    lipoLibraries += ' ' + os.path.join(libraryDir, pSettings.mArchName[j], 'lib' + pLibraryName[i] + '.a')
+
+            if len(lipoLibraries) > 0:
+                executeShellCommand(lipoCommand + lipoLibraries)
+
+        for i in range(0, len(pSettings.mArchName)):
+            remove(os.path.join(libraryDir, pSettings.mArchName[i]))
