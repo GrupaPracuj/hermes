@@ -555,7 +555,7 @@ def buildCMakeAndroid(pIndex, pSettings, pCMakeFlag):
         if platformName == 'linux' or platformName == 'darwin':
             status = executeShellCommand(cmakeCommand) == 0
         elif platformName == 'windows':
-            status = executeCmdCommand(cmakeCommand, workingDir) == 0
+            status = executeCmdCommand(cmakeCommand, os.getcwd()) == 0
 
     return status
 
@@ -573,7 +573,7 @@ def buildCMakeGeneric(pIndex, pSettings, pCMakeFlag):
     if platformName == 'linux' or platformName == 'darwin':
         status = executeShellCommand(cmakeCommand) == 0
     elif platformName == 'windows':
-        status = executeCmdCommand(cmakeCommand, workingDir) == 0
+        status = executeCmdCommand(cmakeCommand, os.getcwd()) == 0
 
     return status
 
@@ -640,7 +640,6 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
 def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
     print('Building...')
     status = False
-    workingDir = os.getcwd()
     platformName = platform.system().lower()
     toolchainDir = os.path.join(pSettings.mAndroidNdkDir, 'toolchains', 'llvm', 'prebuilt')
     
@@ -693,12 +692,14 @@ def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
         if platformName == 'linux' or platformName == 'darwin':
             status = executeShellCommand(makeCommand) == 0
         elif platformName == 'windows':
-            status = executeCmdCommand(makeCommand, workingDir) == 0
+            status = executeCmdCommand(makeCommand, os.getcwd()) == 0
         
     return status
     
 def buildMakeGeneric(pIndex, pLibraryName, pSettings, pMakeFlag):
     print('Building...')
+    status = False
+    platformName = platform.system().lower()
 
     makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
     
@@ -711,7 +712,12 @@ def buildMakeGeneric(pIndex, pLibraryName, pSettings, pMakeFlag):
     if len(pMakeFlag) > 0:
         makeCommand += ' ' + pMakeFlag
 
-    return executeShellCommand(makeCommand) == 0
+    if platformName == 'linux' or platformName == 'darwin':
+        status = executeShellCommand(makeCommand) == 0
+    elif platformName == 'windows':
+        status = executeCmdCommand(makeCommand, os.getcwd()) == 0
+
+    return status
 
 def executeLipo(pLibraryName, pSettings):
     if pSettings.mBuildTarget == 'macos':
