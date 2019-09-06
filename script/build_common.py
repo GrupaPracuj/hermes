@@ -254,11 +254,22 @@ def configure(pSettings, pRelativeRootDir):
                 androidHome = os.getenv('ANDROID_HOME')
                 
                 if androidHome is not None and os.path.isdir(androidHome):
-                    pSettings.mAndroidNdkDir = os.path.join(androidHome, 'ndk-bundle')
-                    
-                    if not os.path.isdir(pSettings.mAndroidNdkDir):
-                        print('Error: ' + pSettings.mAndroidNdkDir + ' is not a valid path.')
-                        return False
+                    pSettings.mAndroidNdkDir = os.path.join(androidHome, 'ndk')
+                    if os.path.isdir(pSettings.mAndroidNdkDir):
+                        ndkVersions = [d for d in os.listdir(pSettings.mAndroidNdkDir) if os.path.isdir(os.path.join(pSettings.mAndroidNdkDir, d))]
+
+                        if len(ndkVersions) > 0:
+                            ndkVersions.sort(reverse = True)
+                            pSettings.mAndroidNdkDir = os.path.join(pSettings.mAndroidNdkDir, ndkVersions[0])
+                        else:
+                            print('Error: System couldn\'t find any NDK version in ' + pSettings.mAndroidNdkDir + ' directory.')
+                            return False
+                    else:
+                        pSettings.mAndroidNdkDir = os.path.join(androidHome, 'ndk-bundle')
+                        
+                        if not os.path.isdir(pSettings.mAndroidNdkDir):
+                            print('Error: System couldn\'t find NDK in ' + pSettings.mAndroidNdkDir + ' directory.')
+                            return False
                 else:
                     print('Error: Occurred problem related to ANDROID_HOME environment variable.')
                     return False
