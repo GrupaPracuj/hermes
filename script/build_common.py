@@ -13,7 +13,6 @@ class Settings:
         self.mAndroidNdkDir = ''
         self.mCoreCount = ''
         self.mCMake = ''
-        self.mGo = ''
         self.mMake = ''
         self.mNinja = ''
         self.mHostTag = []
@@ -103,47 +102,10 @@ def checkCMake(pDestinationDir):
         result = applicationDestinationPath
     elif downloadAndExtract('https://github.com/Kitware/CMake/releases/download/v' + packageVersion + '/' + packageName + packageExtension, destinationDir, packageName + packageExtension, '') and os.path.isfile(applicationSourcePath):
         copy_tree(sourceDir, destinationDir)
-        shutil.rmtree(os.path.join(destinationDir, packageName))
+        shutil.rmtree(sourceDir)
         result = applicationDestinationPath
     elif os.path.isdir(destinationDir):
         shutil.rmtree(destinationDir)
-
-    return result
-
-def checkGo(pDestinationDir):
-    print('Check \'Go\'...')
-
-    platformName = platform.system().lower()
-    if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/go'):
-        return '/usr/bin/go'
-
-    packageVersion = '1.12.6'
-    packageName = 'go' + packageVersion
-    packageExtension = ''
-    applicationName = ''
-    destinationDir = os.path.join(pDestinationDir, platformName)
-
-    if platformName == 'linux':
-        packageName += '.linux-amd64'
-        packageExtension = '.tar.gz'
-        applicationName = 'go'
-    elif platformName == 'darwin':
-        packageName += '.darwin-amd64'
-        packageExtension = '.tar.gz'
-        applicationName = 'go'
-    elif platformName == 'windows':
-        packageName += '.windows-amd64'
-        packageExtension = '.zip'
-        applicationName = 'go.exe'
-
-    result = ''
-    applicationDestinationPath = os.path.join(destinationDir, 'go', 'bin', applicationName)
-    if os.path.isfile(applicationDestinationPath):
-        result = applicationDestinationPath
-    elif downloadAndExtract('https://dl.google.com/go/' + packageName + packageExtension, destinationDir, packageName + packageExtension, '') and os.path.isfile(applicationDestinationPath):
-        result = applicationDestinationPath
-    elif os.path.isdir(os.path.join(destinationDir, 'go')):
-        shutil.rmtree(os.path.join(destinationDir, 'go'))
 
     return result
 
@@ -151,8 +113,11 @@ def checkMake(pDestinationDir):
     print('Check \'Make\'...')
 
     platformName = platform.system().lower()
-    if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/make'):
-        return '/usr/bin/make'
+    if (platformName == 'linux' or platformName == 'darwin'):
+        if os.path.isfile('/usr/bin/make'):
+            return '/usr/bin/make'
+        else:
+            return ''
 
     destinationDir = os.path.join(pDestinationDir, platformName, 'make')
 
@@ -262,11 +227,6 @@ def configure(pSettings, pRelativeRootDir):
                 print('Error: \'CMake\' not found.')
                 return False
 
-            pSettings.mGo = checkGo(downloadDir)
-            if len(pSettings.mGo) == 0:
-                print('Error: \'Go\' not found.')
-                return False
-
             pSettings.mNinja = checkNinja(downloadDir)
             if len(pSettings.mNinja) == 0:
                 print('Error: \'Ninja\' not found.')
@@ -345,11 +305,6 @@ def configure(pSettings, pRelativeRootDir):
                 print('Error: \'CMake\' not found.')
                 return False
 
-            pSettings.mGo = checkGo(downloadDir)
-            if len(pSettings.mGo) == 0:
-                print('Error: \'Go\' not found.')
-                return False
-
             pSettings.mNinja = checkNinja(downloadDir)
             if len(pSettings.mNinja) == 0:
                 print('Error: \'Ninja\' not found.')
@@ -382,11 +337,6 @@ def configure(pSettings, pRelativeRootDir):
             pSettings.mCMake = checkCMake(downloadDir)
             if len(pSettings.mCMake) == 0:
                 print('Error: \'CMake\' not found.')
-                return False
-
-            pSettings.mGo = checkGo(downloadDir)
-            if len(pSettings.mGo) == 0:
-                print('Error: \'Go\' not found.')
                 return False
 
             pSettings.mNinja = checkNinja(downloadDir)

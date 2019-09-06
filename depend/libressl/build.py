@@ -1,8 +1,8 @@
 import os
 import shutil
 
-libraryVersion = '8f574c37dae935a29bff56e750101e5b354503de'
-libraryName = 'boringssl-' + libraryVersion
+libraryVersion = '3.0.0'
+libraryName = 'libressl-' + libraryVersion
 
 buildCommonFile = os.path.join('..', '..', 'script', 'build_common.py')
 exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, mode = 'exec'))
@@ -10,11 +10,13 @@ exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, 
 settings = Settings()
 
 if configure(settings, os.path.join('..', '..')):
-    if downloadAndExtract('https://github.com/google/boringssl/archive/' + libraryVersion + '.zip', '', libraryName + '.zip', ''):
+    if downloadAndExtract('https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/' + libraryName + '.tar.gz', '', libraryName + '.tar.gz', ''):
         remove('include')
         os.chdir(libraryName)
-        if buildCMake(['crypto', 'ssl'], settings, '-DGO_EXECUTABLE=' + settings.mGo, False, '', ['crypto', 'ssl']):
+        if buildCMake(['crypto', 'ssl'], settings, '-DLIBRESSL_SKIP_INSTALL=ON -DLIBRESSL_APPS=OFF -DLIBRESSL_TESTS=OFF', False, '', ['crypto', 'ssl']):
             includePath = os.path.join('include', 'openssl')
             shutil.copytree(includePath, os.path.join('..', includePath))
+            remove(os.path.join('..', includePath, 'Makefile.am'))
+            remove(os.path.join('..', includePath, 'Makefile.in'))
         os.chdir('..')
         remove(libraryName)

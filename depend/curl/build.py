@@ -1,7 +1,7 @@
 import os
 import shutil
 
-libraryVersion = '7.65.1'
+libraryVersion = '7.65.3'
 libraryName = 'curl-' + libraryVersion
 
 buildCommonFile = os.path.join('..', '..', 'script', 'build_common.py')
@@ -13,14 +13,14 @@ if configure(settings, os.path.join('..', '..')):
     if downloadAndExtract('https://curl.haxx.se/download/' + libraryName + '.zip', '', libraryName + '.zip', ''):
         remove('include')
 
-        enableSSL = os.path.isdir(os.path.join('..', 'boringssl', 'include', 'openssl'))
+        enableSSL = os.path.isdir(os.path.join('..', 'libressl', 'include', 'openssl'))
         if enableSSL:
             for i in range(0, len(settings.mArchName)):
                 libraryPath = os.path.join(settings.mRootDir, 'lib', settings.mBuildTarget, settings.mArchName[i])
                 enableSSL &= os.path.isfile(os.path.join(libraryPath, 'libcrypto.a')) and os.path.isfile(os.path.join(libraryPath, 'libssl.a'))
         flagSSL = ''
         if enableSSL and (settings.mBuildTarget == 'android' or settings.mBuildTarget == 'linux'):
-            includeSSL = os.path.join(os.getcwd(), '..', 'boringssl', 'include')
+            includeSSL = os.path.join(os.getcwd(), '..', 'libressl', 'include')
             for i in range(0, len(settings.mArchFlagC)):
                 if len(settings.mArchFlagC[i]) > 0:
                     settings.mArchFlagC[i] += ' '
