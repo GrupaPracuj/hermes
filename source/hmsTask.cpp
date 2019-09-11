@@ -42,7 +42,10 @@ namespace hms
         assert(pThreadCount > 0);
         mThreads.reserve(pThreadCount);
         for (size_t i = 0; i < pThreadCount; ++i)
-            mThreads.push_back({std::thread(&ThreadPool::update, this, i), 0});
+        {
+            mThreads.push_back({std::thread(), 0});
+            mThreads[i].first = std::thread(&ThreadPool::update, this, i);
+        }
     }
     
     TaskManager::ThreadPool::~ThreadPool()
