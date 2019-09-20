@@ -72,5 +72,3 @@ QUICK START (Android):
 MISCELLANEOUS:
   * 'certificate.pem' in '01.HelloWorld_Android' came from 'https://curl.haxx.se/docs/caextract.html'
     and is licensed under MPL 2.0 terms.
-  * 'ios.toolchain.cmake' in 'script' came from 'https://github.com/leetal/ios-cmake',
-    and is licensed under new BSD / BSD-3-Clause license (details are available in 'ios.toolchain.cmake' file)

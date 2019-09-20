@@ -22,6 +22,7 @@ class Settings:
         self.mArchFlagC = []
         self.mArchFlagCXX = []
         self.mArchName = []
+        self.mTargetSdk = []
         self.mMakeFlag = []
         
 def downloadAndExtract(pURL, pDestinationDir, pFileName, pExtractDir):
@@ -307,7 +308,7 @@ def configure(pSettings, pRelativeRootDir):
         if platformName == 'darwin' and platform.machine().endswith('64'):
             hostDetected = True
 
-            pSettings.mAppleSdkDir = os.path.join(receiveShellOutput('xcode-select --print-path').rstrip(), 'Toolchains/XcodeDefault.xctoolchain')
+            pSettings.mAppleSdkDir = receiveShellOutput('xcode-select --print-path').rstrip()
             if not os.path.isdir(pSettings.mAppleSdkDir):
                 print('Error: \'Xcode\' not found.')
                 return False
@@ -328,16 +329,16 @@ def configure(pSettings, pRelativeRootDir):
                 return False
 
         if hostDetected:
-            commonFlags = '-pipe -fPIC -fno-strict-aliasing -fstack-protector -gdwarf-2 -miphoneos-version-min=10.0'
+            commonFlags = '-pipe -fPIC -fno-strict-aliasing -fstack-protector -gdwarf-2 -fvisibility=hidden -fvisibility-inlines-hidden -miphoneos-version-min=10.0'
             commonSimulatorFlags = commonFlags + ' -D__IPHONE_OS_VERSION_MIN_REQUIRED=100000'
 
-            pSettings.mHostTag = ['iPhoneOS', 'iPhoneOS', 'iPhoneOS', 'iPhoneSimulator', 'iPhoneSimulator']
             pSettings.mArch = ['armv7', 'armv7s', 'arm64', 'i386', 'x86_64']
-            pSettings.mArchFlagASM = [commonFlags, commonFlags, commonFlags, commonSimulatorFlags, commonSimulatorFlags]
+            pSettings.mArchFlagASM = ['-arch armv7 ' + commonFlags, '-arch armv7s ' + commonFlags, '-arch arm64 ' + commonFlags, '-arch i386 ' + commonSimulatorFlags, '-arch x86_64 ' + commonSimulatorFlags]
             pSettings.mArchFlagC = pSettings.mArchFlagASM
             pSettings.mArchFlagCXX = pSettings.mArchFlagASM
-            pSettings.mArchName = ['armv7', 'armv7s', 'arm64', 'i386', 'x86_64']
+            pSettings.mArchName = pSettings.mArch
             pSettings.mMakeFlag = ['DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
+            pSettings.mTargetSdk = ['iPhoneOS', 'iPhoneOS', 'iPhoneOS', 'iPhoneSimulator', 'iPhoneSimulator']
 
             print('iOS toolchain path: "' + pSettings.mAppleSdkDir + '"')
         else:
@@ -582,7 +583,7 @@ def buildCMakeiOS(pIndex, pSettings, pCMakeFlag):
 
     toolchainPath = os.path.join(pSettings.mRootDir, 'script', 'ios.toolchain.cmake')
     if os.path.isfile(toolchainPath):
-        cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -GXcode ..'
+        cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -DHMS_XCODE_PATH=' + pSettings.mAppleSdkDir + ' -DHMS_TARGET=' + pSettings.mTargetSdk[pIndex] + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
 
         if platformName == 'darwin':
             status = executeShellCommand(cmakeCommand) == 0
@@ -750,7 +751,7 @@ def buildMakeGeneric(pIndex, pLibraryName, pSettings, pMakeFlag):
     return status
 
 def executeLipo(pLibraryName, pSettings):
-    if pSettings.mBuildTarget == 'macos':
+    if pSettings.mBuildTarget == 'ios' or pSettings.mBuildTarget == 'macos':
         libraryDir = os.path.join(pSettings.mRootDir, 'lib', pSettings.mBuildTarget)
 
         for i in range(0, len(pLibraryName)):
