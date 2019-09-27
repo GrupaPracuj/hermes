@@ -334,8 +334,8 @@ def configure(pSettings, pRelativeRootDir):
 
             pSettings.mArch = ['armv7', 'armv7s', 'arm64', 'i386', 'x86_64']
             pSettings.mArchFlagASM = ['-arch armv7 ' + commonFlags, '-arch armv7s ' + commonFlags, '-arch arm64 ' + commonFlags, '-arch i386 ' + commonSimulatorFlags, '-arch x86_64 ' + commonSimulatorFlags]
-            pSettings.mArchFlagC = pSettings.mArchFlagASM
-            pSettings.mArchFlagCXX = pSettings.mArchFlagASM
+            pSettings.mArchFlagC = ['-arch armv7 -ObjC ' + commonFlags, '-arch armv7s -ObjC ' + commonFlags, '-arch arm64 -ObjC ' + commonFlags, '-arch i386 -ObjC ' + commonSimulatorFlags, '-arch x86_64 -ObjC ' + commonSimulatorFlags]
+            pSettings.mArchFlagCXX = ['-arch armv7 -ObjC++ -stdlib=libc++ ' + commonFlags, '-arch armv7s -ObjC++ -stdlib=libc++ ' + commonFlags, '-arch arm64 -ObjC++ -stdlib=libc++ ' + commonFlags, '-arch i386 -ObjC++ -stdlib=libc++ ' + commonSimulatorFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ ' + commonSimulatorFlags]
             pSettings.mArchName = pSettings.mArch
             pSettings.mMakeFlag = ['DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
             pSettings.mTargetSdk = ['iPhoneOS', 'iPhoneOS', 'iPhoneOS', 'iPhoneSimulator', 'iPhoneSimulator']
@@ -582,7 +582,9 @@ def buildCMakeiOS(pIndex, pSettings, pCMakeFlag):
     platformName = platform.system().lower()
 
     toolchainPath = os.path.join(pSettings.mRootDir, 'script', 'ios.toolchain.cmake')
-    if os.path.isfile(toolchainPath):
+    executableDir = os.path.join(pSettings.mAppleSdkDir, 'Toolchains', 'XcodeDefault.xctoolchain', 'usr', 'bin')
+    sysrootDir = os.path.join(pSettings.mAppleSdkDir, 'Platforms', pSettings.mTargetSdk[pIndex] + '.platform', 'Developer', 'SDKs', pSettings.mTargetSdk[pIndex] + '.sdk')
+    if os.path.isfile(toolchainPath) and os.path.isdir(executableDir) and os.path.isdir(sysrootDir):
         cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -DHMS_XCODE_PATH=' + pSettings.mAppleSdkDir + ' -DHMS_TARGET=' + pSettings.mTargetSdk[pIndex] + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
 
         if platformName == 'darwin':
@@ -644,8 +646,12 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
         buildSuccess = False
         if pSettings.mBuildTarget == 'android':
             buildSuccess = buildMakeAndroid(i, pLibraryName, pSettings, pMakeFlag)
+        elif pSettings.mBuildTarget == 'ios':
+            buildSuccess = buildMakeiOS(i, pLibraryName, pSettings, pMakeFlag)
         elif pSettings.mBuildTarget == 'linux' or pSettings.mBuildTarget == 'macos':
             buildSuccess = buildMakeGeneric(i, pLibraryName, pSettings, pMakeFlag)
+
+        os.environ.clear()
 
         if buildSuccess:
             for j in range(0, len(pLibraryName)):
@@ -705,6 +711,44 @@ def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
 
         os.environ['CXX'] = executablePrefix + androidApi + cxxSuffix
         os.environ['CC'] = executablePrefix + androidApi + ccSuffix
+
+        makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
+        
+        for j in range(0, len(pLibraryName)):
+            makeCommand += ' lib' + pLibraryName[j] + '.a'
+
+        if len(pSettings.mMakeFlag[pIndex]) > 0:
+            makeCommand += ' ' + pSettings.mMakeFlag[pIndex]
+
+        if len(pMakeFlag) > 0:
+            makeCommand += ' ' + pMakeFlag
+            
+        if len(pMakeFlag) > 0:
+            makeCommand += ' ' + pMakeFlag
+
+        if platformName == 'linux' or platformName == 'darwin':
+            status = executeShellCommand(makeCommand) == 0
+        elif platformName == 'windows':
+            status = executeCmdCommand(makeCommand, os.getcwd()) == 0
+        
+    return status
+
+def buildMakeiOS(pIndex, pLibraryName, pSettings, pMakeFlag):
+    print('Building...')
+    status = False
+    platformName = platform.system().lower()
+
+    executableDir = os.path.join(pSettings.mAppleSdkDir, 'Toolchains', 'XcodeDefault.xctoolchain', 'usr', 'bin')
+    sysrootDir = os.path.join(pSettings.mAppleSdkDir, 'Platforms', pSettings.mTargetSdk[pIndex] + '.platform', 'Developer', 'SDKs', pSettings.mTargetSdk[pIndex] + '.sdk')
+    if os.path.isdir(executableDir) and os.path.isdir(sysrootDir):
+        os.environ['CC'] = os.path.join(executableDir, 'clang')
+        os.environ['CXX'] = os.path.join(executableDir, 'clang++')
+        os.environ['LD'] = os.path.join(executableDir, 'ld')
+        os.environ['AR'] = os.path.join(executableDir, 'ar')
+        os.environ['RANLIB'] = os.path.join(executableDir, 'ranlib')
+        os.environ['STRIP'] = os.path.join(executableDir, 'strip')
+        os.environ['CFLAGS'] = os.environ['CFLAGS'] + ' -isysroot ' + sysrootDir
+        os.environ['CXXFLAGS'] = os.environ['CXXFLAGS'] + ' -isysroot ' + sysrootDir
 
         makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
         
