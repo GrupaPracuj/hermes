@@ -329,7 +329,7 @@ def configure(pSettings, pRelativeRootDir):
                 return False
 
         if hostDetected:
-            commonFlags = '-pipe -fPIC -fno-strict-aliasing -fstack-protector -gdwarf-2 -fvisibility=hidden -fvisibility-inlines-hidden -miphoneos-version-min=10.0'
+            commonFlags = '-miphoneos-version-min=10.0 -pipe -fPIC -fno-strict-aliasing -fstack-protector -gdwarf-2 -fvisibility=hidden -fvisibility-inlines-hidden'
             commonSimulatorFlags = commonFlags + ' -D__IPHONE_OS_VERSION_MIN_REQUIRED=100000'
 
             pSettings.mArch = ['armv7', 'armv7s', 'arm64', 'i386', 'x86_64']
@@ -401,8 +401,8 @@ def configure(pSettings, pRelativeRootDir):
 
         if hostDetected:
             pSettings.mArchFlagASM = ['-m64 -mmacosx-version-min=10.7']
-            pSettings.mArchFlagC = ['-m64 -ObjC -mmacosx-version-min=10.7 -pipe -fPIC -fno-strict-aliasing -fstack-protector']
-            pSettings.mArchFlagCXX = ['-m64 -ObjC++ -stdlib=libc++ -mmacosx-version-min=10.7 -pipe -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagC = ['-m64 -ObjC -mmacosx-version-min=10.7 -pipe -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden -fvisibility-inlines-hidden']
+            pSettings.mArchFlagCXX = ['-m64 -ObjC++ -stdlib=libc++ -mmacosx-version-min=10.7 -pipe -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden -fvisibility-inlines-hidden']
             pSettings.mArchName = ['x86_64']
             pSettings.mMakeFlag = ['ARCH64=1']
         else:
