@@ -651,7 +651,8 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
         elif pSettings.mBuildTarget == 'linux' or pSettings.mBuildTarget == 'macos':
             buildSuccess = buildMakeGeneric(i, pLibraryName, pSettings, pMakeFlag)
 
-        os.environ.clear()
+        del os.environ['CFLAGS']
+        del os.environ['CXXFLAGS']
 
         if buildSuccess:
             for j in range(0, len(pLibraryName)):
@@ -730,6 +731,13 @@ def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
             status = executeShellCommand(makeCommand) == 0
         elif platformName == 'windows':
             status = executeCmdCommand(makeCommand, os.getcwd()) == 0
+
+        del os.environ['CC']
+        del os.environ['CXX']
+        del os.environ['LD']
+        del os.environ['AR']
+        del os.environ['RANLIB']
+        del os.environ['STRIP']
         
     return status
 
@@ -768,6 +776,13 @@ def buildMakeiOS(pIndex, pLibraryName, pSettings, pMakeFlag):
             status = executeShellCommand(makeCommand) == 0
         elif platformName == 'windows':
             status = executeCmdCommand(makeCommand, os.getcwd()) == 0
+
+        del os.environ['CC']
+        del os.environ['CXX']
+        del os.environ['LD']
+        del os.environ['AR']
+        del os.environ['RANLIB']
+        del os.environ['STRIP']
         
     return status
     
