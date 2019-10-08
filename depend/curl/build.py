@@ -29,7 +29,7 @@ if configure(settings, os.path.join('..', '..')):
 
             flagSSL = '-DCMAKE_USE_OPENSSL=OFF -DSSL_ENABLED=ON -DUSE_OPENSSL=ON -DHAVE_LIBCRYPTO=ON -DHAVE_LIBSSL=ON'
         elif settings.mBuildTarget == 'ios' or settings.mBuildTarget == 'macos':
-            flagSSL = '-DCMAKE_USE_SECTRANSP=ON'
+            flagSSL = '-DCMAKE_USE_SECTRANSP=ON -DCURL_CA_FALLBACK=ON'
         else:
             flagSSL = '-DCMAKE_USE_OPENSSL=OFF'
 
@@ -40,7 +40,7 @@ if configure(settings, os.path.join('..', '..')):
                 break
                 
         os.chdir(libraryName)
-        if buildCMake(['curl'], settings, flagSSL + ' -DCURL_CA_BUNDLE_SET=OFF -DCURL_CA_FALLBACK=OFF -DCURL_CA_PATH_SET=OFF -DBUILD_SHARED_LIBS=OFF -DHTTP_ONLY=ON -DBUILD_CURL_EXE=OFF -DBUILD_TESTING=OFF -DENABLE_MANUAL=OFF', False, 'lib', [outputLibraryName]):
+        if buildCMake(['curl'], settings, flagSSL + ' -DCURL_CA_BUNDLE=\'none\' -DCURL_CA_PATH=\'none\' -DBUILD_SHARED_LIBS=OFF -DHTTP_ONLY=ON -DBUILD_CURL_EXE=OFF -DBUILD_TESTING=OFF -DENABLE_MANUAL=OFF', False, 'lib', [outputLibraryName]):
             includePath = os.path.join('include', 'curl')
             shutil.copytree(includePath, os.path.join('..', includePath))
             remove(os.path.join('..', includePath, 'Makefile.am'))
