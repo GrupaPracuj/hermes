@@ -4,10 +4,10 @@
 
 package pl.grupapracuj.hermes.ext.jni;
 
-public class NativeObject {
+public class ObjectNative {
     private long mPointer = 0;
 
-    public NativeObject() {
+    public ObjectNative() {
     }
 
     public void destroy() {
@@ -15,7 +15,7 @@ public class NativeObject {
         mPointer = 0;
     }
 
-    public long getPointer() {
+    public long pointer() {
         return mPointer;
     }
 

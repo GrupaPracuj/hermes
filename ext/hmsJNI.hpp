@@ -8,7 +8,7 @@
 #include <jni.h>
 #include <string>
 
-extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_ext_jni_NativeObject_nativeDestroy(JNIEnv* pEnvironment, jobject pObject, jlong pPointer);
+extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_ext_jni_ObjectNative_nativeDestroy(JNIEnv* pEnvironment, jobject pObject, jlong pPointer);
 
 namespace hms
 {
@@ -16,67 +16,54 @@ namespace ext
 {
 namespace jni
 {
-
-    class SmartEnvironment
-    {
-        friend class SmartRef;
-        friend class SmartWeakRef;
-    public:
-        SmartEnvironment() = default;
-        SmartEnvironment(JavaVM* pJavaVM);
-        SmartEnvironment(SmartEnvironment&& pOther) = delete;
-        SmartEnvironment(const SmartEnvironment& pOther) = delete;
-        ~SmartEnvironment();
-
-        SmartEnvironment& operator=(const SmartEnvironment& pOther) = delete;
-
-        JNIEnv* getJNIEnv() const;
-
-    private:        
-        SmartEnvironment& operator=(SmartEnvironment&& pOther);
-
-        JavaVM* mJavaVM = nullptr;
-        JNIEnv* mEnvironment = nullptr;
-        bool mDetachCurrentThread = false;
-    };
     
-    class SmartRef
+    class Reference
     {
     public:
-        SmartRef(jobject pObject, JNIEnv* pEnvironment);
-        ~SmartRef();
+        Reference(jobject pObject, JNIEnv* pEnvironment);
+        Reference(const Reference& pOther) = delete;
+        Reference(Reference&& pOther);
+        ~Reference();
+
+        Reference& operator=(const Reference& pOther) = delete;
+        Reference& operator=(Reference&& pOther);
         
-        jobject getObject() const;
-        void getEnvironment(SmartEnvironment& pSmartEnvironment) const;
+        jobject object() const;
+        JNIEnv* environment() const;
         
     private:
-        jobject mObject = nullptr;
-        JavaVM* mJavaVM = nullptr;
+        jobject mObject;
+        JavaVM* mVM;
     };
     
-    class SmartWeakRef
+    class ReferenceWeak
     {
     public:
-        SmartWeakRef(jobject pObject, JNIEnv* pEnvironment);
-        ~SmartWeakRef();
+        ReferenceWeak(jobject pObject, JNIEnv* pEnvironment);
+        ReferenceWeak(const ReferenceWeak& pOther) = delete;
+        ReferenceWeak(ReferenceWeak&& pOther);
+        ~ReferenceWeak();
+
+        ReferenceWeak& operator=(const ReferenceWeak& pOther) = delete;
+        ReferenceWeak& operator=(ReferenceWeak&& pOther);
         
-        jobject getWeakObject() const;
-        void getEnvironment(SmartEnvironment& pSmartEnvironment) const;
+        jobject objectWeak() const;
+        JNIEnv* environment() const;
         
     private:
-        jobject mObject = nullptr;
-        JavaVM* mJavaVM = nullptr;
+        jobject mObjectWeak;
+        JavaVM* mVM;
     };
 
-    class NativeObject
+    class ObjectNative
     {
     public:
-        NativeObject() = delete;
-        NativeObject(const NativeObject& pOther) = delete;
-        NativeObject(NativeObject&& pOther) = delete;
+        ObjectNative() = delete;
+        ObjectNative(const ObjectNative& pOther) = delete;
+        ObjectNative(ObjectNative&& pOther) = delete;
 
-        NativeObject& operator=(const NativeObject& pOther) = delete;
-        NativeObject& operator=(NativeObject&& pOther) = delete;
+        ObjectNative& operator=(const ObjectNative& pOther) = delete;
+        ObjectNative& operator=(ObjectNative&& pOther) = delete;
 
         template<typename T>
         static jobject create(const T& pObject, JNIEnv* pEnvironment, jclass pClass = nullptr)
@@ -84,7 +71,11 @@ namespace jni
             auto container = new Container<T>();
             container->mObject = pObject;
 
-            return createObject(reinterpret_cast<jlong>(container), pEnvironment, pClass);
+            auto result = object(reinterpret_cast<jlong>(container), pEnvironment, pClass);
+            if (result == nullptr)
+                delete container;
+
+            return result;
         }
 
         template<typename T>
@@ -93,26 +84,31 @@ namespace jni
             auto container = new Container<T>();
             container->mObject = pObject;
 
-            return createObject(reinterpret_cast<jlong>(container), pEnvironment, pClass);
+            auto result = object(reinterpret_cast<jlong>(container), pEnvironment, pClass);
+            if (result == nullptr)
+                delete container;
+
+            return result;
         }
 
         template<typename T>
         static T& get(jobject pObject, JNIEnv* pEnvironment)
         {
-            return get<T>(getPointer(pObject, pEnvironment));
+            return get<T>(pointer(pObject, pEnvironment));
         }
 
         template<typename T>
         static T& get(jlong pPointer)
         {
-            assert(pPointer > 0);
+            if (pPointer <= 0)
+                throw std::invalid_argument("hmsJNI: parameter is null");
 
             auto container = reinterpret_cast<Container<T>*>(pPointer);
             return container->mObject;
         }
 
     private:
-        friend void ::Java_pl_grupapracuj_hermes_ext_jni_NativeObject_nativeDestroy(JNIEnv* pEnvironment, jobject pObject, jlong pPointer);
+        friend void ::Java_pl_grupapracuj_hermes_ext_jni_ObjectNative_nativeDestroy(JNIEnv* pEnvironment, jobject pObject, jlong pPointer);
 
         class ContainerGeneric
         {
@@ -128,8 +124,8 @@ namespace jni
             T mObject;
         };
 
-        static jobject createObject(jlong pPointer, JNIEnv* pEnvironment, jclass pClass);
-        static jlong getPointer(jobject pObject, JNIEnv* pEnvironment);
+        static jobject object(jlong pPointer, JNIEnv* pEnvironment, jclass pClass);
+        static jlong pointer(jobject pObject, JNIEnv* pEnvironment);
     };
     
     class Utility
