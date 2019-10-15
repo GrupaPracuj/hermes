@@ -4,12 +4,10 @@
 
 #include "hmsJNI.hpp"
 
-#include <cassert>
-
-extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_ext_jni_NativeObject_nativeDestroy(JNIEnv* pEnvironment, jobject pObject, jlong pPointer)
+extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_ext_jni_ObjectNative_nativeDestroy(JNIEnv* pEnvironment, jobject pObject, jlong pPointer)
 {
     if (pPointer > 0)
-        delete reinterpret_cast<hms::ext::jni::NativeObject::ContainerGeneric*>(pPointer);
+        delete reinterpret_cast<hms::ext::jni::ObjectNative::ContainerGeneric*>(pPointer);
 }
 
 namespace hms
@@ -19,177 +17,280 @@ namespace ext
 namespace jni
 {
 
-    /* NativeObject */
+    /* Environment */
 
-    jobject NativeObject::createObject(jlong pPointer, JNIEnv* pEnvironment, jclass pClass)
+    class Environment
     {
-        assert(pPointer > 0 && pEnvironment != nullptr);
+    public:
+        Environment() = default;
+        Environment(Environment& pOther) = delete;
+        Environment(Environment&& pOther) = delete;
 
-        bool deleteLocalRef = false;
-        jclass jClassNativeObject = pClass;
-        if (jClassNativeObject == nullptr)
+        ~Environment()
         {
-            jClassNativeObject = pEnvironment->FindClass("pl/grupapracuj/hermes/ext/jni/NativeObject");
-            deleteLocalRef = true;
+            if (mVM != nullptr)
+                mVM->DetachCurrentThread();
         }
-        assert(jClassNativeObject != nullptr);
 
-        jmethodID jMethodNativeObjectInit = pEnvironment->GetMethodID(jClassNativeObject, "<init>", "()V");
-        assert(jMethodNativeObjectInit != nullptr);
+        Environment& operator=(const Environment& pOther) = delete;
+        Environment& operator=(Environment&& pOther) = delete;
 
-        jfieldID jFieldPointer = pEnvironment->GetFieldID(jClassNativeObject, "mPointer", "J");
-        assert(jFieldPointer != nullptr);
+        JNIEnv* initialize(JavaVM* pVM)
+        {
+            if (pVM->GetEnv((void**)&mEnvironment, JNI_VERSION_1_6) == JNI_EDETACHED && pVM->AttachCurrentThread(&mEnvironment, nullptr) == JNI_OK)
+                mVM = pVM;
 
-        jobject jObjectNativeObject = pEnvironment->NewObject(jClassNativeObject, jMethodNativeObjectInit);
-        pEnvironment->SetLongField(jObjectNativeObject, jFieldPointer, pPointer);
+            return mEnvironment;
+        }
 
-        if (deleteLocalRef)
-            pEnvironment->DeleteLocalRef(jClassNativeObject);
+        JNIEnv* environmentJNI() const
+        {
+            return mEnvironment;
+        }
 
-        return jObjectNativeObject;
-    }
+    private:        
+        JavaVM* mVM = nullptr;
+        JNIEnv* mEnvironment = nullptr;
+    };
 
-    jlong NativeObject::getPointer(jobject pObject, JNIEnv* pEnvironment)
+    thread_local Environment gEnvironment;
+    
+    /* Reference */
+    
+    Reference::Reference(jobject pObject, JNIEnv* pEnvironment) : mObject(nullptr), mVM(nullptr)
     {
-        assert(pObject != nullptr && pEnvironment != nullptr);
+        if (pObject == nullptr || pEnvironment == nullptr)
+            throw std::invalid_argument("hmsJNI: one or more parameter is null");
 
-        jclass jClassNativeObject = pEnvironment->GetObjectClass(pObject);
-        assert(jClassNativeObject != nullptr);
-
-        jfieldID jFieldPointer = pEnvironment->GetFieldID(jClassNativeObject, "mPointer", "J");
-        assert(jFieldPointer != nullptr);
-
-        jlong pointer = pEnvironment->GetLongField(pObject, jFieldPointer);
-        pEnvironment->DeleteLocalRef(jClassNativeObject);
-
-        return pointer;
+        if (pEnvironment->GetJavaVM(&mVM) == JNI_OK)
+            mObject = pEnvironment->NewGlobalRef(pObject);
+        else
+            throw std::invalid_argument("hmsJNI: couldn't get JavaVM");
     }
 
-    /* SmartEnvironment */
-
-    SmartEnvironment::SmartEnvironment(JavaVM* pJavaVM) : mJavaVM(pJavaVM)
+    Reference::Reference(Reference&& pOther)
     {
-        assert(mJavaVM != nullptr);
+        mObject = pOther.mObject;
+        mVM = pOther.mVM;
 
-        if (mJavaVM->GetEnv((void**)&mEnvironment, JNI_VERSION_1_6) == JNI_EDETACHED && mJavaVM->AttachCurrentThread(&mEnvironment, nullptr) == JNI_OK)
-            mDetachCurrentThread = true;
+        pOther.mObject = nullptr;
+        pOther.mVM = nullptr;
     }
 
-    SmartEnvironment::~SmartEnvironment()
+    Reference::~Reference()
     {
-        if (mDetachCurrentThread)
-            mJavaVM->DetachCurrentThread();
-
+        if (mObject != nullptr)
+        {
+            try
+            {
+                environment()->DeleteGlobalRef(mObject);
+            }
+            catch (const std::exception& lpException) {}
+        }
     }
 
-    SmartEnvironment& SmartEnvironment::operator=(SmartEnvironment&& pOther)
+    Reference& Reference::operator=(Reference&& pOther)
     {
         if (&pOther == this)
             return *this;
 
-        mJavaVM = pOther.mJavaVM;
-        mEnvironment = pOther.mEnvironment;
-        mDetachCurrentThread = pOther.mDetachCurrentThread;
+        mObject = pOther.mObject;
+        mVM = pOther.mVM;
 
-        pOther.mJavaVM = nullptr;
-        pOther.mEnvironment = nullptr;
-        pOther.mDetachCurrentThread = false;
+        pOther.mObject = nullptr;
+        pOther.mVM = nullptr;
         
         return *this;
     }
 
-    JNIEnv* SmartEnvironment::getJNIEnv() const
-    {
-        return mEnvironment;
-    }
-    
-    /* SmartRef */
-    
-    SmartRef::SmartRef(jobject pObject, JNIEnv* pEnvironment)
-    {
-        assert(pObject != nullptr && pEnvironment != nullptr);
-
-        jint status = pEnvironment->GetJavaVM(&mJavaVM);
-        if (status == JNI_OK)
-            mObject = pEnvironment->NewGlobalRef(pObject);
-    }
-
-    SmartRef::~SmartRef()
-    {
-        if (mObject != nullptr)
-        {
-            SmartEnvironment smartEnvironment;
-            smartEnvironment = SmartEnvironment(mJavaVM);
-            JNIEnv* environment = smartEnvironment.getJNIEnv();
-            if (environment != nullptr)
-                environment->DeleteGlobalRef(mObject);
-        }
-    }
-
-    jobject SmartRef::getObject() const
+    jobject Reference::object() const
     {
         return mObject;
     }
 
-    void SmartRef::getEnvironment(SmartEnvironment& pSmartEnvironment) const
+    JNIEnv* Reference::environment() const
     {
-        pSmartEnvironment = SmartEnvironment(mJavaVM);
+        auto environmentJNI = gEnvironment.environmentJNI();
+        if (environmentJNI == nullptr)
+        {
+            environmentJNI = gEnvironment.initialize(mVM);
+            if (environmentJNI == nullptr)
+                throw std::runtime_error("hmsJNI: couldn't get JNIEnv");
+        }
+
+        return environmentJNI;
     }
     
-    /* SmartWeakRef */
+    /* ReferenceWeak */
 
-    SmartWeakRef::SmartWeakRef(jobject pObject, JNIEnv* pEnvironment)
+    ReferenceWeak::ReferenceWeak(jobject pObject, JNIEnv* pEnvironment) : mObjectWeak(nullptr), mVM(nullptr)
     {
-        assert(pObject != nullptr && pEnvironment != nullptr);
+        if (pObject == nullptr || pEnvironment == nullptr)
+            throw std::invalid_argument("hmsJNI: one or more parameter is null");
 
-        jint status = pEnvironment->GetJavaVM(&mJavaVM);
-        if (status == JNI_OK)
-            mObject = pEnvironment->NewWeakGlobalRef(pObject);
+        if (pEnvironment->GetJavaVM(&mVM) == JNI_OK)
+            mObjectWeak = pEnvironment->NewWeakGlobalRef(pObject);
+        else
+            throw std::invalid_argument("hmsJNI: couldn't get JavaVM");
     }
 
-    SmartWeakRef::~SmartWeakRef()
+    ReferenceWeak::ReferenceWeak(ReferenceWeak&& pOther)
     {
-        if (mObject != nullptr)
+        mObjectWeak = pOther.mObjectWeak;
+        mVM = pOther.mVM;
+
+        pOther.mObjectWeak = nullptr;
+        pOther.mVM = nullptr;
+    }
+
+    ReferenceWeak::~ReferenceWeak()
+    {
+        if (mObjectWeak != nullptr)
         {
-            SmartEnvironment smartEnvironment;
-            smartEnvironment = SmartEnvironment(mJavaVM);
-            JNIEnv* environment = smartEnvironment.getJNIEnv();
-            if (environment != nullptr)
-                environment->DeleteWeakGlobalRef(mObject);
+            try
+            {
+                environment()->DeleteWeakGlobalRef(mObjectWeak);
+            }
+            catch (const std::exception& lpException) {}
         }
     }
 
-    jobject SmartWeakRef::getWeakObject() const
+    ReferenceWeak& ReferenceWeak::operator=(ReferenceWeak&& pOther)
     {
-        return mObject;
+        if (&pOther == this)
+            return *this;
+
+        mObjectWeak = pOther.mObjectWeak;
+        mVM = pOther.mVM;
+
+        pOther.mObjectWeak = nullptr;
+        pOther.mVM = nullptr;
+        
+        return *this;
     }
 
-    void SmartWeakRef::getEnvironment(SmartEnvironment& pSmartEnvironment) const
+    jobject ReferenceWeak::objectWeak() const
     {
-        pSmartEnvironment = SmartEnvironment(mJavaVM);
+        return mObjectWeak;
+    }
+
+    JNIEnv* ReferenceWeak::environment() const
+    {
+        auto environmentJNI = gEnvironment.environmentJNI();
+        if (environmentJNI == nullptr)
+        {
+            environmentJNI = gEnvironment.initialize(mVM);
+            if (environmentJNI == nullptr)
+                throw std::runtime_error("hmsJNI: couldn't get JNIEnv");
+        }
+
+        return environmentJNI;
+    }
+
+    /* ObjectNative */
+
+    jobject ObjectNative::object(jlong pPointer, JNIEnv* pEnvironment, jclass pClass)
+    {
+        if (pPointer <= 0 || pEnvironment == nullptr)
+            throw std::invalid_argument("hmsJNI: one or more parameter is null");
+
+        bool deleteLocalRef = false;
+        jclass classJNI = pClass;
+        if (classJNI == nullptr)
+        {
+            classJNI = pEnvironment->FindClass("pl/grupapracuj/hermes/ext/jni/ObjectNative");
+            if (pEnvironment->ExceptionCheck())
+                throw std::runtime_error("hmsJNI: JNI method 'FindClass' failed");
+
+            deleteLocalRef = true;
+        }
+
+        jobject result = nullptr;
+
+        if (classJNI != nullptr)
+        {
+            jmethodID methodInitJNI = pEnvironment->GetMethodID(classJNI, "<init>", "()V");
+            if (pEnvironment->ExceptionCheck())
+            {
+                if (deleteLocalRef)
+                    pEnvironment->DeleteLocalRef(classJNI);
+
+                throw std::runtime_error("hmsJNI: JNI method 'GetMethodID' failed");
+            }
+
+            jfieldID fieldPointerJNI = pEnvironment->GetFieldID(classJNI, "mPointer", "J");
+            if (pEnvironment->ExceptionCheck())
+            {
+                if (deleteLocalRef)
+                    pEnvironment->DeleteLocalRef(classJNI);
+
+                throw std::runtime_error("hmsJNI: JNI method 'GetFieldID' failed");
+            }
+
+            result = pEnvironment->NewObject(classJNI, methodInitJNI);
+            if (pEnvironment->ExceptionCheck())
+            {
+                if (deleteLocalRef)
+                    pEnvironment->DeleteLocalRef(classJNI);
+
+                throw std::runtime_error("hmsJNI: JNI method 'NewObject' failed");
+            }
+
+            pEnvironment->SetLongField(result, fieldPointerJNI, pPointer);
+            if (pEnvironment->ExceptionCheck())
+            {
+                if (deleteLocalRef)
+                    pEnvironment->DeleteLocalRef(classJNI);
+
+                throw std::runtime_error("hmsJNI: JNI method 'SetLongField' failed");
+            }
+        }
+
+        if (deleteLocalRef)
+            pEnvironment->DeleteLocalRef(classJNI);
+
+        return result;
+    }
+
+    jlong ObjectNative::pointer(jobject pObject, JNIEnv* pEnvironment)
+    {
+        if (pObject == nullptr || pEnvironment == nullptr)
+            throw std::invalid_argument("hmsJNI: one or more parameter is null");
+
+        jclass classJNI = pEnvironment->GetObjectClass(pObject);
+
+        jfieldID fieldPointerJNI = pEnvironment->GetFieldID(classJNI, "mPointer", "J");        
+        if (pEnvironment->ExceptionCheck())
+        {
+            pEnvironment->DeleteLocalRef(classJNI);
+            throw std::runtime_error("hmsJNI: JNI method 'GetFieldID' failed");
+        }
+
+        jlong result = pEnvironment->GetLongField(pObject, fieldPointerJNI);
+
+        pEnvironment->DeleteLocalRef(classJNI);
+
+        return result;
     }
     
     /* Utility */
     
     std::string Utility::string(jstring pData, JNIEnv* pEnvironment)
     {
-        assert(pEnvironment != nullptr);
+        std::string result;
         
-        std::string data;
-        
-        if (pData != nullptr)
+        if (pData != nullptr && pEnvironment != nullptr)
         {
-            const char* tmp = pEnvironment->GetStringUTFChars(pData, nullptr);
-            
-            if (tmp)
+            const char* tmp = pEnvironment->GetStringUTFChars(pData, nullptr);            
+            if (tmp != nullptr)
             {
                 const jsize length = pEnvironment->GetStringUTFLength(pData);
-                data = std::string(tmp, length);
+                result = std::string(tmp, length);
                 pEnvironment->ReleaseStringUTFChars(pData, tmp);
             }
         }
         
-        return data;
+        return result;
     }
     
 }
