@@ -28,7 +28,7 @@ namespace jni
 
         ~Environment()
         {
-            if (mDetachCurrentThread)
+            if (mVM != nullptr)
                 mVM->DetachCurrentThread();
         }
 
@@ -38,10 +38,7 @@ namespace jni
         JNIEnv* initialize(JavaVM* pVM)
         {
             if (pVM->GetEnv((void**)&mEnvironment, JNI_VERSION_1_6) == JNI_EDETACHED && pVM->AttachCurrentThread(&mEnvironment, nullptr) == JNI_OK)
-            {
                 mVM = pVM;
-                mDetachCurrentThread = true;
-            }
 
             return mEnvironment;
         }
@@ -54,7 +51,6 @@ namespace jni
     private:        
         JavaVM* mVM = nullptr;
         JNIEnv* mEnvironment = nullptr;
-        bool mDetachCurrentThread = false;
     };
 
     thread_local Environment gEnvironment;
