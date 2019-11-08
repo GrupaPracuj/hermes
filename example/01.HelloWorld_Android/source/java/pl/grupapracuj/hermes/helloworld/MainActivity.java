@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
-		mTextOutput = (TextView) findViewById(R.id.tv_result);
+		/*mTextOutput = (TextView) findViewById(R.id.tv_result);
         mButtonExecuteJNI = (Button) findViewById(R.id.btn_call_jni);
         mButtonClear = (Button) findViewById(R.id.btn_clear_results);
 
@@ -57,19 +57,19 @@ public class MainActivity extends AppCompatActivity {
                     executeNative(mHelloWorld.getPointer());
             }
         });
-        mTextOutput.setMovementMethod(new ScrollingMovementMethod());
+        mTextOutput.setMovementMethod(new ScrollingMovementMethod());*/
     }
 
     @Override
     protected void onDestroy() {
-        if (mHelloWorld != null)
-            mHelloWorld.destroy();
+        /*if (mHelloWorld != null)
+            mHelloWorld.destroy();*/
 
         super.onDestroy();
     }
 
     public void addText(String pText) {
-        if (isFinishing())
+        /*if (isFinishing())
             return;
 
         StringBuilder sb = new StringBuilder(mTextOutput.getText().toString());
@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
 
         sb.append(pText);
 
-        mTextOutput.setText(sb.toString());
+        mTextOutput.setText(sb.toString());*/
     }
 
     private String copyData(String pFilename)
