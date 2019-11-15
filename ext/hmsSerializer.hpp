@@ -8,6 +8,7 @@
 #include <functional>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -66,7 +67,7 @@ namespace ext
     public:
         using property_type = T;
         
-        Property(std::string pName, T C::* pPtr, ESerializerMode pMode = ESerializerMode::All, std::function<bool(const C&, const T&)> pSerializeCondition = nullptr, std::function<void(C&, T&)> pDidDeserialize = nullptr) : mName(std::move(pName)), mPtr(pPtr), mMode(pMode), mSerializeCondition(std::move(pSerializeCondition)), mDidDeserialize(std::move(pDidDeserialize)) {}
+        Property(std::string pName, T C::* pPtr, ESerializerMode pMode = ESerializerMode::All, std::function<bool(const C&, const T&)> pSerializeCondition = nullptr, std::function<void(C&, T&)> pDeserialized = nullptr) : mName(std::move(pName)), mPtr(pPtr), mMode(pMode), mSerializeCondition(std::move(pSerializeCondition)), mDeserialized(std::move(pDeserialized)) {}
 
         T& get(C& pObj) const
         {
@@ -95,15 +96,15 @@ namespace ext
         
         void didDeserialize(C& pObj) const
         {
-            if (mDidDeserialize != nullptr)
-                mDidDeserialize(pObj, get(pObj));
+            if (mDeserialized != nullptr)
+                mDeserialized(pObj, get(pObj));
         }
         
     private:
         ESerializerMode mMode;
         std::string mName;
         std::function<bool(const C&, const T&)> mSerializeCondition;
-        std::function<void(C&, T&)> mDidDeserialize;
+        std::function<void(C&, T&)> mDeserialized;
         T C::* mPtr;
     };
     
@@ -141,13 +142,21 @@ namespace ext
     
     namespace json
     {
+        template <typename T>
+        struct is_deserialize_class : std::false_type{};
+    
         bool convert(const Json::Value& pSource, std::string& pDestination);
         bool convert(const std::string& pSource, Json::Value& pDestination);
         
         template <typename T>
         bool assignOp(const Json::Value* pSource, T& pDestination)
         {
-            return false;
+            bool status = false;
+            
+            if constexpr(is_deserialize_class<T>::value)
+                status = pDestination.deserialize(*pSource);
+            
+            return status;
         }
         
         template <>
@@ -183,7 +192,7 @@ namespace ext
             {
                 if (pKey.size() > 0)
                 {
-                    if (pSource.isMember(pKey))
+                    if (pSource.isObject() && pSource.isMember(pKey))
                         source = &pSource[pKey];
                 }
                 else
@@ -200,6 +209,103 @@ namespace ext
             
             return (source != nullptr) ? true : false;
         }
+    
+        template <typename K, typename V>
+        class Map
+        {
+        public:
+            Map(std::string pKey, std::string pValue) : mKey(std::move(pKey)), mValue(std::move(pValue))
+            {
+            }
+            
+            using iterator = typename std::unordered_map<K, V>::iterator;
+            iterator begin()
+            {
+                return mMap.begin();
+            }
+            
+            iterator end()
+            {
+                return mMap.end();
+            }
+            
+            using const_iterator = typename std::unordered_map<K, V>::const_iterator;
+            const_iterator cbegin() const
+            {
+                return mMap.cbegin();
+            }
+            
+            const_iterator cend() const
+            {
+                return mMap.cend();
+            }
+            
+            const_iterator find(const std::string& pKey) const
+            {
+                return mMap.find(pKey);
+            }
+            
+            size_t count() const
+            {
+                return mMap.size();
+            }
+            
+            bool deserialize(const Json::Value& pRoot)
+            {
+                bool didDeserializeAtLeastOne = false;
+                if (pRoot.isArray())
+                {
+                    for (const auto& v : pRoot)
+                    {
+                        K key{};
+                        V value{};
+                        if (safeAs<K>(v, key, mKey) && safeAs<V>(v, value, mValue))
+                        {
+                            didDeserializeAtLeastOne = true;
+                            mMap[key] = value;
+                        }
+                    }
+                }
+                
+                return didDeserializeAtLeastOne;
+            }
+        
+        private:
+            std::unordered_map<K, V> mMap;
+            std::string mKey;
+            std::string mValue;
+        };
+        
+        template <typename T>
+        class Field
+        {
+        public:
+            Field(std::string pKey = "name") : mKey(std::move(pKey))
+            {
+            }
+            
+            const T& value() const
+            {
+                return mValue;
+            }
+            
+            bool deserialize(const Json::Value& pRoot)
+            {
+                T value{};
+                safeAs<T>(pRoot, value, mKey);
+                return safeAs<T>(pRoot, mValue, mKey);
+            }
+        
+        private:
+            T mValue{};
+            std::string mKey;
+        };
+        
+        template <typename K, typename V>
+        struct is_deserialize_class<Map<K, V>> : std::true_type{};
+        
+        template <typename T>
+        struct is_deserialize_class<Field<T>> : std::true_type{};
         
         template <typename C, typename = std::enable_if_t<!hasRegisteredProperties<C>() && !std::is_pointer<C>::value && (!is_array<C>::value && !is_vector<C>::value)>, typename = void>
         void serialize(Json::Value& pDestination, const C& pSource, const std::string& pName = "");
@@ -217,19 +323,19 @@ namespace ext
         Json::Value serialize(const C& pSource, const std::string& pName = "");
         
         template <typename C, typename = std::enable_if_t<!hasRegisteredProperties<C>() && !std::is_pointer<C>::value && (!is_array<C>::value && !is_vector<C>::value)>, typename = void>
-        void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName = "");
+        bool deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName = "");
         
         template <typename C, typename = std::enable_if_t<!hasRegisteredProperties<C>() && !std::is_pointer<C>::value && is_array<C>::value>, typename = void, typename = void>
-        void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName = "");
+        bool deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName = "");
         
         template <typename C, typename = std::enable_if_t<!hasRegisteredProperties<C>() && !std::is_pointer<C>::value && is_vector<C>::value>, typename = void, typename = void, typename = void>
-        void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName = "");
+        bool deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName = "");
         
         template <typename C, typename = std::enable_if_t<std::is_pointer<C>::value>>
-        void deserialize(C pDestination, const Json::Value& pSource, const std::string& pName = "");
+        bool deserialize(C pDestination, const Json::Value& pSource, const std::string& pName = "");
         
         template <typename C, typename = std::enable_if_t<hasRegisteredProperties<C>() && !std::is_pointer<C>::value>>
-        void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName = "");
+        bool deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName = "");
         
         template <typename C, typename = std::enable_if_t<!std::is_pointer<C>::value>>
         C deserialize(const Json::Value& pSource, const std::string& pName = "");
@@ -291,28 +397,35 @@ namespace ext
         }
         
         template <typename C, typename, typename>
-        void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName)
+        bool deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName)
         {
-            safeAs<C>(pSource, pDestination, pName);
+            return safeAs<C>(pSource, pDestination, pName);
         }
         
         template <typename C, typename, typename, typename> // array
-        void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName)
+        bool deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName)
         {
+            bool status = false;
+        
             Json::Value empty;
             const Json::Value& value = pName.length() == 0 ? pSource :
                                        pSource.isObject() ? pSource[pName] :
                                        empty;
             if (value.isArray() && value.size() == pDestination.size())
             {
+                status = true;
                 for (size_t i = 0; i < static_cast<size_t>(value.size()); i++)
                     deserialize<typename C::value_type>(pDestination[i], value[static_cast<int>(i)], "");
             }
+            
+            return status;
         }
         
         template <typename C, typename, typename, typename, typename> // vector
-        void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName)
+        bool deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName)
         {
+            bool status = false;
+        
             Json::Value empty;
             const Json::Value& value = pName.length() == 0 ? pSource :
                                        pSource.isObject() ? pSource[pName] :
@@ -321,30 +434,36 @@ namespace ext
             {
                 size_t offset = pDestination.size();
                 pDestination.resize(offset + value.size(), typename C::value_type{});
-                
+                status = true;
                 for (int i = 0; static_cast<Json::ArrayIndex>(i) < value.size(); i++)
                     deserialize<typename C::value_type>(pDestination[offset + static_cast<size_t>(i)], value[i]);
             }
+            
+            return status;
         }
         
         template <typename C, typename>
-        void deserialize(C pDestination, const Json::Value& pSource, const std::string& pName)
+        bool deserialize(C pDestination, const Json::Value& pSource, const std::string& pName)
         {
-            deserialize<typename std::remove_pointer<C>::type>(*pDestination, pSource, pName);
+            return deserialize<typename std::remove_pointer<C>::type>(*pDestination, pSource, pName);
         }
         
         template <typename C, typename>
-        void deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName)
+        bool deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName)
         {
             const Json::Value& source = pName.length() == 0 ? pSource : pSource[pName];
-            executeOnAllProperties<C>([&source, &pDestination](auto& lpProperty) -> void
+            bool didDeserializeAtLeastOne = false;
+            
+            executeOnAllProperties<C>([&source, &pDestination, &didDeserializeAtLeastOne](auto& lpProperty) -> void
             {
-                if ((static_cast<uint32_t>(lpProperty.getMode()) & static_cast<uint32_t>(ESerializerMode::Deserialize)) == static_cast<uint32_t>(ESerializerMode::Deserialize))
+                if ((static_cast<uint32_t>(lpProperty.getMode()) & static_cast<uint32_t>(ESerializerMode::Deserialize)) == static_cast<uint32_t>(ESerializerMode::Deserialize) && deserialize<typename std::decay_t<decltype(lpProperty)>::property_type>(lpProperty.get(pDestination), source, lpProperty.getName()))
                 {
-                    deserialize<typename std::decay_t<decltype(lpProperty)>::property_type>(lpProperty.get(pDestination), source, lpProperty.getName());
+                    didDeserializeAtLeastOne = true;
                     lpProperty.didDeserialize(pDestination);
                 }
             });
+            
+            return didDeserializeAtLeastOne;
         }
         
         template <typename C, typename>
