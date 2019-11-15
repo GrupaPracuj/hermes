@@ -66,23 +66,10 @@ namespace jni
         ObjectNative& operator=(ObjectNative&& pOther) = delete;
 
         template<typename T>
-        static jobject create(const T& pObject, JNIEnv* pEnvironment, jclass pClass = nullptr)
+        static jobject create(T pObject, JNIEnv* pEnvironment, jclass pClass = nullptr)
         {
             auto container = new Container<T>();
-            container->mObject = pObject;
-
-            auto result = object(reinterpret_cast<jlong>(container), pEnvironment, pClass);
-            if (result == nullptr)
-                delete container;
-
-            return result;
-        }
-
-        template<typename T>
-        static jobject create(T&& pObject, JNIEnv* pEnvironment, jclass pClass = nullptr)
-        {
-            auto container = new Container<T>();
-            container->mObject = pObject;
+            container->mObject = std::move(pObject);
 
             auto result = object(reinterpret_cast<jlong>(container), pEnvironment, pClass);
             if (result == nullptr)

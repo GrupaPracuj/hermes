@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.4.1)
 
-SET(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG=1")
-SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O2 -DNDEBUG=1")
+SET(CMAKE_CXX_FLAGS_DEBUG "-g -D_DEBUG=1 -DDEBUG=1")
+SET(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -DNDEBUG=1")
 
 set(HERMES_LIBRARY_PATH $ENV{HERMES_HOME}/lib/android/${ANDROID_ABI})
 
@@ -29,6 +29,15 @@ set_target_properties(libjsoncpp PROPERTIES IMPORTED_LOCATION ${HERMES_LIBRARY_P
 add_library(libssl STATIC IMPORTED )
 set_target_properties(libssl PROPERTIES IMPORTED_LOCATION ${HERMES_LIBRARY_PATH}/libssl.a)
 
-add_library(mainactivity SHARED source/cpp/MainActivity.cpp)
+include_directories(../01.HelloWorld)
 
-target_link_libraries(mainactivity libhmsextserializer libhmsextjni libhermes libaes libjsoncpp libcurl libssl libcrypto android z log)
+file(GLOB SOURCE_LIST
+    ../01.HelloWorld/*.cpp
+    ../01.HelloWorld/*.hpp
+    source/cpp/*.cpp
+    source/cpp/*.hpp
+)
+
+add_library(helloworld SHARED ${SOURCE_LIST})
+
+target_link_libraries(helloworld libhmsextserializer libhmsextjni libhermes libaes libjsoncpp libcurl libssl libcrypto android z log)
