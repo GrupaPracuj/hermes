@@ -94,7 +94,7 @@ namespace ext
             return mSerializeCondition == nullptr ? true : mSerializeCondition(pObj, get(pObj));
         }
         
-        void didDeserialize(C& pObj) const
+        void deserialized(C& pObj) const
         {
             if (mDeserialized != nullptr)
                 mDeserialized(pObj, get(pObj));
@@ -143,7 +143,7 @@ namespace ext
     namespace json
     {
         template <typename T>
-        struct is_deserialize_class : std::false_type{};
+        struct is_deserializable_class : std::false_type{};
     
         bool convert(const Json::Value& pSource, std::string& pDestination);
         bool convert(const std::string& pSource, Json::Value& pDestination);
@@ -153,7 +153,7 @@ namespace ext
         {
             bool status = false;
             
-            if constexpr(is_deserialize_class<T>::value)
+            if constexpr(is_deserializable_class<T>::value)
                 status = pDestination.deserialize(*pSource);
             
             return status;
@@ -252,7 +252,7 @@ namespace ext
             
             bool deserialize(const Json::Value& pRoot)
             {
-                bool didDeserializeAtLeastOne = false;
+                bool deserialized = false;
                 if (pRoot.isArray())
                 {
                     for (const auto& v : pRoot)
@@ -261,13 +261,13 @@ namespace ext
                         V value{};
                         if (safeAs<K>(v, key, mKey) && safeAs<V>(v, value, mValue))
                         {
-                            didDeserializeAtLeastOne = true;
+                            deserialized = true;
                             mMap[key] = value;
                         }
                     }
                 }
                 
-                return didDeserializeAtLeastOne;
+                return deserialized;
             }
         
         private:
@@ -302,10 +302,10 @@ namespace ext
         };
         
         template <typename K, typename V>
-        struct is_deserialize_class<Map<K, V>> : std::true_type{};
+        struct is_deserializable_class<Map<K, V>> : std::true_type{};
         
         template <typename T>
-        struct is_deserialize_class<Field<T>> : std::true_type{};
+        struct is_deserializable_class<Field<T>> : std::true_type{};
         
         template <typename C, typename = std::enable_if_t<!hasRegisteredProperties<C>() && !std::is_pointer<C>::value && (!is_array<C>::value && !is_vector<C>::value)>, typename = void>
         void serialize(Json::Value& pDestination, const C& pSource, const std::string& pName = "");
@@ -452,18 +452,18 @@ namespace ext
         bool deserialize(C& pDestination, const Json::Value& pSource, const std::string& pName)
         {
             const Json::Value& source = pName.length() == 0 ? pSource : pSource[pName];
-            bool didDeserializeAtLeastOne = false;
+            bool deserialized = false;
             
-            executeOnAllProperties<C>([&source, &pDestination, &didDeserializeAtLeastOne](auto& lpProperty) -> void
+            executeOnAllProperties<C>([&source, &pDestination, &deserialized](auto& lpProperty) -> void
             {
                 if ((static_cast<uint32_t>(lpProperty.getMode()) & static_cast<uint32_t>(ESerializerMode::Deserialize)) == static_cast<uint32_t>(ESerializerMode::Deserialize) && deserialize<typename std::decay_t<decltype(lpProperty)>::property_type>(lpProperty.get(pDestination), source, lpProperty.getName()))
                 {
-                    didDeserializeAtLeastOne = true;
-                    lpProperty.didDeserialize(pDestination);
+                    deserialized = true;
+                    lpProperty.deserialized(pDestination);
                 }
             });
             
-            return didDeserializeAtLeastOne;
+            return deserialized;
         }
         
         template <typename C, typename>
