@@ -335,7 +335,7 @@ def configure(pSettings, pRelativeRootDir):
             pSettings.mArch = ['armv7', 'armv7s', 'arm64', 'i386', 'x86_64']
             pSettings.mArchFlagASM = ['-arch armv7 ' + commonFlags, '-arch armv7s ' + commonFlags, '-arch arm64 ' + commonFlags, '-arch i386 ' + commonSimulatorFlags, '-arch x86_64 ' + commonSimulatorFlags]
             pSettings.mArchFlagC = ['-arch armv7 -ObjC ' + commonFlags, '-arch armv7s -ObjC ' + commonFlags, '-arch arm64 -ObjC ' + commonFlags, '-arch i386 -ObjC ' + commonSimulatorFlags, '-arch x86_64 -ObjC ' + commonSimulatorFlags]
-            pSettings.mArchFlagCXX = ['-arch armv7 -ObjC++ -stdlib=libc++ ' + commonFlags, '-arch armv7s -ObjC++ -stdlib=libc++ ' + commonFlags, '-arch arm64 -ObjC++ -stdlib=libc++ ' + commonFlags, '-arch i386 -ObjC++ -stdlib=libc++ ' + commonSimulatorFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ ' + commonSimulatorFlags]
+            pSettings.mArchFlagCXX = ['-arch armv7 -ObjC++ -stdlib=libc++ -fno-aligned-allocation ' + commonFlags, '-arch armv7s -ObjC++ -stdlib=libc++ -fno-aligned-allocation ' + commonFlags, '-arch arm64 -ObjC++ -stdlib=libc++ ' + commonFlags, '-arch i386 -ObjC++ -stdlib=libc++ ' + commonSimulatorFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ ' + commonSimulatorFlags]
             pSettings.mArchName = pSettings.mArch
             pSettings.mMakeFlag = ['DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
             pSettings.mTargetSdk = ['iPhoneOS', 'iPhoneOS', 'iPhoneOS', 'iPhoneSimulator', 'iPhoneSimulator']

@@ -22,7 +22,7 @@ EXT_GZIPREADER_NAME = libhmsextgzipreader.a
 EXT_GZIPREADER_SRCFILES = ext/hmsGZipReader.cpp
 EXT_GZIPREADER_OBJFILES = $(EXT_GZIPREADER_SRCFILES:%.cpp=%.o)
 
-CXXFLAGS += -std=c++14 -Iinclude -Idepend/aes/include -Idepend/curl/include -Idepend/jsoncpp/include -Idepend/zlib/include
+CXXFLAGS += -std=c++17 -Iinclude -Idepend/aes/include -Idepend/curl/include -Idepend/jsoncpp/include -Idepend/zlib/include
 
 ifndef NDEBUG
 CXXFLAGS += -g -D_DEBUG=1 -DDEBUG=1
