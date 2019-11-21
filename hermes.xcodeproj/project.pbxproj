@@ -576,6 +576,7 @@
 				);
 				OTHER_LDFLAGS = "-ObjC";
 				SDKROOT = iphoneos;
+				WARNING_CFLAGS = "-Wreorder";
 			};
 			name = Debug;
 		};
@@ -641,6 +642,7 @@
 				OTHER_LDFLAGS = "-ObjC";
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
+				WARNING_CFLAGS = "-Wreorder";
 			};
 			name = Release;
 		};

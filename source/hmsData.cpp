@@ -265,7 +265,7 @@ namespace hms
     
     /* MemoryWriter */
     
-    MemoryWriter::MemoryWriter(void* pMemory, size_t pSize, bool pDeleteOnClose) : mBuffer(pMemory), mSize(pSize), mDeleteBufferOnClose(pDeleteOnClose)
+    MemoryWriter::MemoryWriter(void* pMemory, size_t pSize, bool pDeleteOnClose) : mBuffer(pMemory), mDeleteBufferOnClose(pDeleteOnClose), mSize(pSize)
     {
     }
     
@@ -495,7 +495,7 @@ namespace hms
     
     /* MemoryReader */
     
-    MemoryReader::MemoryReader(const void* pMemory, size_t pSize, bool pDeleteOnClose) : mBuffer(pMemory), mSize(pSize), mDeleteBufferOnClose(pDeleteOnClose)
+    MemoryReader::MemoryReader(const void* pMemory, size_t pSize, bool pDeleteOnClose) : mBuffer(pMemory), mDeleteBufferOnClose(pDeleteOnClose), mSize(pSize)
     {
     }
     

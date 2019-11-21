@@ -67,7 +67,7 @@ namespace ext
     public:
         using property_type = T;
         
-        Property(std::string pName, T C::* pPtr, ESerializerMode pMode = ESerializerMode::All, std::function<bool(const C&, const T&)> pSerializeCondition = nullptr, std::function<void(C&, T&)> pDeserialized = nullptr) : mName(std::move(pName)), mPtr(pPtr), mMode(pMode), mSerializeCondition(std::move(pSerializeCondition)), mDeserialized(std::move(pDeserialized)) {}
+        Property(std::string pName, T C::* pPtr, ESerializerMode pMode = ESerializerMode::All, std::function<bool(const C&, const T&)> pSerializeCondition = nullptr, std::function<void(C&, T&)> pDeserialized = nullptr) : mMode(pMode), mName(std::move(pName)), mSerializeCondition(std::move(pSerializeCondition)), mDeserialized(std::move(pDeserialized)), mPtr(pPtr) {}
 
         T& get(C& pObj) const
         {
@@ -291,8 +291,6 @@ namespace ext
             
             bool deserialize(const Json::Value& pRoot)
             {
-                T value{};
-                safeAs<T>(pRoot, value, mKey);
                 return safeAs<T>(pRoot, mValue, mKey);
             }
         
