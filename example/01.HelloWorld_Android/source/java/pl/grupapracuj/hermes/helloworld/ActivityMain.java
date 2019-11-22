@@ -10,6 +10,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -36,6 +37,7 @@ public class ActivityMain extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(null);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
         buildLayout();
 
         mNativeHelloWorld = nativeCreate(assetCopy("certificate.pem"));
@@ -47,7 +49,7 @@ public class ActivityMain extends Activity {
                 nativeExecute(mNativeHelloWorld.pointer(), mRequestIndex);
 
                 mRequestIndex++;
-                if (mRequestIndex > 5)
+                if (mRequestIndex > 7)
                     mRequestIndex = 1;
             }
         });

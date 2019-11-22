@@ -5,7 +5,7 @@ std::unordered_map<std::string, jclass> gClassLoader;
 
 extern "C" JNIEXPORT jobject JNICALL Java_pl_grupapracuj_hermes_helloworld_ActivityMain_nativeCreate(JNIEnv* pEnvironment, jobject pObject, jstring pCertificatePath)
 {
-    auto helloWorld = std::make_shared<HelloWorld>(hms::ext::jni::Utility::string(pCertificatePath, pEnvironment));
+    auto helloWorld = std::make_shared<HelloWorld>(nullptr, hms::ext::jni::Utility::string(pCertificatePath, pEnvironment));
 
     return hms::ext::jni::ObjectNative::create<std::shared_ptr<HelloWorld>>(helloWorld, pEnvironment, gClassLoader["pl/grupapracuj/hermes/ext/jni/NativeObject"]);
 }

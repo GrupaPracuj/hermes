@@ -59,7 +59,7 @@ namespace hms
 class HelloWorld
 {
 public:
-    HelloWorld(std::string pCertificatePath);
+    HelloWorld(std::function<void(std::function<void()>)> pMainThreadHandler, std::string pCertificatePath);
     ~HelloWorld();
 
     void execute(std::function<void(std::string)> pCallback, int32_t pRequestIndex);

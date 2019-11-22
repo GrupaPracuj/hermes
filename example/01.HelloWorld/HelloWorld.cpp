@@ -4,7 +4,7 @@ UserData::UserData(size_t pId) : hms::DataShared(pId)
 {
 };
 
-HelloWorld::HelloWorld(std::string pCertificatePath)
+HelloWorld::HelloWorld(std::function<void(std::function<void()>)> pMainThreadHandler, std::string pCertificatePath)
 {
     auto logger = hms::Hermes::getInstance()->getLogger();
     logger->initialize(hms::ELogLevel::Info, "HelloWorld", nullptr);
@@ -16,7 +16,7 @@ HelloWorld::HelloWorld(std::string pCertificatePath)
     auto taskManager = hms::Hermes::getInstance()->getTaskManager();
     // First element of pair - thread pool id, second element of pair - number of threads in thread pool.
     const std::pair<int, int> threadInfo = {0, 2};
-    taskManager->initialize({threadInfo});
+    taskManager->initialize({threadInfo}, pMainThreadHandler);
 
     auto networkManager = hms::Hermes::getInstance()->getNetworkManager();
     networkManager->initialize(10, threadInfo.first, threadInfo.first, {200, 299});
