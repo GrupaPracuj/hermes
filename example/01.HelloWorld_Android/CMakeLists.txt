@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.4.1)
 SET(CMAKE_CXX_FLAGS_DEBUG "-g -D_DEBUG=1 -DDEBUG=1")
 SET(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -DNDEBUG=1")
 
-set(HERMES_LIBRARY_PATH $ENV{HERMES_HOME}/lib/android/${ANDROID_ABI})
+set(HERMES_LIBRARY_PATH ${PROJECT_SOURCE_DIR}/../../lib/android/${ANDROID_ABI})
 
 add_library(libaes STATIC IMPORTED )
 set_target_properties(libaes PROPERTIES IMPORTED_LOCATION ${HERMES_LIBRARY_PATH}/libaes.a)
@@ -29,11 +29,11 @@ set_target_properties(libjsoncpp PROPERTIES IMPORTED_LOCATION ${HERMES_LIBRARY_P
 add_library(libssl STATIC IMPORTED )
 set_target_properties(libssl PROPERTIES IMPORTED_LOCATION ${HERMES_LIBRARY_PATH}/libssl.a)
 
-include_directories(../01.HelloWorld)
+include_directories(${PROJECT_SOURCE_DIR}/../01.HelloWorld)
 
 file(GLOB SOURCE_LIST
-    ../01.HelloWorld/*.cpp
-    ../01.HelloWorld/*.hpp
+    ${PROJECT_SOURCE_DIR}/../01.HelloWorld/*.cpp
+    ${PROJECT_SOURCE_DIR}/../01.HelloWorld/*.hpp
     source/cpp/*.cpp
     source/cpp/*.hpp
 )

@@ -24,7 +24,7 @@ endif
 SRCFILES = $(wildcard *.cpp)
 OBJFILES = $(SRCFILES:%.cpp=%.o)
 
-CXXFLAGS += -std=c++17 -fPIC -fno-strict-aliasing -fstack-protector -I. -I.. -I$(HERMES_HOME) -I$(HERMES_HOME)/include -I$(HERMES_HOME)/depend/jsoncpp/include
+CXXFLAGS += -std=c++17 -fPIC -fno-strict-aliasing -fstack-protector -I. -I../.. -I../../include -I../../depend/jsoncpp/include
 
 LDFLAGS += -lhmsextserializer -lhermes -laes -lcurl -ljsoncpp -lz -lzlib $(POSTLDFLAGS)
 

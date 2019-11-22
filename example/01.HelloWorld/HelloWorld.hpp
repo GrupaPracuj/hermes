@@ -49,8 +49,8 @@ namespace hms
         template<>
         inline auto registerProperties<UserData>()
         {
-            return std::make_tuple(Property<UserData, int32_t>("id", &UserData::mId),
-                Property<UserData, std::string>("name", &UserData::mName),
+            return std::make_tuple(Property<UserData, int32_t>("id", &UserData::mId, ESerializerMode::Deserialize),
+                Property<UserData, std::string>("name", &UserData::mName, ESerializerMode::Deserialize),
                 Property<UserData, UserData::Address>("address", &UserData::mAddress, ESerializerMode::Deserialize));
         }
     }
