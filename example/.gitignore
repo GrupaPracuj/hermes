@@ -5,4 +5,5 @@ local.properties
 .externalNativeBuild
 *.iml
 build
+01.HelloWorld/01.HelloWorld
 01.HelloWorld_Android/source/java/pl/grupapracuj/hermes/ext
