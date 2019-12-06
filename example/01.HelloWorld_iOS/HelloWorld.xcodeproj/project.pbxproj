@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5560EBA3239A9BB20097C159 /* HelloWorld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5560EBA2239A9BB20097C159 /* HelloWorld.cpp */; };
+		5560EBA5239AA2EB0097C159 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5560EBA4239AA2EB0097C159 /* Security.framework */; };
+		5560EBA7239AA30E0097C159 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5560EBA6239AA30E0097C159 /* libz.tbd */; };
+		5560EBAD239AC3E50097C159 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5560EBAB239AC3CC0097C159 /* LaunchScreen.storyboard */; };
 		55B244A723918F430017AB52 /* ApplicationMain.mm in Sources */ = {isa = PBXBuildFile; fileRef = 55B244A623918F430017AB52 /* ApplicationMain.mm */; };
 		55BD9A9C2391559200DA16C7 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55BD9A9B2391559200DA16C7 /* CoreFoundation.framework */; };
 		55BD9A9E239155B400DA16C7 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55BD9A9D239155B400DA16C7 /* UIKit.framework */; };
@@ -14,10 +18,14 @@
 
 /* Begin PBXFileReference section */
 		552BE89C239169AA00D38E84 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = resources/Info.plist; sourceTree = "<group>"; };
-		552BE89D239169AA00D38E84 /* Base.lproj */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Base.lproj; path = resources/Base.lproj; sourceTree = "<group>"; };
 		552BE89E239169AA00D38E84 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = resources/Assets.xcassets; sourceTree = "<group>"; };
+		5560EBA1239A9BB20097C159 /* HelloWorld.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = HelloWorld.hpp; path = ../01.HelloWorld/HelloWorld.hpp; sourceTree = "<group>"; };
+		5560EBA2239A9BB20097C159 /* HelloWorld.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HelloWorld.cpp; path = ../01.HelloWorld/HelloWorld.cpp; sourceTree = "<group>"; };
+		5560EBA4239AA2EB0097C159 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		5560EBA6239AA30E0097C159 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
+		5560EBAB239AC3CC0097C159 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = resources/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		55B244A623918F430017AB52 /* ApplicationMain.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ApplicationMain.mm; sourceTree = "<group>"; };
-		55BD9A6E2391521100DA16C7 /* helloworld.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = helloworld.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		55BD9A6E2391521100DA16C7 /* 01.HelloWorld.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = 01.HelloWorld.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		55BD9A9B2391559200DA16C7 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
 		55BD9A9D239155B400DA16C7 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -27,8 +35,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				55BD9A9E239155B400DA16C7 /* UIKit.framework in Frameworks */,
+				5560EBA7239AA30E0097C159 /* libz.tbd in Frameworks */,
 				55BD9A9C2391559200DA16C7 /* CoreFoundation.framework in Frameworks */,
+				5560EBA5239AA2EB0097C159 /* Security.framework in Frameworks */,
+				55BD9A9E239155B400DA16C7 /* UIKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -38,9 +48,9 @@
 		552BE89B2391698800D38E84 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				552BE89E239169AA00D38E84 /* Assets.xcassets */,
-				552BE89D239169AA00D38E84 /* Base.lproj */,
 				552BE89C239169AA00D38E84 /* Info.plist */,
+				5560EBAB239AC3CC0097C159 /* LaunchScreen.storyboard */,
+				552BE89E239169AA00D38E84 /* Assets.xcassets */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -49,6 +59,8 @@
 			isa = PBXGroup;
 			children = (
 				55B244A623918F430017AB52 /* ApplicationMain.mm */,
+				5560EBA2239A9BB20097C159 /* HelloWorld.cpp */,
+				5560EBA1239A9BB20097C159 /* HelloWorld.hpp */,
 				55BD9A9A2391559200DA16C7 /* Frameworks */,
 				55BD9A6F2391521100DA16C7 /* Products */,
 				552BE89B2391698800D38E84 /* Resources */,
@@ -58,7 +70,7 @@
 		55BD9A6F2391521100DA16C7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				55BD9A6E2391521100DA16C7 /* helloworld.app */,
+				55BD9A6E2391521100DA16C7 /* 01.HelloWorld.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -66,8 +78,10 @@
 		55BD9A9A2391559200DA16C7 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				55BD9A9D239155B400DA16C7 /* UIKit.framework */,
+				5560EBA6239AA30E0097C159 /* libz.tbd */,
 				55BD9A9B2391559200DA16C7 /* CoreFoundation.framework */,
+				5560EBA4239AA2EB0097C159 /* Security.framework */,
+				55BD9A9D239155B400DA16C7 /* UIKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -89,7 +103,7 @@
 			);
 			name = helloworld;
 			productName = helloworld;
-			productReference = 55BD9A6E2391521100DA16C7 /* helloworld.app */;
+			productReference = 55BD9A6E2391521100DA16C7 /* 01.HelloWorld.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -128,6 +142,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5560EBAD239AC3E50097C159 /* LaunchScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -139,6 +154,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				55B244A723918F430017AB52 /* ApplicationMain.mm in Sources */,
+				5560EBA3239A9BB20097C159 /* HelloWorld.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -179,6 +195,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_BITCODE = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -195,10 +212,23 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					../..,
+					../../include,
+					../../depend/jsoncpp/include,
+				);
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				LIBRARY_SEARCH_PATHS = ../../lib/ios;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = (
+					"-lhmsextserializer",
+					"-lhermes",
+					"-laes",
+					"-ljsoncpp",
+					"-lcurl",
+				);
 				SDKROOT = iphoneos;
 			};
 			name = Debug;
@@ -237,6 +267,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_BITCODE = NO;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -247,9 +278,22 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					../..,
+					../../include,
+					../../depend/jsoncpp/include,
+				);
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				LIBRARY_SEARCH_PATHS = ../../lib/ios;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				OTHER_LDFLAGS = (
+					"-lhmsextserializer",
+					"-lhermes",
+					"-laes",
+					"-ljsoncpp",
+					"-lcurl",
+				);
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -258,7 +302,7 @@
 		55BD9A882391521200DA16C7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Icon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = XWBEJZ9SCN;
@@ -269,7 +313,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = pl.grupapracuj.hermes.helloworld;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = 01.HelloWorld;
 				PROVISIONING_PROFILE_SPECIFIER = Development.Common;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -278,7 +322,7 @@
 		55BD9A892391521200DA16C7 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Icon;
 				CODE_SIGN_IDENTITY = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = XWBEJZ9SCN;
@@ -289,7 +333,7 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = pl.grupapracuj.hermes.helloworld;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = 01.HelloWorld;
 				PROVISIONING_PROFILE_SPECIFIER = Distribution.Calculator;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
