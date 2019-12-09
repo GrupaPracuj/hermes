@@ -305,7 +305,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = Icon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Manual;
-				DEVELOPMENT_TEAM = XWBEJZ9SCN;
 				INFOPLIST_FILE = "$(SRCROOT)/resources/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -314,7 +313,6 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = pl.grupapracuj.hermes.helloworld;
 				PRODUCT_NAME = 01.HelloWorld;
-				PROVISIONING_PROFILE_SPECIFIER = Development.Common;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -325,7 +323,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = Icon;
 				CODE_SIGN_IDENTITY = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				DEVELOPMENT_TEAM = XWBEJZ9SCN;
 				INFOPLIST_FILE = "$(SRCROOT)/resources/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -334,7 +331,6 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = pl.grupapracuj.hermes.helloworld;
 				PRODUCT_NAME = 01.HelloWorld;
-				PROVISIONING_PROFILE_SPECIFIER = Distribution.Calculator;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
