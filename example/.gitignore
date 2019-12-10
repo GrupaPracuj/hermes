@@ -7,3 +7,5 @@ local.properties
 build
 01.HelloWorld/01.HelloWorld
 01.HelloWorld_Android/source/java/pl/grupapracuj/hermes/ext
+01.HelloWorld_iOS/HelloWorld.xcodeproj/project.xcworkspace/xcuserdata
+01.HelloWorld_iOS/HelloWorld.xcodeproj/xcuserdata

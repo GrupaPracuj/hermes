@@ -47,25 +47,14 @@ android {
     }
     sourceSets {
         main {
-            manifest.srcFile 'resource/AndroidManifest.xml'
+            manifest.srcFile 'resources/AndroidManifest.xml'
             java.srcDirs = ['source/java']
             jni.srcDirs = ['source/cpp']
-            resources.srcDirs = ['resource/res']
-            res.srcDirs = ['resource/res']
-            assets.srcDirs = ['resource/assets']
+            resources.srcDirs = ['resources/res']
+            res.srcDirs = ['resources/res']
+            assets.srcDirs = ['resources/assets']
         }
     }
-}
-
-ext {
-    supportLibrary = '27.0.1'
-    constraintLibrary = '1.0.2'
-}
-
-dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "com.android.support:appcompat-v7:${supportLibrary}"
-    implementation "com.android.support.constraint:constraint-layout:${constraintLibrary}"
 }
 
 task copyJavaHermesExt(type: Copy) {

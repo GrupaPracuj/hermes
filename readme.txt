@@ -43,32 +43,40 @@ DEPENDENCIES:
   sha1 code - https://github.com/etodd/sha1
 
 QUICK START (iOS):
-  * Execute build_ios.sh scripts in $(HERMES_HOME)/depend/jsoncpp, $(HERMES_HOME)/depend/aes,
-    $(HERMES_HOME)/depend/zlib and $(HERMES_HOME)/depend/curl (add 'NDEBUG=1' parameter to build_ios.sh
-    to build libraries in the release mode).
-  * Open Xcode, go to XCode -> Preferences -> Locations -> Custom Paths and add new entry [Name:
-    'HERMES_HOME' Display Name: 'Hermes' Path: 'path to Hermes project root eg. /Users/name/hermes'].
-    Next open hermes.xcodeproj and build 'hermes_ios' target.
-  * In your project settings add '$(HERMES_HOME)/include $(HERMES_HOME)/depend/jsoncpp/include'
-    entry to 'Header Search Paths' and '$(HERMES_HOME)/lib/ios' entry to 'Library Search Paths'.
-    Next add libhermes.a, libcurl.a, libjsoncpp.a, libaes.a, libzlib.a from Hermes library path and libz.tbd,
-    Security.framework from Xcode library set. Make sure that these libraries were added
-    to 'Link Binary With Libraries' section in 'Build Phases' project settings). Finally you need
-    to switch 'C++ Language Dialect' to 'C++17 [-std=c++17]' or higher and 'C++ Standard Library'
-    to 'libc++'.
-  * Check 'sample.cpp' for use.
+  * Execute 'python3 ./build.py ios' command in $(HERMES_HOME)/depend/jsoncpp, $(HERMES_HOME)/depend/aes,
+    $(HERMES_HOME)/depend/zlib and $(HERMES_HOME)/depend/curl (add 'NDEBUG=1' parameter to build.py
+    to build libraries in the release mode -> 'python3 ./build.py ios NDEBUG=1').
+  * Execute 'python3 ./build.py ios' from $(HERMES_HOME) directory (add 'NDEBUG=1' parameter to build.py
+    to build libraries in the release mode -> 'python3 ./build.py ios NDEBUG=1').
+  * From Xcode open $(HERMES_HOME)/example/01.HelloWorld_iOS project.
   
 QUICK START (Android):
-  * Add 'ANDROID_NDK_ROOT' and 'HERMES_HOME' environment variables with destination paths set to AndroidNDK
-    and Hermes library directories.
+  * Add 'ANDROID_HOME' environment variable with destination path set to AndroidSDK directory.
   * If you want to use SSL with curl, execute 'python3 ./build.py android NDEBUG=1' command in $(HERMES_HOME)/depend/libressl
   * Execute 'python3 ./build.py android' command in $(HERMES_HOME)/depend/jsoncpp, $(HERMES_HOME)/depend/aes,
     $(HERMES_HOME)/depend/zlib and $(HERMES_HOME)/depend/curl (add 'NDEBUG=1' parameter to build.py
-    to build libraries in the release mode).
+    to build libraries in the release mode -> 'python3 ./build.py android NDEBUG=1').
   * Execute 'python3 ./build.py android' from $(HERMES_HOME) directory (add 'NDEBUG=1' parameter to build.py
-    to build libraries in the release mode).
+    to build libraries in the release mode -> 'python3 ./build.py android NDEBUG=1').
   * From Android Studio import $(HERMES_HOME)/example/01.HelloWorld_Android project.
 
+QUICK START (Linux):
+  * If you want to use SSL with curl, execute 'python3 ./build.py linux NDEBUG=1' command in $(HERMES_HOME)/depend/libressl
+  * Execute 'python3 ./build.py linux' command in $(HERMES_HOME)/depend/jsoncpp, $(HERMES_HOME)/depend/aes,
+    $(HERMES_HOME)/depend/zlib and $(HERMES_HOME)/depend/curl (add 'NDEBUG=1' parameter to build.py
+    to build libraries in the release mode -> 'python3 ./build.py linux NDEBUG=1').
+  * Execute 'python3 ./build.py linux' from $(HERMES_HOME) directory (add 'NDEBUG=1' parameter to build.py
+    to build libraries in the release mode -> 'python3 ./build.py linux NDEBUG=1').
+  * Execute 'make' in $(HERMES_HOME)/example/01.HelloWorld directory and run '01.HelloWorld' application.
+
+QUICK START (macOS):
+  * Execute 'python3 ./build.py macos' command in $(HERMES_HOME)/depend/jsoncpp, $(HERMES_HOME)/depend/aes,
+    $(HERMES_HOME)/depend/zlib and $(HERMES_HOME)/depend/curl (add 'NDEBUG=1' parameter to build.py
+    to build libraries in the release mode -> 'python3 ./build.py macos NDEBUG=1').
+  * Execute 'python3 ./build.py macos' from $(HERMES_HOME) directory (add 'NDEBUG=1' parameter to build.py
+    to build libraries in the release mode -> 'python3 ./build.py macos NDEBUG=1').
+  * Execute 'make' in $(HERMES_HOME)/example/01.HelloWorld directory and run '01.HelloWorld' application.
+
 MISCELLANEOUS:
-  * 'certificate.pem' in '01.HelloWorld_Android' came from 'https://curl.haxx.se/docs/caextract.html'
+  * 'certificate.pem' in '01.HelloWorld' and '01.HelloWorld_Android' came from 'https://curl.haxx.se/docs/caextract.html'
     and is licensed under MPL 2.0 terms.
