@@ -1,3 +1,7 @@
+// Copyright (C) 2017-2020 Grupa Pracuj Sp. z o.o.
+// This file is part of the "Hermes" library.
+// For conditions of distribution and use, see copyright notice in license.txt.
+
 #ifndef _HELLO_WORLD_HPP_
 #define _HELLO_WORLD_HPP_
 

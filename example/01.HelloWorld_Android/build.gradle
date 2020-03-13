@@ -57,8 +57,10 @@ android {
     }
 }
 
-task copyJavaHermesExt(type: Copy) {
+task copyHermesExt(type: Copy) {
     from "../../ext/java/"
     into "source/java/"
 }
-preBuild.dependsOn copyJavaHermesExt
+project.afterEvaluate {
+    preBuild.dependsOn copyHermesExt
+}

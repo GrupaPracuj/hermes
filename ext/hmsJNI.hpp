@@ -124,10 +124,10 @@ namespace jni
     };
 
     template <typename T>
-    class NativeObjectWrapper
+    class ObjectNativeWrapper
     {
     public:
-        NativeObjectWrapper(T pData) : mData(std::move(pData))
+        ObjectNativeWrapper(T pData) : mData(std::move(pData))
         {
         }
 
@@ -219,7 +219,7 @@ namespace jni
         }
 
         template <typename C = Utility, typename T>
-        static jobject convert(JNIEnv* pEnvironment, hms::ext::jni::NativeObjectWrapper<T>&& pValue)
+        static jobject convert(JNIEnv* pEnvironment, hms::ext::jni::ObjectNativeWrapper<T>&& pValue)
         {
             jobject result = nullptr;
 
