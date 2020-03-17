@@ -1,5 +1,8 @@
-package pl.grupapracuj.hermes.helloworld;
+// Copyright (C) 2017-2020 Grupa Pracuj Sp. z o.o.
+// This file is part of the "Hermes" library.
+// For conditions of distribution and use, see copyright notice in license.txt.
 
+package pl.grupapracuj.hermes.helloworld;
 
 import android.app.Activity;
 import android.graphics.Color;
@@ -40,7 +43,7 @@ public class ActivityMain extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         buildLayout();
 
-        mNativeHelloWorld = nativeCreate(assetCopy("certificate.pem"));
+        mNativeHelloWorld = nativeCreate(getClassLoader(), assetCopy("certificate.pem"));
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View lpView) {
@@ -173,6 +176,6 @@ public class ActivityMain extends Activity {
         return result;
     }
 
-    private native ObjectNative nativeCreate(String pCertificatePath);
+    private native ObjectNative nativeCreate(ClassLoader pClassLoader, String pCertificatePath);
     private native void nativeExecute(long pPointer, int pRequestIndex);
 }

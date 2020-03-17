@@ -1,8 +1,10 @@
-// Copyright (C) 2017-2019 Grupa Pracuj Sp. z o.o.
+// Copyright (C) 2017-2020 Grupa Pracuj Sp. z o.o.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
 #include "hmsJNI.hpp"
+
+#include "hmsData.hpp"
 
 extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_ext_jni_ObjectNative_nativeDestroy(JNIEnv* pEnvironment, jobject pObject, jlong pPointer)
 {
@@ -274,25 +276,125 @@ namespace jni
     }
     
     /* Utility */
+
+    JavaVM* Utility::mJavaVM = nullptr;
+    std::array<std::pair<jclass, bool>, static_cast<size_t>(Utility::EClass::COUNT)> Utility::mClasses = {};
+    std::array<jmethodID, static_cast<size_t>(Utility::EMethodId::COUNT)> Utility::mMethodIds = {};
     
-    std::string Utility::string(jstring pData, JNIEnv* pEnvironment)
+    void Utility::initialize(JNIEnv* pEnvironment, jobject pClassLoader)
+    {
+        std::array<std::string, 18> classNames = {{
+            "java/lang/Boolean",
+            "java/lang/Byte",
+            "java/lang/Double",
+            "java/lang/Float",
+            "java/lang/Integer",
+            "java/lang/Long",
+            "java/lang/Short",
+            "java/lang/String",
+            "[B",
+            "pl/grupapracuj/hermes/ext/jni/ObjectNative",
+            "pl/grupapracuj/hermes/ext/tuple/Nontuple",
+            "pl/grupapracuj/hermes/ext/tuple/Octuple",
+            "pl/grupapracuj/hermes/ext/tuple/Pair",
+            "pl/grupapracuj/hermes/ext/tuple/Quadruple",
+            "pl/grupapracuj/hermes/ext/tuple/Quintuple",
+            "pl/grupapracuj/hermes/ext/tuple/Septuple",
+            "pl/grupapracuj/hermes/ext/tuple/Sextuple",
+            "pl/grupapracuj/hermes/ext/tuple/Triple"
+        }};
+        static_assert(classNames.size() == static_cast<size_t>(EClass::COUNT), "Class names table needs to be updated.");
+
+        classLoad(pEnvironment, pClassLoader, mClasses.data(), classNames.data(), mClasses.size());
+
+        mMethodIds[static_cast<size_t>(EMethodId::java_lang_Boolean_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::java_lang_Boolean)].first, "<init>", "(Z)V");
+        mMethodIds[static_cast<size_t>(EMethodId::java_lang_Byte_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::java_lang_Byte)].first, "<init>", "(B)V");
+        mMethodIds[static_cast<size_t>(EMethodId::java_lang_Double_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::java_lang_Double)].first, "<init>", "(D)V");
+        mMethodIds[static_cast<size_t>(EMethodId::java_lang_Float_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::java_lang_Float)].first, "<init>", "(F)V");
+        mMethodIds[static_cast<size_t>(EMethodId::java_lang_Integer_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::java_lang_Integer)].first, "<init>", "(I)V");
+        mMethodIds[static_cast<size_t>(EMethodId::java_lang_Long_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::java_lang_Long)].first, "<init>", "(J)V");
+        mMethodIds[static_cast<size_t>(EMethodId::java_lang_Short_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::java_lang_Short)].first, "<init>", "(S)V");
+        mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Nontuple_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Nontuple)].first, "<init>", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V");
+        mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Octuple_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Octuple)].first, "<init>", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V");
+        mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Pair_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Pair)].first, "<init>", "(Ljava/lang/Object;Ljava/lang/Object;)V");
+        mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Quadruple_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Quadruple)].first, "<init>", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V");
+        mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Quintuple_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Quintuple)].first, "<init>", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V");
+        mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Septuple_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Septuple)].first, "<init>", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V");
+        mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Sextuple_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Sextuple)].first, "<init>", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V");
+        mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Triple_init)] = pEnvironment->GetMethodID(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Triple)].first, "<init>", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V");
+    }
+
+    JavaVM* Utility::javaVM()
+    {
+        assert(mJavaVM != nullptr);
+        return mJavaVM;
+    }
+
+    void Utility::javaVM(JavaVM* pJavaVM)
+    {
+        mJavaVM = pJavaVM;
+    }
+
+    bool Utility::classLoad(JNIEnv* pEnvironment, jobject pClassLoader, std::pair<jclass, bool>* pClasses, std::string* pSignatures, size_t pCount)
+    {
+        jclass jClassLoaderClass = pEnvironment->GetObjectClass(pClassLoader);
+        jmethodID jClassLoaderLoadClass = pEnvironment->GetMethodID(jClassLoaderClass, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
+
+        for (size_t i = 0; i < pCount; ++i)
+        {
+            if (pClasses[i].second)
+            {
+                pEnvironment->DeleteGlobalRef(pClasses[i].first);
+                pClasses[i].second = false;
+            }
+
+            jstring jClassName = pEnvironment->NewStringUTF(pSignatures[i].c_str());
+            jobject jClass = pEnvironment->CallObjectMethod(pClassLoader, jClassLoaderLoadClass, jClassName);
+
+            if (!pEnvironment->ExceptionCheck())
+            {
+                pClasses[i].first = static_cast<jclass>(pEnvironment->NewGlobalRef(jClass));
+                pClasses[i].second = true;
+            }
+            else
+            {
+                return false;
+            }
+
+            pEnvironment->DeleteLocalRef(jClass);
+            pEnvironment->DeleteLocalRef(jClassName);
+        }
+
+        pEnvironment->DeleteLocalRef(jClassLoaderClass);
+
+        return true;
+    }
+
+    jbyteArray Utility::convertHmsDataBuffer(JNIEnv* pEnvironment, const hms::DataBuffer& pValue)
+    {
+        jbyteArray jArray = pEnvironment->NewByteArray(static_cast<jsize>(pValue.size()));
+        if (pValue.size() != 0)
+            pEnvironment->SetByteArrayRegion(jArray, 0, static_cast<jsize>(pValue.size()), static_cast<const jbyte*>(pValue.data()));
+
+        return jArray;
+    }
+
+    std::string Utility::jconvert(JNIEnv* pEnvironment, jstring pValue)
     {
         std::string result;
-        
-        if (pData != nullptr && pEnvironment != nullptr)
+        if (pValue != nullptr && pEnvironment != nullptr)
         {
-            const char* tmp = pEnvironment->GetStringUTFChars(pData, nullptr);            
+            const char* tmp = pEnvironment->GetStringUTFChars(pValue, nullptr);
             if (tmp != nullptr)
             {
-                const jsize length = pEnvironment->GetStringUTFLength(pData);
+                const jsize length = pEnvironment->GetStringUTFLength(pValue);
                 result = std::string(tmp, length);
-                pEnvironment->ReleaseStringUTFChars(pData, tmp);
+                pEnvironment->ReleaseStringUTFChars(pValue, tmp);
             }
         }
-        
+
         return result;
     }
-    
 }
 }
 }
