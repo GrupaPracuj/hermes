@@ -409,46 +409,58 @@ namespace jni
         }
 
         template <typename C = Utility, typename T>
-        static jintArray convert(JNIEnv* pEnvironment, const std::vector<T>& pValue, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, jint> || std::is_same_v<std::decay_t<T>, int32_t> || std::is_same_v<std::decay_t<T>, uint32_t> || std::is_same_v<std::decay_t<T>, size_t> || std::is_enum_v<std::decay_t<T>>>* = nullptr)
+        static jintArray convert(JNIEnv* pEnvironment, const std::vector<T>& pValue, typename std::enable_if_t<sizeof(T) == sizeof(jint) && (std::is_same_v<T, jint> || std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t> || std::is_enum_v<T>)>* = nullptr)
         {
-            return arrayIntCreate(pEnvironment, pValue);
+            jintArray jArray = pEnvironment->NewIntArray(static_cast<jsize>(pValue.size()));
+            pEnvironment->SetIntArrayRegion(jArray, 0, static_cast<jsize>(pValue.size()), reinterpret_cast<const jint*>(pValue.data()));
+
+            return jArray;
         }
 
         template <typename C = Utility, typename T>
-        static jobjectArray convert(JNIEnv* pEnvironment, const std::vector<T>& pValue, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::string> || std::is_same_v<std::decay_t<T>, hms::DataBuffer> || is_pair<std::decay_t<T>>::value || is_tuple<std::decay_t<T>>::value>* = nullptr)
+        static jlongArray convert(JNIEnv* pEnvironment, const std::vector<T>& pValue, typename std::enable_if_t<sizeof(T) == sizeof(jlong) && (std::is_same_v<T, jlong> || std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>)>* = nullptr)
+        {
+            jlongArray jArray = pEnvironment->NewLongArray(static_cast<jsize>(pValue.size()));
+            pEnvironment->SetLongArrayRegion(jArray, 0, static_cast<jsize>(pValue.size()), reinterpret_cast<const jlong*>(pValue.data()));
+
+            return jArray;
+        }
+
+        template <typename C = Utility, typename T>
+        static jobjectArray convert(JNIEnv* pEnvironment, const std::vector<T>& pValue, typename std::enable_if_t<std::is_same_v<T, std::string> || std::is_same_v<T, hms::DataBuffer> || is_pair<T>::value || is_tuple<T>::value>* = nullptr)
         {
             jclass jClass = nullptr;
-            if constexpr(std::is_same<std::decay_t<T>, std::string>::value)
+            if constexpr(std::is_same<T, std::string>::value)
             {
                 jClass = mClasses[static_cast<size_t>(EClass::java_lang_String)].first;
             }
-            else if constexpr(std::is_same<std::decay_t<T>, hms::DataBuffer>::value)
+            else if constexpr(std::is_same<T, hms::DataBuffer>::value)
             {
                 jClass = mClasses[static_cast<size_t>(EClass::java_lang_arrayByte)].first;
             }
-            else if constexpr(is_pair<std::decay_t<T>>::value)
+            else if constexpr(is_pair<T>::value)
             {
                 jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Pair)].first;
             }
-            else if constexpr(is_tuple<std::decay_t<T>>::value)
+            else if constexpr(is_tuple<T>::value)
             {
-                assert(std::tuple_size<std::decay_t<T>>::value < 10);
+                assert(std::tuple_size<T>::value < 10);
 
-                if constexpr(std::tuple_size<std::decay_t<T>>::value == 2)
+                if constexpr(std::tuple_size<T>::value == 2)
                     jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Pair)].first;
-                else if constexpr(std::tuple_size<std::decay_t<T>>::value == 3)
+                else if constexpr(std::tuple_size<T>::value == 3)
                     jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Triple)].first;
-                else if constexpr(std::tuple_size<std::decay_t<T>>::value == 4)
+                else if constexpr(std::tuple_size<T>::value == 4)
                     jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Quadruple)].first;
-                else if constexpr(std::tuple_size<std::decay_t<T>>::value == 5)
+                else if constexpr(std::tuple_size<T>::value == 5)
                     jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Quintuple)].first;
-                else if constexpr(std::tuple_size<std::decay_t<T>>::value == 6)
+                else if constexpr(std::tuple_size<T>::value == 6)
                     jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Sextuple)].first;
-                else if constexpr(std::tuple_size<std::decay_t<T>>::value == 7)
+                else if constexpr(std::tuple_size<T>::value == 7)
                     jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Septuple)].first;
-                else if constexpr(std::tuple_size<std::decay_t<T>>::value == 8)
+                else if constexpr(std::tuple_size<T>::value == 8)
                     jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Octuple)].first;
-                else if constexpr(std::tuple_size<std::decay_t<T>>::value == 9)
+                else if constexpr(std::tuple_size<T>::value == 9)
                     jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Nontuple)].first;
             }
 
@@ -506,15 +518,6 @@ namespace jni
         static jshort convert(JNIEnv* pEnvironment, T pValue, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, jshort>>* = nullptr)
         {
             return pValue;
-        }
-
-        template <typename C = Utility, typename T>
-        static jintArray arrayIntCreate(JNIEnv* pEnvironment, const std::vector<T>& pValue)
-        {
-            jintArray jArray = pEnvironment->NewIntArray(static_cast<jsize>(pValue.size()));
-            pEnvironment->SetIntArrayRegion(jArray, 0, static_cast<jsize>(pValue.size()), reinterpret_cast<const jint*>(pValue.data()));
-
-            return jArray;
         }
 
         template <typename C = Utility, typename T>
