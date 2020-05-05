@@ -160,7 +160,147 @@ namespace jni
 
         static JavaVM* javaVM();
         static void javaVM(JavaVM* pJavaVM);
+        
+        template<typename T = Utility, typename... Arguments>
+        static jboolean methodBoolean(std::shared_ptr<hms::ext::jni::ReferenceWeak> pObjectWeakRef, std::string pMethod, std::string pSignature, Arguments&&... pArguments)
+        {
+            assert(pObjectWeakRef != nullptr && pMethod.size() > 0 && pSignature.size() > 2);
+            jboolean result = static_cast<jboolean>(false);
 
+            JNIEnv* environment = pObjectWeakRef->environment();
+            jobject strongObject = environment->NewGlobalRef(pObjectWeakRef->objectWeak());
+            if (strongObject != nullptr)
+            {
+                jclass jClass = environment->GetObjectClass(strongObject);
+                jmethodID jMethod = environment->GetMethodID(jClass, pMethod.c_str(), pSignature.c_str());
+                result = methodBooleanCall(environment, strongObject, jMethod, T::template convert<T>(environment, std::forward<Arguments>(pArguments))...);
+                environment->DeleteLocalRef(jClass);
+                environment->DeleteGlobalRef(strongObject);
+            }
+
+            return result;
+        }
+        
+        template<typename T = Utility, typename... Arguments>
+        static jbyte methodByte(std::shared_ptr<hms::ext::jni::ReferenceWeak> pObjectWeakRef, std::string pMethod, std::string pSignature, Arguments&&... pArguments)
+        {
+            assert(pObjectWeakRef != nullptr && pMethod.size() > 0 && pSignature.size() > 2);
+            jbyte result = '\0';
+
+            JNIEnv* environment = pObjectWeakRef->environment();
+            jobject strongObject = environment->NewGlobalRef(pObjectWeakRef->objectWeak());
+            if (strongObject != nullptr)
+            {
+                jclass jClass = environment->GetObjectClass(strongObject);
+                jmethodID jMethod = environment->GetMethodID(jClass, pMethod.c_str(), pSignature.c_str());
+                result = methodByteCall(environment, strongObject, jMethod, T::template convert<T>(environment, std::forward<Arguments>(pArguments))...);
+                environment->DeleteLocalRef(jClass);
+                environment->DeleteGlobalRef(strongObject);
+            }
+
+            return result;
+        }
+        
+        template<typename T = Utility, typename... Arguments>
+        static jchar methodChar(std::shared_ptr<hms::ext::jni::ReferenceWeak> pObjectWeakRef, std::string pMethod, std::string pSignature, Arguments&&... pArguments)
+        {
+            assert(pObjectWeakRef != nullptr && pMethod.size() > 0 && pSignature.size() > 2);
+            jchar result = '\0';
+
+            JNIEnv* environment = pObjectWeakRef->environment();
+            jobject strongObject = environment->NewGlobalRef(pObjectWeakRef->objectWeak());
+            if (strongObject != nullptr)
+            {
+                jclass jClass = environment->GetObjectClass(strongObject);
+                jmethodID jMethod = environment->GetMethodID(jClass, pMethod.c_str(), pSignature.c_str());
+                result = methodCharCall(environment, strongObject, jMethod, T::template convert<T>(environment, std::forward<Arguments>(pArguments))...);
+                environment->DeleteLocalRef(jClass);
+                environment->DeleteGlobalRef(strongObject);
+            }
+
+            return result;
+        }
+        
+        template<typename T = Utility, typename... Arguments>
+        static jdouble methodDouble(std::shared_ptr<hms::ext::jni::ReferenceWeak> pObjectWeakRef, std::string pMethod, std::string pSignature, Arguments&&... pArguments)
+        {
+            assert(pObjectWeakRef != nullptr && pMethod.size() > 0 && pSignature.size() > 2);
+            jdouble result = 0.0;
+
+            JNIEnv* environment = pObjectWeakRef->environment();
+            jobject strongObject = environment->NewGlobalRef(pObjectWeakRef->objectWeak());
+            if (strongObject != nullptr)
+            {
+                jclass jClass = environment->GetObjectClass(strongObject);
+                jmethodID jMethod = environment->GetMethodID(jClass, pMethod.c_str(), pSignature.c_str());
+                result = methodDoubleCall(environment, strongObject, jMethod, T::template convert<T>(environment, std::forward<Arguments>(pArguments))...);
+                environment->DeleteLocalRef(jClass);
+                environment->DeleteGlobalRef(strongObject);
+            }
+
+            return result;
+        }
+        
+        template<typename T = Utility, typename... Arguments>
+        static jfloat methodFloat(std::shared_ptr<hms::ext::jni::ReferenceWeak> pObjectWeakRef, std::string pMethod, std::string pSignature, Arguments&&... pArguments)
+        {
+            assert(pObjectWeakRef != nullptr && pMethod.size() > 0 && pSignature.size() > 2);
+            jfloat result = 0.f;
+
+            JNIEnv* environment = pObjectWeakRef->environment();
+            jobject strongObject = environment->NewGlobalRef(pObjectWeakRef->objectWeak());
+            if (strongObject != nullptr)
+            {
+                jclass jClass = environment->GetObjectClass(strongObject);
+                jmethodID jMethod = environment->GetMethodID(jClass, pMethod.c_str(), pSignature.c_str());
+                result = methodFloatCall(environment, strongObject, jMethod, T::template convert<T>(environment, std::forward<Arguments>(pArguments))...);
+                environment->DeleteLocalRef(jClass);
+                environment->DeleteGlobalRef(strongObject);
+            }
+
+            return result;
+        }
+        
+        template<typename T = Utility, typename... Arguments>
+        static jint methodInt(std::shared_ptr<hms::ext::jni::ReferenceWeak> pObjectWeakRef, std::string pMethod, std::string pSignature, Arguments&&... pArguments)
+        {
+            assert(pObjectWeakRef != nullptr && pMethod.size() > 0 && pSignature.size() > 2);
+            jint result = 0;
+
+            JNIEnv* environment = pObjectWeakRef->environment();
+            jobject strongObject = environment->NewGlobalRef(pObjectWeakRef->objectWeak());
+            if (strongObject != nullptr)
+            {
+                jclass jClass = environment->GetObjectClass(strongObject);
+                jmethodID jMethod = environment->GetMethodID(jClass, pMethod.c_str(), pSignature.c_str());
+                result = methodIntCall(environment, strongObject, jMethod, T::template convert<T>(environment, std::forward<Arguments>(pArguments))...);
+                environment->DeleteLocalRef(jClass);
+                environment->DeleteGlobalRef(strongObject);
+            }
+
+            return result;
+        }
+        
+        template<typename T = Utility, typename... Arguments>
+        static jlong methodLong(std::shared_ptr<hms::ext::jni::ReferenceWeak> pObjectWeakRef, std::string pMethod, std::string pSignature, Arguments&&... pArguments)
+        {
+            assert(pObjectWeakRef != nullptr && pMethod.size() > 0 && pSignature.size() > 2);
+            jlong result = 0;
+
+            JNIEnv* environment = pObjectWeakRef->environment();
+            jobject strongObject = environment->NewGlobalRef(pObjectWeakRef->objectWeak());
+            if (strongObject != nullptr)
+            {
+                jclass jClass = environment->GetObjectClass(strongObject);
+                jmethodID jMethod = environment->GetMethodID(jClass, pMethod.c_str(), pSignature.c_str());
+                result = methodLongCall(environment, strongObject, jMethod, T::template convert<T>(environment, std::forward<Arguments>(pArguments))...);
+                environment->DeleteLocalRef(jClass);
+                environment->DeleteGlobalRef(strongObject);
+            }
+
+            return result;
+        }
+        
         template<typename T = Utility, typename... Arguments>
         static jobject methodObject(std::shared_ptr<hms::ext::jni::ReferenceWeak> pObjectWeakRef, std::string pMethod, std::string pSignature, Arguments&&... pArguments)
         {
@@ -174,6 +314,26 @@ namespace jni
                 jclass jClass = environment->GetObjectClass(strongObject);
                 jmethodID jMethod = environment->GetMethodID(jClass, pMethod.c_str(), pSignature.c_str());
                 result = methodObjectCall(environment, strongObject, jMethod, T::template convert<T>(environment, std::forward<Arguments>(pArguments))...);
+                environment->DeleteLocalRef(jClass);
+                environment->DeleteGlobalRef(strongObject);
+            }
+
+            return result;
+        }
+        
+        template<typename T = Utility, typename... Arguments>
+        static jshort methodShort(std::shared_ptr<hms::ext::jni::ReferenceWeak> pObjectWeakRef, std::string pMethod, std::string pSignature, Arguments&&... pArguments)
+        {
+            assert(pObjectWeakRef != nullptr && pMethod.size() > 0 && pSignature.size() > 2);
+            jshort result = 0;
+
+            JNIEnv* environment = pObjectWeakRef->environment();
+            jobject strongObject = environment->NewGlobalRef(pObjectWeakRef->objectWeak());
+            if (strongObject != nullptr)
+            {
+                jclass jClass = environment->GetObjectClass(strongObject);
+                jmethodID jMethod = environment->GetMethodID(jClass, pMethod.c_str(), pSignature.c_str());
+                result = methodShortCall(environment, strongObject, jMethod, T::template convert<T>(environment, std::forward<Arguments>(pArguments))...);
                 environment->DeleteLocalRef(jClass);
                 environment->DeleteGlobalRef(strongObject);
             }
@@ -601,11 +761,83 @@ namespace jni
             if (pObject != nullptr)
                 pEnvironment->DeleteLocalRef(pObject);
         }
+        
+        template <typename... T>
+        static jboolean methodBooleanCall(JNIEnv* pEnvironment, jobject pObject, jmethodID pMethod, T&&... pParameters)
+        {
+            jboolean result = pEnvironment->CallBooleanMethod(pObject, pMethod, std::forward<T>(pParameters)...);
+            (void)std::initializer_list<int32_t>{(localRefDelete(pEnvironment, std::forward<T>(pParameters)), 0)...};
+
+            return result;
+        }
+        
+        template <typename... T>
+        static jbyte methodByteCall(JNIEnv* pEnvironment, jobject pObject, jmethodID pMethod, T&&... pParameters)
+        {
+            jbyte result = pEnvironment->CallByteMethod(pObject, pMethod, std::forward<T>(pParameters)...);
+            (void)std::initializer_list<int32_t>{(localRefDelete(pEnvironment, std::forward<T>(pParameters)), 0)...};
+
+            return result;
+        }
+        
+        template <typename... T>
+        static jchar methodCharCall(JNIEnv* pEnvironment, jobject pObject, jmethodID pMethod, T&&... pParameters)
+        {
+            jchar result = pEnvironment->CallCharMethod(pObject, pMethod, std::forward<T>(pParameters)...);
+            (void)std::initializer_list<int32_t>{(localRefDelete(pEnvironment, std::forward<T>(pParameters)), 0)...};
+
+            return result;
+        }
+        
+        template <typename... T>
+        static jdouble methodDoubleCall(JNIEnv* pEnvironment, jobject pObject, jmethodID pMethod, T&&... pParameters)
+        {
+            jdouble result = pEnvironment->CallDoubleMethod(pObject, pMethod, std::forward<T>(pParameters)...);
+            (void)std::initializer_list<int32_t>{(localRefDelete(pEnvironment, std::forward<T>(pParameters)), 0)...};
+
+            return result;
+        }
+        
+        template <typename... T>
+        static jfloat methodFloatCall(JNIEnv* pEnvironment, jobject pObject, jmethodID pMethod, T&&... pParameters)
+        {
+            jfloat result = pEnvironment->CallFloatMethod(pObject, pMethod, std::forward<T>(pParameters)...);
+            (void)std::initializer_list<int32_t>{(localRefDelete(pEnvironment, std::forward<T>(pParameters)), 0)...};
+
+            return result;
+        }
+        
+        template <typename... T>
+        static jint methodIntCall(JNIEnv* pEnvironment, jobject pObject, jmethodID pMethod, T&&... pParameters)
+        {
+            jint result = pEnvironment->CallIntMethod(pObject, pMethod, std::forward<T>(pParameters)...);
+            (void)std::initializer_list<int32_t>{(localRefDelete(pEnvironment, std::forward<T>(pParameters)), 0)...};
+
+            return result;
+        }
+        
+        template <typename... T>
+        static jlong methodLongCall(JNIEnv* pEnvironment, jobject pObject, jmethodID pMethod, T&&... pParameters)
+        {
+            jlong result = pEnvironment->CallLongMethod(pObject, pMethod, std::forward<T>(pParameters)...);
+            (void)std::initializer_list<int32_t>{(localRefDelete(pEnvironment, std::forward<T>(pParameters)), 0)...};
+
+            return result;
+        }
 
         template <typename... T>
         static jobject methodObjectCall(JNIEnv* pEnvironment, jobject pObject, jmethodID pMethod, T&&... pParameters)
         {
             jobject result = pEnvironment->CallObjectMethod(pObject, pMethod, std::forward<T>(pParameters)...);
+            (void)std::initializer_list<int32_t>{(localRefDelete(pEnvironment, std::forward<T>(pParameters)), 0)...};
+
+            return result;
+        }
+        
+        template <typename... T>
+        static jshort methodShortCall(JNIEnv* pEnvironment, jobject pObject, jmethodID pMethod, T&&... pParameters)
+        {
+            jshort result = pEnvironment->CallShortMethod(pObject, pMethod, std::forward<T>(pParameters)...);
             (void)std::initializer_list<int32_t>{(localRefDelete(pEnvironment, std::forward<T>(pParameters)), 0)...};
 
             return result;
