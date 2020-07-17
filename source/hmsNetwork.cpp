@@ -1385,7 +1385,7 @@ namespace hms
                         if (response.mCode == ENetworkCode::OK && lpParam.mAllowCache)
                             strongThis->cacheResponse(response, lpParam.mMethod, lpParam.mCacheLifetime);
 
-                        if (lpParam.mTaskBackground != nullptr)
+                        if (response.mCode != ENetworkCode::Cancel && lpParam.mTaskBackground != nullptr)
                             response.mDataTaskBackground = lpParam.mTaskBackground(response);
 
                         Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(lpParam.mCallback), response = std::move(response)]() mutable -> void
@@ -1456,7 +1456,7 @@ namespace hms
                         {
                             if (it->mCallback != nullptr)
                             {
-                                if (it->mTaskBackground != nullptr)
+                                if (response.mCode != ENetworkCode::Cancel && it->mTaskBackground != nullptr)
                                     response.mDataTaskBackground = it->mTaskBackground(response);
 
                                 Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(it->mCallback), response = std::move(response)]() mutable -> void
@@ -1655,7 +1655,7 @@ namespace hms
                                 if (response.mCode == ENetworkCode::OK && requestData->mParam->mAllowCache)
                                     strongThis->cacheResponse(response, requestData->mParam->mMethod, requestData->mParam->mCacheLifetime);
 
-                                if (requestData->mParam->mTaskBackground != nullptr)
+                                if (response.mCode != ENetworkCode::Cancel && requestData->mParam->mTaskBackground != nullptr)
                                     response.mDataTaskBackground = requestData->mParam->mTaskBackground(response);
 
                                 Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(requestData->mParam->mCallback), response = std::move(response)]() mutable -> void
