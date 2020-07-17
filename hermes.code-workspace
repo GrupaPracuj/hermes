@@ -68,7 +68,20 @@
 			"tuple": "cpp",
 			"type_traits": "cpp",
 			"typeinfo": "cpp",
-			"utility": "cpp"
+			"utility": "cpp",
+			"bit": "cpp",
+			"cstddef": "cpp",
+			"deque": "cpp",
+			"list": "cpp",
+			"map": "cpp",
+			"unordered_map": "cpp",
+			"vector": "cpp",
+			"algorithm": "cpp",
+			"iterator": "cpp",
+			"memory_resource": "cpp",
+			"random": "cpp",
+			"string": "cpp",
+			"cinttypes": "cpp"
 		}
 	}
 }

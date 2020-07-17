@@ -43,8 +43,8 @@ void HelloWorld::execute(std::function<void(std::string)> pCallback, int32_t pRe
 {
     using namespace std::string_literals;
 
-    hms::NetworkRequestParam requestParams;
-    requestParams.mRequestType = hms::ENetworkRequestType::Get;
+    hms::NetworkRequest requestParams;
+    requestParams.mRequestType = hms::ENetworkRequest::Get;
     requestParams.mMethod = "users/"s + std::to_string(pRequestIndex);
     requestParams.mCallback = [pCallback = std::move(pCallback)](hms::NetworkResponse lpResponse) -> void
     {

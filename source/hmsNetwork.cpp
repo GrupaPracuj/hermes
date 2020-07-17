@@ -206,7 +206,7 @@ namespace hms
                     {
                         Hermes::getInstance()->getTaskManager()->execute(-1, [lpCallback = std::move(pCallback), cCode]() -> void
                         {
-                            lpCallback(static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(cCode)));
+                            lpCallback(static_cast<ENetworkCode>(static_cast<int32_t>(ENetworkCode::Unknown) + static_cast<int32_t>(cCode)));
                         });
                     }
 
@@ -231,7 +231,7 @@ namespace hms
                 {
                     if (pCallback != nullptr)
                     {
-                        ENetworkCode code = cCode == CURLE_OK ? ENetworkCode::OK : static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(cCode));
+                        ENetworkCode code = cCode == CURLE_OK ? ENetworkCode::OK : static_cast<ENetworkCode>(static_cast<int32_t>(ENetworkCode::Unknown) + static_cast<int32_t>(cCode));
                         Hermes::getInstance()->getTaskManager()->execute(-1, [lpCallback = std::move(pCallback), code]() -> void
                         {
                             lpCallback(code);
@@ -245,7 +245,7 @@ namespace hms
         mMessage.first.push(std::move(messageTask));
     }
     
-    void NetworkWebSocketHandle::initialize(int32_t pThreadPoolId, NetworkWebSocketParam pParam, NetworkManager* pNetworkManager)
+    void NetworkWebSocketHandle::initialize(int32_t pThreadPoolId, NetworkWebSocket pParam, NetworkManager* pNetworkManager)
     {
         assert(pNetworkManager != nullptr);
         
@@ -686,7 +686,7 @@ namespace hms
                         CURLcode code = curl_easy_send(mControlBlock->mHandle, message.c_str(), message.length(), &sendCount);
                         
                         if(code != CURLE_OK)
-                            Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Pong send failed. CURLcode %", static_cast<int>(code));
+                            Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Pong send failed. CURLcode %", static_cast<int32_t>(code));
                     }
                 }
             }
@@ -702,7 +702,7 @@ namespace hms
                     CURLcode code = curl_easy_send(mControlBlock->mHandle, message.c_str(), message.length(), &sendCount);
                     
                     if (code != CURLE_OK)
-                        Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Close response send failed. CURLcode %", static_cast<int>(code));
+                        Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Close response send failed. CURLcode %", static_cast<int32_t>(code));
                 }
                 endSent = true;
             }
@@ -768,7 +768,7 @@ namespace hms
             internalData->mActive = false;
             
             const ENetworkCode code = lpResponse.mCode;
-            Hermes::getInstance()->getLogger()->print(ELogLevel::Info, "Recovery: %, code: %, http: %, message: %", (code == ENetworkCode::OK) ? "passed" : "failed", static_cast<unsigned>(code), lpResponse.mHttpCode, lpResponse.mMessage);
+            Hermes::getInstance()->getLogger()->print(ELogLevel::Info, "Recovery: %, code: %, http: %, message: %", (code == ENetworkCode::OK) ? "passed" : "failed", static_cast<int32_t>(code), lpResponse.mHttpCode, lpResponse.mMessage);
 
             if (lpCallback != nullptr)
                 lpCallback(std::move(lpResponse));
@@ -781,7 +781,7 @@ namespace hms
 
                 if (networkAPI != nullptr && code == ENetworkCode::OK)
                 {
-                    NetworkRequestParam* param = &std::get<1>(*receiver);
+                    NetworkRequest* param = &std::get<1>(*receiver);
 
                     auto defaultHeader = networkAPI->getDefaultHeader();
                     
@@ -798,12 +798,13 @@ namespace hms
         };
 
         mRequestParam.mRequestType = pConfig.mRequestType;
-        mRequestParam.mResponseType = ENetworkResponseType::Message;
+        mRequestParam.mResponseType = ENetworkResponse::Message;
         mRequestParam.mMethod = std::move(pConfig.mUrl);
         mRequestParam.mParameter = std::move(pConfig.mParameter);
         mRequestParam.mHeader = std::move(pConfig.mHeader);
         mRequestParam.mRequestBody = "";
         mRequestParam.mCallback = std::move(callback);
+        mRequestParam.mTaskBackground = std::move(pConfig.mTaskBackground);
         mRequestParam.mProgress = nullptr;
         mRequestParam.mRepeatCount = pConfig.mRepeatCount;
         mRequestParam.mAllowRecovery = false;
@@ -823,7 +824,7 @@ namespace hms
         return mCondition != nullptr && mCondition(pResponse, pRequestBody, pParameter, pHeader);
     }
     
-    void NetworkRecovery::pushReceiver(std::tuple<size_t, NetworkRequestParam, std::shared_ptr<NetworkRequestHandle>> pReceiver)
+    void NetworkRecovery::pushReceiver(std::tuple<size_t, NetworkRequest, std::shared_ptr<NetworkRequestHandle>> pReceiver)
     {
         mInternalData->mReceiver.push(std::move(pReceiver));
     }
@@ -893,16 +894,15 @@ namespace hms
     
     /* NetworkAPI */
     
-    NetworkAPI::NetworkAPI(size_t pId, std::string pName, std::string pUrl) :  mId(pId), mName(std::move(pName)), mUrl(std::move(pUrl))
+    NetworkAPI::NetworkAPI(size_t pId, std::string pName, std::string pUrl) :  mId(pId), mName(std::move(pName)), mUrl(std::move(pUrl)), mCallbackContinious(decltype(mCallbackContinious)(new std::vector<std::pair<std::function<void(const NetworkResponse&)>, std::string>>()))
     {
-        mCallbackContinious = decltype(mCallbackContinious)(new std::vector<std::pair<std::function<void(const NetworkResponse&)>, std::string>>());
     }
     
     NetworkAPI::~NetworkAPI()
     {
     }
 
-    std::shared_ptr<NetworkRequestHandle> NetworkAPI::request(NetworkRequestParam pParam)
+    std::shared_ptr<NetworkRequestHandle> NetworkAPI::request(NetworkRequest pParam)
     {
         std::shared_ptr<NetworkRequestHandle> requestHandle = std::make_shared<NetworkRequestHandle>();
         auto callbackContinious = mCallbackContinious;
@@ -1068,7 +1068,7 @@ namespace hms
         delete pObject;
     }
     
-    bool NetworkManager::initialize(long pTimeout, int pThreadPoolId, int pSocketThreadPoolId, std::pair<int, int> pHttpCodeSuccess)
+    bool NetworkManager::initialize(int64_t pTimeout, int32_t pThreadPoolId, int32_t pSocketThreadPoolId, std::pair<int32_t, int32_t> pHttpCodeSuccess)
     {
         uint32_t initialized = 0;
 
@@ -1235,13 +1235,13 @@ namespace hms
         return mRecovery[pId];
     }
     
-    void NetworkManager::request(NetworkRequestParam pParam, std::shared_ptr<NetworkRequestHandle> pRequestHandle)
+    void NetworkManager::request(NetworkRequest pParam, std::shared_ptr<NetworkRequestHandle> pRequestHandle)
     {
         if (pRequestHandle == nullptr)
             pRequestHandle = std::make_shared<NetworkRequestHandle>();
         
         auto weakThis = mWeakThis;
-        auto requestTask = [weakThis, pRequestHandle](NetworkRequestParam lpParam, RequestSettings lpRequestSettings) -> void
+        auto requestTask = [weakThis, pRequestHandle](NetworkRequest lpParam, RequestSettings lpRequestSettings) -> void
         {
             std::shared_ptr<NetworkManager> strongThis = weakThis.lock();
             if (strongThis != nullptr && strongThis->mInitialized.load() == 2)
@@ -1253,6 +1253,9 @@ namespace hms
                     {
                         if (lpParam.mCallback != nullptr)
                         {
+                            if (lpParam.mTaskBackground != nullptr)
+                                response.mDataTaskBackground = lpParam.mTaskBackground(response);
+
                             Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(lpParam.mCallback), response = std::move(response)]() mutable -> void
                             {
                                 callback(std::move(response));
@@ -1364,7 +1367,7 @@ namespace hms
                         Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Cancel: %", lpParam.mMethod);
                         break;
                     default:
-                        code = static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(curlCode));
+                        code = static_cast<ENetworkCode>(static_cast<int32_t>(ENetworkCode::Unknown) + static_cast<int32_t>(curlCode));
                         Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "CURL code: %. URL: %", curl_easy_strerror(curlCode), lpParam.mMethod);
                         break;
                     }
@@ -1381,6 +1384,9 @@ namespace hms
 
                         if (response.mCode == ENetworkCode::OK && lpParam.mAllowCache)
                             strongThis->cacheResponse(response, lpParam.mMethod, lpParam.mCacheLifetime);
+
+                        if (lpParam.mTaskBackground != nullptr)
+                            response.mDataTaskBackground = lpParam.mTaskBackground(response);
 
                         Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(lpParam.mCallback), response = std::move(response)]() mutable -> void
                         {
@@ -1403,7 +1409,7 @@ namespace hms
         });
     }
     
-    void NetworkManager::request(std::vector<NetworkRequestParam> pParam, std::vector<std::shared_ptr<NetworkRequestHandle>> pRequestHandle)
+    void NetworkManager::request(std::vector<NetworkRequest> pParam, std::vector<std::shared_ptr<NetworkRequestHandle>> pRequestHandle)
     {
         if (pParam.size() == 0)
             return;
@@ -1418,7 +1424,7 @@ namespace hms
         }
 
         auto weakThis = mWeakThis;
-        auto requestTask = [weakThis, pRequestHandle](std::vector<NetworkRequestParam> lpParam, RequestSettings lpRequestSettings) -> void
+        auto requestTask = [weakThis, pRequestHandle](std::vector<NetworkRequest> lpParam, RequestSettings lpRequestSettings) -> void
         {
             void* handle = nullptr;
             size_t paramSize = lpParam.size();
@@ -1430,7 +1436,7 @@ namespace hms
             std::shared_ptr<NetworkManager> strongThis = weakThis.lock();
             if (strongThis != nullptr && strongThis->mInitialized.load() == 2)
             {
-                std::vector<NetworkRequestParam> param;
+                std::vector<NetworkRequest> param;
                 param.reserve(lpParam.size());
                 
                 for (auto it = lpParam.begin(); it != lpParam.end(); it++)
@@ -1450,6 +1456,9 @@ namespace hms
                         {
                             if (it->mCallback != nullptr)
                             {
+                                if (it->mTaskBackground != nullptr)
+                                    response.mDataTaskBackground = it->mTaskBackground(response);
+
                                 Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(it->mCallback), response = std::move(response)]() mutable -> void
                                 {
                                     callback(std::move(response));
@@ -1533,7 +1542,7 @@ namespace hms
                 }
 
                 int activeHandle = 0;
-                unsigned terminateAbort = 0;
+                uint32_t terminateAbort = 0;
                 
                 do
                 {
@@ -1628,7 +1637,7 @@ namespace hms
                                 Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Cancel: %", (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
                                 break;
                             default:
-                                code = static_cast<ENetworkCode>(static_cast<int>(ENetworkCode::Unknown) + static_cast<int>(curlCode));
+                                code = static_cast<ENetworkCode>(static_cast<int32_t>(ENetworkCode::Unknown) + static_cast<int32_t>(curlCode));
                                 Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "CURL code: %. URL: %", curl_easy_strerror(curlCode), (requestData != nullptr) ? requestData->mParam->mMethod : "unknown");
                                 break;
                             }
@@ -1645,6 +1654,9 @@ namespace hms
                                 
                                 if (response.mCode == ENetworkCode::OK && requestData->mParam->mAllowCache)
                                     strongThis->cacheResponse(response, requestData->mParam->mMethod, requestData->mParam->mCacheLifetime);
+
+                                if (requestData->mParam->mTaskBackground != nullptr)
+                                    response.mDataTaskBackground = requestData->mParam->mTaskBackground(response);
 
                                 Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(requestData->mParam->mCallback), response = std::move(response)]() mutable -> void
                                 {
@@ -1679,13 +1691,13 @@ namespace hms
         });
     }
     
-    long NetworkManager::getTimeout() const
+    int64_t NetworkManager::getTimeout() const
     {
         std::lock_guard<std::mutex> lock(mRequestSettingsMutex);
         return mRequestSettings.mTimeout;
     }
     
-    void NetworkManager::setTimeout(long pTimeout)
+    void NetworkManager::setTimeout(int64_t pTimeout)
     {
         if (mInitialized.load() == 2)
         {
@@ -1713,13 +1725,13 @@ namespace hms
         }
     }
     
-    long NetworkManager::getProgressTimePeriod() const
+    int64_t NetworkManager::getProgressTimePeriod() const
     {
         std::lock_guard<std::mutex> lock(mRequestSettingsMutex);
         return mRequestSettings.mProgressTimePeriod;
     }
     
-    void NetworkManager::setProgressTimePeriod(long pTimePeriod)
+    void NetworkManager::setProgressTimePeriod(int64_t pTimePeriod)
     {
         if (mInitialized.load() == 2)
         {
@@ -1832,31 +1844,29 @@ namespace hms
         return header;
     }
 
-    void NetworkManager::configureHandle(void* pHandle, ENetworkRequestType pRequestType, ENetworkResponseType pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody,
-        std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader,
-        long pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer, const std::string pCACertificatePath) const
+    void NetworkManager::configureHandle(void* pHandle, ENetworkRequest pRequestType, ENetworkResponse pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody, std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader, int64_t pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer, const std::string pCACertificatePath) const
     {
         switch (pRequestType)
         {
-        case ENetworkRequestType::Delete:
+        case ENetworkRequest::Delete:
             curl_easy_setopt(pHandle, CURLOPT_NOBODY, 1);
             curl_easy_setopt(pHandle, CURLOPT_CUSTOMREQUEST, "DELETE");
             break;
-        case ENetworkRequestType::Get:
+        case ENetworkRequest::Get:
             curl_easy_setopt(pHandle, CURLOPT_HTTPGET, 1);
             break;
-        case ENetworkRequestType::Post:
+        case ENetworkRequest::Post:
             curl_easy_setopt(pHandle, CURLOPT_HTTPPOST, 1);
             curl_easy_setopt(pHandle, CURLOPT_POSTFIELDS, pRequestBody.c_str());
             curl_easy_setopt(pHandle, CURLOPT_POSTFIELDSIZE, pRequestBody.size());
             break;
-        case ENetworkRequestType::Put:
+        case ENetworkRequest::Put:
             curl_easy_setopt(pHandle, CURLOPT_NOBODY, 0);
             curl_easy_setopt(pHandle, CURLOPT_CUSTOMREQUEST, "PUT");
             curl_easy_setopt(pHandle, CURLOPT_POSTFIELDS, pRequestBody.c_str());
             curl_easy_setopt(pHandle, CURLOPT_POSTFIELDSIZE, pRequestBody.size());
             break;
-        case ENetworkRequestType::Head:
+        case ENetworkRequest::Head:
             curl_easy_setopt(pHandle, CURLOPT_NOBODY, 1);
             break;
         default:
@@ -1867,11 +1877,11 @@ namespace hms
         
         switch (pResponseType)
         {
-        case ENetworkResponseType::Message:
+        case ENetworkResponse::Message:
             curl_easy_setopt(pHandle, CURLOPT_WRITEFUNCTION, CURL_WRITER_MESSAGE_CALLBACK);
             curl_easy_setopt(pHandle, CURLOPT_WRITEDATA, pResponseMessage);
             break;
-        case ENetworkResponseType::RawData:
+        case ENetworkResponse::RawData:
             curl_easy_setopt(pHandle, CURLOPT_WRITEFUNCTION, CURL_WRITER_RAWDATA_CALLBACK);
             curl_easy_setopt(pHandle, CURLOPT_WRITEDATA, pResponseRawData);
             break;
@@ -1932,7 +1942,7 @@ namespace hms
                 };
                 
                 auto duration = std::chrono::system_clock::now().time_since_epoch();
-                u_int64_t timestamp = static_cast<u_int64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+                uint64_t timestamp = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
                 
                 struct dirent *file;
                 while ((file = readdir(dir)) != NULL)
@@ -1950,14 +1960,14 @@ namespace hms
                 closedir(dir);
                 
                 std::sort(info.begin(), info.end(), [](const CacheFileData& lpFile1, const CacheFileData& lpFile2) -> bool
-                          {
-                              return lpFile1.mHeader.mTimestamp < lpFile2.mHeader.mTimestamp;
-                          });
+                {
+                    return lpFile1.mHeader.mTimestamp < lpFile2.mHeader.mTimestamp;
+                });
                 
                 if (info.size() > pFileCountLimit)
                 {
-                    std::rotate(info.begin(), info.begin() + static_cast<long>(info.size() - pFileCountLimit), info.end());
-                    for (auto it = info.begin() + static_cast<long>(pFileCountLimit); it != info.end(); it++)
+                    std::rotate(info.begin(), info.begin() + static_cast<int64_t>(info.size() - pFileCountLimit), info.end());
+                    for (auto it = info.begin() + static_cast<int64_t>(pFileCountLimit); it != info.end(); it++)
                     {
                         if (std::remove((*it).mFullFilePath.c_str()) != 0)
                             Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Cache failed to delete file at '%'", (*it).mFullFilePath);
@@ -2014,7 +2024,7 @@ namespace hms
         }
     }
     
-    std::shared_ptr<NetworkWebSocketHandle> NetworkManager::connectWebSocket(NetworkWebSocketParam pParam)
+    std::shared_ptr<NetworkWebSocketHandle> NetworkManager::connectWebSocket(NetworkWebSocket pParam)
     {
         std::shared_ptr<NetworkWebSocketHandle> handle = nullptr;
         
@@ -2059,7 +2069,7 @@ namespace hms
             if (!file.good() || file.gcount() != readSize) return info;
             
             size_t urlSizeSubtract = 0;
-            u_int16_t stringMask = 1 << 12;
+            uint16_t stringMask = 1 << 12;
             if ((stringMask & info.mHeader.mFlagsAndSize) == stringMask)
             {
                 urlSizeSubtract += stringMask;
@@ -2069,7 +2079,7 @@ namespace hms
             urlSizeSubtract += (1 << 14) & info.mHeader.mFlagsAndSize;
             urlSizeSubtract += (1 << 15) & info.mHeader.mFlagsAndSize;
             
-            u_int16_t urlSize = info.mHeader.mFlagsAndSize - static_cast<u_int16_t>(urlSizeSubtract);
+            uint16_t urlSize = info.mHeader.mFlagsAndSize - static_cast<uint16_t>(urlSizeSubtract);
             
             info.mUrl.resize(urlSize);
             file.read(&info.mUrl[0], urlSize);
@@ -2096,7 +2106,7 @@ namespace hms
         }
         
         auto duration = std::chrono::system_clock::now().time_since_epoch();
-        u_int64_t timestamp = static_cast<u_int64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+        uint64_t timestamp = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
         
         if (info.mIsValid && timestamp >= info.mHeader.mTimestamp && (timestamp - info.mHeader.mTimestamp) < info.mHeader.mLifetime)
         {
@@ -2131,7 +2141,7 @@ namespace hms
         return response;
     }
     
-    bool NetworkManager::cacheResponse(const NetworkResponse& lpResponse, const std::string& pUrl, u_int32_t pLifetime)
+    bool NetworkManager::cacheResponse(const NetworkResponse& lpResponse, const std::string& pUrl, uint32_t pLifetime)
     {
         static const char lookup[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
         
@@ -2150,7 +2160,7 @@ namespace hms
         if (lpResponse.mCode == ENetworkCode::OK && dataSize > 0 && dataSize <= maxFileSize)
         {
             auto duration = std::chrono::system_clock::now().time_since_epoch();
-            u_int64_t timestamp = static_cast<u_int64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+            uint64_t timestamp = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
             CacheFileData info;
             
             {
