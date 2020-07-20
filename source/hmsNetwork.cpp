@@ -1256,9 +1256,10 @@ namespace hms
                             if (lpParam.mTaskBackground != nullptr)
                                 response.mDataTaskBackground = lpParam.mTaskBackground(response);
 
-                            Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(lpParam.mCallback), response = std::move(response)]() mutable -> void
+                            auto responseHandler = std::make_shared<decltype(response)>(std::move(response));
+                            Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(lpParam.mCallback), responseHandler = std::move(responseHandler)]() mutable -> void
                             {
-                                callback(std::move(response));
+                                callback(std::move(*responseHandler));
                             });
                         }
 
@@ -1388,9 +1389,10 @@ namespace hms
                         if (response.mCode != ENetworkCode::Cancel && lpParam.mTaskBackground != nullptr)
                             response.mDataTaskBackground = lpParam.mTaskBackground(response);
 
-                        Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(lpParam.mCallback), response = std::move(response)]() mutable -> void
+                        auto responseHandler = std::make_shared<decltype(response)>(std::move(response));
+                        Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(lpParam.mCallback), responseHandler = std::move(responseHandler)]() mutable -> void
                         {
-                            callback(std::move(response));
+                            callback(std::move(*responseHandler));
                         });
                     }
                 }
@@ -1459,9 +1461,10 @@ namespace hms
                                 if (response.mCode != ENetworkCode::Cancel && it->mTaskBackground != nullptr)
                                     response.mDataTaskBackground = it->mTaskBackground(response);
 
-                                Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(it->mCallback), response = std::move(response)]() mutable -> void
+                                auto responseHandler = std::make_shared<decltype(response)>(std::move(response));
+                                Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(it->mCallback), responseHandler = std::move(responseHandler)]() mutable -> void
                                 {
-                                    callback(std::move(response));
+                                    callback(std::move(*responseHandler));
                                 });
                             }
                         }
@@ -1658,9 +1661,10 @@ namespace hms
                                 if (response.mCode != ENetworkCode::Cancel && requestData->mParam->mTaskBackground != nullptr)
                                     response.mDataTaskBackground = requestData->mParam->mTaskBackground(response);
 
-                                Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(requestData->mParam->mCallback), response = std::move(response)]() mutable -> void
+                                auto responseHandler = std::make_shared<decltype(response)>(std::move(response));
+                                Hermes::getInstance()->getTaskManager()->execute(-1, [callback = std::move(requestData->mParam->mCallback), responseHandler = std::move(responseHandler)]() mutable -> void
                                 {
-                                    callback(std::move(response));
+                                    callback(std::move(*responseHandler));
                                 });
                             }
                         }

@@ -102,7 +102,7 @@ namespace hms
         std::vector<std::pair<std::string, std::string>> mHeader;
         std::string mMessage;
         DataBuffer mRawData;
-        std::shared_ptr<NetworkResponseDataTaskBackground> mDataTaskBackground;
+        std::unique_ptr<NetworkResponseDataTaskBackground> mDataTaskBackground;
         std::string mMethod;
     };
 
@@ -116,7 +116,7 @@ namespace hms
         std::vector<std::pair<std::string, std::string>> mHeader = {};
         std::string mRequestBody;
         std::function<void(NetworkResponse)> mCallback;
-        std::function<std::shared_ptr<NetworkResponseDataTaskBackground>(const NetworkResponse&)> mTaskBackground;
+        std::function<std::unique_ptr<NetworkResponseDataTaskBackground>(const NetworkResponse&)> mTaskBackground;
         std::function<void(int64_t, int64_t, int64_t, int64_t)> mProgress;
         uint32_t mRepeatCount = 0;
         bool mAllowRecovery = true;        
