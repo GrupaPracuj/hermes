@@ -77,7 +77,7 @@ namespace hms
         
         size_t mCapacity;
         size_t mSize;
-        char* mData;
+        unsigned char* mData;
     };
     
     class DataShared

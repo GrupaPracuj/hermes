@@ -16,11 +16,11 @@ namespace hms
 
     /* DataBuffer */
     
-    DataBuffer::DataBuffer(size_t pCapacity) : mCapacity(pCapacity), mSize(0), mData(mCapacity > 0 ? new char[mCapacity] : nullptr)
+    DataBuffer::DataBuffer(size_t pCapacity) : mCapacity(pCapacity), mSize(0), mData(mCapacity > 0 ? new unsigned char[mCapacity] : nullptr)
     {
     }
     
-    DataBuffer::DataBuffer(const DataBuffer& pOther) : mCapacity(pOther.mCapacity), mSize(pOther.mSize), mData(mCapacity > 0 ? new char[mCapacity] : nullptr)
+    DataBuffer::DataBuffer(const DataBuffer& pOther) : mCapacity(pOther.mCapacity), mSize(pOther.mSize), mData(mCapacity > 0 ? new unsigned char[mCapacity] : nullptr)
     {
         std::copy(pOther.mData, pOther.mData + mSize, mData);
     }
@@ -74,7 +74,7 @@ namespace hms
         {
             if (pCapacity > 0)
             {
-                char* data = new char[pCapacity];
+                unsigned char* data = new unsigned char[pCapacity];
                 const size_t size = std::min(mSize, pCapacity);
                 
                 if (size > 0)
@@ -1037,7 +1037,7 @@ namespace hms
         const std::string filePath = pRelativeToWorkspace ? mWorkingDirectory + pName : pName;
         for (auto it = mLoader.cbegin(); it != mLoader.cend(); it++)
         {
-            if(it->get()->isLoadable(filePath))
+            if (it->get()->isLoadable(filePath))
             {
                 added = true;
                 mStorage.push_back(it->get()->createStorageReader(filePath, pPrefix));
@@ -1054,7 +1054,7 @@ namespace hms
         
         for (auto it = mLoader.cbegin(); it != mLoader.cend(); it++)
         {
-            if(it->get()->isLoadable(*pReader))
+            if (it->get()->isLoadable(*pReader))
             {
                 added = true;
                 mStorage.push_back(it->get()->createStorageReader(pReader, pPrefix));

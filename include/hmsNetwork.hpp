@@ -32,7 +32,7 @@ namespace hms
     
     class NetworkManager;
 
-    enum class ENetworkCode : int
+    enum class ENetworkCode : int32_t
     {
         OK = 0,
         InvalidHttpCodeRange,
@@ -42,7 +42,7 @@ namespace hms
         Unknown = 100
     };
 
-    enum class ENetworkRequestType : int
+    enum class ENetworkRequest : int32_t
     {
         Delete = 0,
         Get,
@@ -51,13 +51,13 @@ namespace hms
         Head
     };
         
-    enum class ENetworkResponseType : int
+    enum class ENetworkResponse : int32_t
     {
         Message = 0,
         RawData
     };
         
-    enum class ENetworkWebSocketDisconnect : int
+    enum class ENetworkWebSocketDisconnect : int32_t
     {
         User = 0,
         InitialConnection,
@@ -88,34 +88,45 @@ namespace hms
         Count
     };
 
-    struct NetworkResponse
+    class NetworkResponseDataTaskBackground
     {
+    public:
+        virtual ~NetworkResponseDataTaskBackground() = default;
+    };
+
+    class NetworkResponse
+    {
+    public:
         ENetworkCode mCode = ENetworkCode::Unknown;
         int32_t mHttpCode = -1;
         std::vector<std::pair<std::string, std::string>> mHeader;
         std::string mMessage;
         DataBuffer mRawData;
+        std::unique_ptr<NetworkResponseDataTaskBackground> mDataTaskBackground;
         std::string mMethod;
     };
-        
-    struct NetworkRequestParam
+
+    class NetworkRequest
     {
-        ENetworkRequestType mRequestType = ENetworkRequestType::Get;
-        ENetworkResponseType mResponseType = ENetworkResponseType::Message;
+    public:
+        ENetworkRequest mRequestType = ENetworkRequest::Get;
+        ENetworkResponse mResponseType = ENetworkResponse::Message;
         std::string mMethod;
         std::vector<std::pair<std::string, std::string>> mParameter = {};
         std::vector<std::pair<std::string, std::string>> mHeader = {};
         std::string mRequestBody;
         std::function<void(NetworkResponse)> mCallback;
+        std::function<std::unique_ptr<NetworkResponseDataTaskBackground>(const NetworkResponse&)> mTaskBackground;
         std::function<void(int64_t, int64_t, int64_t, int64_t)> mProgress;
         uint32_t mRepeatCount = 0;
         bool mAllowRecovery = true;        
         bool mAllowCache = false;
-        u_int32_t mCacheLifetime = 8640000;
+        uint32_t mCacheLifetime = 8640000;
     };
         
-    struct NetworkWebSocketParam
+    class NetworkWebSocket
     {
+    public:
         std::string mUrl;
         std::vector<std::pair<std::string, std::string>> mParameter = {};
         std::vector<std::pair<std::string, std::string>> mHeader = {};
@@ -180,7 +191,7 @@ namespace hms
         NetworkWebSocketHandle& operator=(const NetworkWebSocketHandle& pOther) = delete;
         NetworkWebSocketHandle& operator=(NetworkWebSocketHandle&& pOther) = delete;
         
-        void initialize(int32_t pThreadPoolId, NetworkWebSocketParam pParam, NetworkManager* pNetworkManager);
+        void initialize(int32_t pThreadPoolId, NetworkWebSocket pParam, NetworkManager* pNetworkManager);
     
         int32_t sendUpgradeHeader(const tools::URLTool& pUrl, const std::vector<std::pair<std::string, std::string>>& pHeader, std::string& pSecAccept) const;
         std::string packMessage(const std::string& pMessage, ENetworkWebSocketOpCode pOpCode = ENetworkWebSocketOpCode::Text) const;
@@ -200,21 +211,23 @@ namespace hms
     class NetworkRecovery
     {
     public:
-        struct Config
+        class Config
         {
+        public:
             std::function<bool(const NetworkResponse& lpResponse, std::string&, std::vector<std::pair<std::string, std::string>>&, std::vector<std::pair<std::string, std::string>>&)> mCondition;
-            ENetworkRequestType mRequestType = ENetworkRequestType::Post;
+            ENetworkRequest mRequestType = ENetworkRequest::Post;
             std::string mUrl;
             std::vector<std::pair<std::string, std::string>> mParameter;
             std::vector<std::pair<std::string, std::string>> mHeader;
             std::function<void(NetworkResponse)> mCallback;
+            std::function<std::unique_ptr<NetworkResponseDataTaskBackground>(const NetworkResponse&)> mTaskBackground;
             uint32_t mRepeatCount = 0;
         };
 
         bool isQueueEmpty() const;
             
         bool checkCondition(const NetworkResponse& pResponse, std::string& pRequestBody, std::vector<std::pair<std::string, std::string>>& pParameter, std::vector<std::pair<std::string, std::string>>& pHeader) const;
-        void pushReceiver(std::tuple<size_t, NetworkRequestParam, std::shared_ptr<NetworkRequestHandle>> pReceiver);
+        void pushReceiver(std::tuple<size_t, NetworkRequest, std::shared_ptr<NetworkRequestHandle>> pReceiver);
         void runRequest(std::string pRequestBody, std::vector<std::pair<std::string, std::string>> pParameter, std::vector<std::pair<std::string, std::string>> pHeader);
         
         bool isActive() const;
@@ -235,7 +248,7 @@ namespace hms
         class InternalData
         {
         public:
-            std::queue<std::tuple<size_t, NetworkRequestParam, std::shared_ptr<NetworkRequestHandle>>> mReceiver;
+            std::queue<std::tuple<size_t, NetworkRequest, std::shared_ptr<NetworkRequestHandle>>> mReceiver;
             bool mActive = false;
         };
         
@@ -250,7 +263,7 @@ namespace hms
         size_t mId = 0;
         std::string mName;
 
-        NetworkRequestParam mRequestParam;
+        NetworkRequest mRequestParam;
         std::function<bool(const NetworkResponse& lpResponse, std::string&, std::vector<std::pair<std::string, std::string>>&, std::vector<std::pair<std::string, std::string>>&)> mCondition;
         std::shared_ptr<InternalData> mInternalData;
     };
@@ -262,7 +275,7 @@ namespace hms
         //! Call a request.
         /** This method is used to send a HTTP request.
          \param pParam Parameters of the request. */
-        virtual std::shared_ptr<NetworkRequestHandle> request(NetworkRequestParam pParam);
+        virtual std::shared_ptr<NetworkRequestHandle> request(NetworkRequest pParam);
         
         //! Call a request.
         /** This is an alternative method for a HTTP request.
@@ -270,9 +283,9 @@ namespace hms
          \param pMethod Endpoint of the request.
          \param pRequestBody The request body.
          \param pCallback Callback with a response from the server. */
-        std::shared_ptr<NetworkRequestHandle> request(ENetworkRequestType pRequestType, std::string pMethod, std::string pRequestBody, std::function<void(NetworkResponse)> pCallback)
+        std::shared_ptr<NetworkRequestHandle> request(ENetworkRequest pRequestType, std::string pMethod, std::string pRequestBody, std::function<void(NetworkResponse)> pCallback)
         {
-            NetworkRequestParam param;
+            NetworkRequest param;
             
             param.mRequestType = pRequestType;
             param.mMethod = std::move(pMethod);
@@ -359,7 +372,7 @@ namespace hms
             std::atomic<uint32_t>* mTerminateAbort = nullptr;
         };
     
-        bool initialize(long pTimeout, int pThreadPoolId, int pWebSocketThreadPoolId, std::pair<int, int> pHttpCodeSuccess = {200, 299});
+        bool initialize(int64_t pTimeout, int32_t pThreadPoolId, int32_t pWebSocketThreadPoolId, std::pair<int32_t, int32_t> pHttpCodeSuccess = {200, 299});
         bool terminate();
 
         std::shared_ptr<NetworkAPI> add(size_t pId, std::string pName, std::string pUrl);
@@ -387,17 +400,17 @@ namespace hms
         size_t countRecovery() const;
         std::shared_ptr<NetworkRecovery> getRecovery(size_t pId) const;
 
-        void request(NetworkRequestParam pParam, std::shared_ptr<NetworkRequestHandle> pRequestHandle = nullptr);
-        void request(std::vector<NetworkRequestParam> pParam, std::vector<std::shared_ptr<NetworkRequestHandle>> pRequestHandle = {});
+        void request(NetworkRequest pParam, std::shared_ptr<NetworkRequestHandle> pRequestHandle = nullptr);
+        void request(std::vector<NetworkRequest> pParam, std::vector<std::shared_ptr<NetworkRequestHandle>> pRequestHandle = {});
         
-        long getTimeout() const;
-        void setTimeout(long pTimeout);
+        int64_t getTimeout() const;
+        void setTimeout(int64_t pTimeout);
         
         bool getFlag(ENetworkFlag pFlag) const;
         void setFlag(ENetworkFlag pFlag, bool pState);
         
-        long getProgressTimePeriod() const;
-        void setProgressTimePeriod(long pTimePeriod);
+        int64_t getProgressTimePeriod() const;
+        void setProgressTimePeriod(int64_t pTimePeriod);
         
         std::string getCACertificatePath() const;
         void setCACertificatePath(std::string pPath);
@@ -409,7 +422,7 @@ namespace hms
         bool initCache(const std::string& pDirectoryPath, unsigned pFileCountLimit, unsigned pFileSizeLimit);
         void clearCache();
         
-        std::shared_ptr<NetworkWebSocketHandle> connectWebSocket(NetworkWebSocketParam pParam);
+        std::shared_ptr<NetworkWebSocketHandle> connectWebSocket(NetworkWebSocket pParam);
         
     private:
         friend class Hermes;
@@ -423,15 +436,15 @@ namespace hms
             ProgressData mProgressData;
             void* mHandle = nullptr;
             std::vector<char> mErrorBuffer;
-            NetworkRequestParam* mParam = nullptr;
+            NetworkRequest* mParam = nullptr;
         };
         
         struct CacheFileData
         {
             struct Header {
-                u_int64_t mTimestamp = 0;
-                u_int32_t mLifetime = 0;
-                u_int16_t mFlagsAndSize = 0;
+                uint64_t mTimestamp = 0;
+                uint32_t mLifetime = 0;
+                uint16_t mFlagsAndSize = 0;
             } mHeader;
             
             bool mStringType = false;
@@ -443,11 +456,11 @@ namespace hms
         
         struct RequestSettings
         {
-            std::pair<int, int> mHttpCodeSuccess = {200, 299};
+            std::pair<int32_t, int32_t> mHttpCodeSuccess = {200, 299};
             std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> mFlag = {false, false, false};
             std::string mCACertificatePath;
-            long mTimeout = 0;
-            long mProgressTimePeriod = 0;
+            int64_t mTimeout = 0;
+            int64_t mProgressTimePeriod = 0;
         };
     
         NetworkManager();
@@ -463,7 +476,7 @@ namespace hms
         
         std::vector<std::pair<std::string, std::string>> createUniqueHeader(const std::vector<std::pair<std::string, std::string>>& pHeader) const;
 
-        void configureHandle(void* pHandle, ENetworkRequestType pRequestType, ENetworkResponseType pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody, std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader, long pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer, const std::string pCACertificatePath) const;
+        void configureHandle(void* pHandle, ENetworkRequest pRequestType, ENetworkResponse pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody, std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader, int64_t pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer, const std::string pCACertificatePath) const;
         
         void resetHandle(void* pHandle) const;
         
@@ -485,8 +498,8 @@ namespace hms
         std::unordered_map<std::thread::id, void*> mMultiHandle;
         std::mutex mMultiHandleMutex;
 
-        int mThreadPoolId = -1;
-        int mWebSocketThreadPoolId = -1;
+        int32_t mThreadPoolId = -1;
+        int32_t mWebSocketThreadPoolId = -1;
 
         std::atomic<uint32_t> mInitialized {0};
         std::atomic<uint32_t> mCacheInitialized {0};
