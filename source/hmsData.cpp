@@ -1037,7 +1037,7 @@ namespace hms
         const std::string filePath = pRelativeToWorkspace ? mWorkingDirectory + pName : pName;
         for (auto it = mLoader.cbegin(); it != mLoader.cend(); it++)
         {
-            if(it->get()->isLoadable(filePath))
+            if (it->get()->isLoadable(filePath))
             {
                 added = true;
                 mStorage.push_back(it->get()->createStorageReader(filePath, pPrefix));
@@ -1054,7 +1054,7 @@ namespace hms
         
         for (auto it = mLoader.cbegin(); it != mLoader.cend(); it++)
         {
-            if(it->get()->isLoadable(*pReader))
+            if (it->get()->isLoadable(*pReader))
             {
                 added = true;
                 mStorage.push_back(it->get()->createStorageReader(pReader, pPrefix));

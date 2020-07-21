@@ -685,7 +685,7 @@ namespace hms
                     {
                         CURLcode code = curl_easy_send(mControlBlock->mHandle, message.c_str(), message.length(), &sendCount);
                         
-                        if(code != CURLE_OK)
+                        if (code != CURLE_OK)
                             Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Pong send failed. CURLcode %", static_cast<int32_t>(code));
                     }
                 }
