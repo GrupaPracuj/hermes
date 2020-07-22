@@ -1,7 +1,7 @@
 import os
 import shutil
 
-libraryVersion = '3.0.2'
+libraryVersion = '3.1.3'
 libraryName = 'libressl-' + libraryVersion
 
 buildCommonFile = os.path.join('..', '..', 'script', 'build_common.py')
