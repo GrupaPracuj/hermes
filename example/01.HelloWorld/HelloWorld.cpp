@@ -43,10 +43,10 @@ void HelloWorld::execute(std::function<void(std::string)> pCallback, int32_t pRe
 {
     using namespace std::string_literals;
 
-    hms::NetworkRequest requestParams;
-    requestParams.mRequestType = hms::ENetworkRequest::Get;
-    requestParams.mMethod = "users/"s + std::to_string(pRequestIndex);
-    requestParams.mCallback = [pCallback = std::move(pCallback)](hms::NetworkResponse lpResponse) -> void
+    hms::NetworkRequest request;
+    request.mRequestType = hms::ENetworkRequest::Get;
+    request.mMethod = "users/"s + std::to_string(pRequestIndex);
+    request.mCallback = [pCallback = std::move(pCallback)](hms::NetworkResponse lpResponse) -> void
     {
         std::string outputText;
 
@@ -75,5 +75,5 @@ void HelloWorld::execute(std::function<void(std::string)> pCallback, int32_t pRe
             pCallback(std::move(outputText));
     };
 
-    hms::Hermes::getInstance()->getNetworkManager()->get(static_cast<size_t>(ENetworkAPI::JsonPlaceholder))->request(std::move(requestParams));
+    hms::Hermes::getInstance()->getNetworkManager()->get(static_cast<size_t>(ENetworkAPI::JsonPlaceholder))->request(std::move(request));
 }
