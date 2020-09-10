@@ -8,6 +8,7 @@ import sys
 class Settings:
     def __init__(self):
         self.mRootDir = ''
+        self.mLibDir = ''
         self.mBuildTarget = ''
         self.mAndroidApi = ''
         self.mAndroidNdkDir = ''
@@ -190,7 +191,7 @@ def checkNinja(pDestinationDir):
 
     return result
         
-def configure(pSettings, pRelativeRootDir):
+def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
     import multiprocessing
 
     print('Configuring...')
@@ -211,6 +212,10 @@ def configure(pSettings, pRelativeRootDir):
     platformName = platform.system().lower()
     pSettings.mRootDir = os.path.join(workingDir, pRelativeRootDir)
     downloadDir = os.path.join(pSettings.mRootDir, 'download')
+    if len(pRelativeLibDir) == 0:
+        pSettings.mLibDir = pSettings.mRootDir
+    else:
+        pSettings.mLibDir = os.path.join(workingDir, pRelativeLibDir)
 
     pSettings.mBuildTarget = sys.argv[1]
     if pSettings.mBuildTarget == 'android':
@@ -499,7 +504,7 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
     pCMakeFlag += '-DCMAKE_BUILD_TYPE=' + configType
 
     for i in range(0, len(pSettings.mArchName)):
-        libraryDir = os.path.join(pSettings.mRootDir, 'lib', pSettings.mBuildTarget, pSettings.mArchName[i])
+        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget, pSettings.mArchName[i])
 
         if not os.path.isdir(libraryDir):
             os.makedirs(libraryDir)
@@ -629,7 +634,7 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
         executeCmdCommand(pSettings.mMake + ' clean', workingDir)
 
     for i in range(0, len(pSettings.mArchName)):
-        libraryDir = os.path.join(pSettings.mRootDir, 'lib', pSettings.mBuildTarget, pSettings.mArchName[i])
+        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget, pSettings.mArchName[i])
 
         if not os.path.isdir(libraryDir):
             os.makedirs(libraryDir)
@@ -811,7 +816,7 @@ def buildMakeGeneric(pIndex, pLibraryName, pSettings, pMakeFlag):
 
 def executeLipo(pLibraryName, pSettings):
     if pSettings.mBuildTarget == 'ios' or pSettings.mBuildTarget == 'macos':
-        libraryDir = os.path.join(pSettings.mRootDir, 'lib', pSettings.mBuildTarget)
+        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget)
 
         for i in range(0, len(pLibraryName)):
             remove(os.path.join(libraryDir, 'lib' + pLibraryName[i] + '.a'))
