@@ -393,10 +393,24 @@ namespace jni
         }
 
         template <typename C = Utility, typename T>
+        static jobject convert(JNIEnv* pEnvironment, const hms::ext::jni::ObjectNativeWrapper<T>& pValue)
+        {
+            jobject result = nullptr;
+
+            try
+            {
+                result = hms::ext::jni::ObjectNative::create<T>(pValue.mData, pEnvironment, mClasses[static_cast<size_t>(EClass::pl_grupapracuj_hermes_ext_jni_ObjectNative)].first);
+            }
+            catch (const std::exception& lpException) {}
+
+            return result;
+        }
+
+        template <typename C = Utility, typename T>
         static jobject convert(JNIEnv* pEnvironment, T&& pValue, typename std::enable_if_t<is_pair<std::decay_t<T>>::value>* = nullptr)
         {
-            jobject jFirst = C::template objectCreate<C>(pEnvironment, pValue.first);
-            jobject jSecond = C::template objectCreate<C>(pEnvironment, pValue.second);
+            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::move(pValue.first));
+            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::move(pValue.second));
             jobject jObject = pEnvironment->NewObject(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Pair)].first, mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Pair_init)], jFirst, jSecond);
             localRefDelete(pEnvironment, jFirst);
             localRefDelete(pEnvironment, jSecond);
@@ -407,8 +421,8 @@ namespace jni
         template <typename C = Utility, typename T>
         static jobject convert(JNIEnv* pEnvironment, T&& pValue, typename std::enable_if_t<is_tuple<std::decay_t<T>>::value && std::tuple_size<std::decay_t<T>>::value == 2>* = nullptr)
         {
-            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::get<0>(pValue));
-            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::get<1>(pValue));
+            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::move(std::get<0>(pValue)));
+            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::move(std::get<1>(pValue)));
             jobject jObject = pEnvironment->NewObject(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Pair)].first, mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Pair_init)], jFirst, jSecond);
             localRefDelete(pEnvironment, jFirst);
             localRefDelete(pEnvironment, jSecond);
@@ -419,9 +433,9 @@ namespace jni
         template <typename C = Utility, typename T>
         static jobject convert(JNIEnv* pEnvironment, T&& pValue, typename std::enable_if_t<is_tuple<std::decay_t<T>>::value && std::tuple_size<std::decay_t<T>>::value == 3>* = nullptr)
         {
-            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::get<0>(pValue));
-            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::get<1>(pValue));
-            jobject jThird = C::template objectCreate<C>(pEnvironment, std::get<2>(pValue));
+            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::move(std::get<0>(pValue)));
+            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::move(std::get<1>(pValue)));
+            jobject jThird = C::template objectCreate<C>(pEnvironment, std::move(std::get<2>(pValue)));
             jobject jObject = pEnvironment->NewObject(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Triple)].first, mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Triple_init)], jFirst, jSecond, jThird);
             localRefDelete(pEnvironment, jFirst);
             localRefDelete(pEnvironment, jSecond);
@@ -433,10 +447,10 @@ namespace jni
         template <typename C = Utility, typename T>
         static jobject convert(JNIEnv* pEnvironment, T&& pValue, typename std::enable_if_t<is_tuple<std::decay_t<T>>::value && std::tuple_size<std::decay_t<T>>::value == 4>* = nullptr)
         {
-            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::get<0>(pValue));
-            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::get<1>(pValue));
-            jobject jThird = C::template objectCreate<C>(pEnvironment, std::get<2>(pValue));
-            jobject jFourth = C::template objectCreate<C>(pEnvironment, std::get<3>(pValue));
+            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::move(std::get<0>(pValue)));
+            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::move(std::get<1>(pValue)));
+            jobject jThird = C::template objectCreate<C>(pEnvironment, std::move(std::get<2>(pValue)));
+            jobject jFourth = C::template objectCreate<C>(pEnvironment, std::move(std::get<3>(pValue)));
             jobject jObject = pEnvironment->NewObject(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Quadruple)].first, mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Quadruple_init)], jFirst, jSecond, jThird, jFourth);
             localRefDelete(pEnvironment, jFirst);
             localRefDelete(pEnvironment, jSecond);
@@ -449,11 +463,11 @@ namespace jni
         template <typename C = Utility, typename T>
         static jobject convert(JNIEnv* pEnvironment, T&& pValue, typename std::enable_if_t<is_tuple<std::decay_t<T>>::value && std::tuple_size<std::decay_t<T>>::value == 5>* = nullptr)
         {
-            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::get<0>(pValue));
-            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::get<1>(pValue));
-            jobject jThird = C::template objectCreate<C>(pEnvironment, std::get<2>(pValue));
-            jobject jFourth = C::template objectCreate<C>(pEnvironment, std::get<3>(pValue));
-            jobject jFifth = C::template objectCreate<C>(pEnvironment, std::get<4>(pValue));
+            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::move(std::get<0>(pValue)));
+            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::move(std::get<1>(pValue)));
+            jobject jThird = C::template objectCreate<C>(pEnvironment, std::move(std::get<2>(pValue)));
+            jobject jFourth = C::template objectCreate<C>(pEnvironment, std::move(std::get<3>(pValue)));
+            jobject jFifth = C::template objectCreate<C>(pEnvironment, std::move(std::get<4>(pValue)));
             jobject jObject = pEnvironment->NewObject(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Quintuple)].first, mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Quintuple_init)], jFirst, jSecond, jThird, jFourth, jFifth);
             localRefDelete(pEnvironment, jFirst);
             localRefDelete(pEnvironment, jSecond);
@@ -467,12 +481,12 @@ namespace jni
         template <typename C = Utility, typename T>
         static jobject convert(JNIEnv* pEnvironment, T&& pValue, typename std::enable_if_t<is_tuple<std::decay_t<T>>::value && std::tuple_size<std::decay_t<T>>::value == 6>* = nullptr)
         {
-            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::get<0>(pValue));
-            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::get<1>(pValue));
-            jobject jThird = C::template objectCreate<C>(pEnvironment, std::get<2>(pValue));
-            jobject jFourth = C::template objectCreate<C>(pEnvironment, std::get<3>(pValue));
-            jobject jFifth = C::template objectCreate<C>(pEnvironment, std::get<4>(pValue));
-            jobject jSixth = C::template objectCreate<C>(pEnvironment, std::get<5>(pValue));
+            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::move(std::get<0>(pValue)));
+            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::move(std::get<1>(pValue)));
+            jobject jThird = C::template objectCreate<C>(pEnvironment, std::move(std::get<2>(pValue)));
+            jobject jFourth = C::template objectCreate<C>(pEnvironment, std::move(std::get<3>(pValue)));
+            jobject jFifth = C::template objectCreate<C>(pEnvironment, std::move(std::get<4>(pValue)));
+            jobject jSixth = C::template objectCreate<C>(pEnvironment, std::move(std::get<5>(pValue)));
             jobject jObject = pEnvironment->NewObject(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Sextuple)].first, mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Sextuple_init)], jFirst, jSecond, jThird, jFourth, jFifth, jSixth);
             localRefDelete(pEnvironment, jFirst);
             localRefDelete(pEnvironment, jSecond);
@@ -487,13 +501,13 @@ namespace jni
         template <typename C = Utility, typename T>
         static jobject convert(JNIEnv* pEnvironment, T&& pValue, typename std::enable_if_t<is_tuple<std::decay_t<T>>::value && std::tuple_size<std::decay_t<T>>::value == 7>* = nullptr)
         {
-            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::get<0>(pValue));
-            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::get<1>(pValue));
-            jobject jThird = C::template objectCreate<C>(pEnvironment, std::get<2>(pValue));
-            jobject jFourth = C::template objectCreate<C>(pEnvironment, std::get<3>(pValue));
-            jobject jFifth = C::template objectCreate<C>(pEnvironment, std::get<4>(pValue));
-            jobject jSixth = C::template objectCreate<C>(pEnvironment, std::get<5>(pValue));
-            jobject jSeventh = C::template objectCreate<C>(pEnvironment, std::get<6>(pValue));
+            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::move(std::get<0>(pValue)));
+            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::move(std::get<1>(pValue)));
+            jobject jThird = C::template objectCreate<C>(pEnvironment, std::move(std::get<2>(pValue)));
+            jobject jFourth = C::template objectCreate<C>(pEnvironment, std::move(std::get<3>(pValue)));
+            jobject jFifth = C::template objectCreate<C>(pEnvironment, std::move(std::get<4>(pValue)));
+            jobject jSixth = C::template objectCreate<C>(pEnvironment, std::move(std::get<5>(pValue)));
+            jobject jSeventh = C::template objectCreate<C>(pEnvironment, std::move(std::get<6>(pValue)));
             jobject jObject = pEnvironment->NewObject(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Septuple)].first, mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Septuple_init)], jFirst, jSecond, jThird, jFourth, jFifth, jSixth, jSeventh);
             localRefDelete(pEnvironment, jFirst);
             localRefDelete(pEnvironment, jSecond);
@@ -509,14 +523,14 @@ namespace jni
         template <typename C = Utility, typename T>
         static jobject convert(JNIEnv* pEnvironment, T&& pValue, typename std::enable_if_t<is_tuple<std::decay_t<T>>::value && std::tuple_size<std::decay_t<T>>::value == 8>* = nullptr)
         {
-            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::get<0>(pValue));
-            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::get<1>(pValue));
-            jobject jThird = C::template objectCreate<C>(pEnvironment, std::get<2>(pValue));
-            jobject jFourth = C::template objectCreate<C>(pEnvironment, std::get<3>(pValue));
-            jobject jFifth = C::template objectCreate<C>(pEnvironment, std::get<4>(pValue));
-            jobject jSixth = C::template objectCreate<C>(pEnvironment, std::get<5>(pValue));
-            jobject jSeventh = C::template objectCreate<C>(pEnvironment, std::get<6>(pValue));
-            jobject jEighth = C::template objectCreate<C>(pEnvironment, std::get<7>(pValue));
+            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::move(std::get<0>(pValue)));
+            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::move(std::get<1>(pValue)));
+            jobject jThird = C::template objectCreate<C>(pEnvironment, std::move(std::get<2>(pValue)));
+            jobject jFourth = C::template objectCreate<C>(pEnvironment, std::move(std::get<3>(pValue)));
+            jobject jFifth = C::template objectCreate<C>(pEnvironment, std::move(std::get<4>(pValue)));
+            jobject jSixth = C::template objectCreate<C>(pEnvironment, std::move(std::get<5>(pValue)));
+            jobject jSeventh = C::template objectCreate<C>(pEnvironment, std::move(std::get<6>(pValue)));
+            jobject jEighth = C::template objectCreate<C>(pEnvironment, std::move(std::get<7>(pValue)));
             jobject jObject = pEnvironment->NewObject(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Octuple)].first, mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Octuple_init)], jFirst, jSecond, jThird, jFourth, jFifth, jSixth, jSeventh, jEighth);
             localRefDelete(pEnvironment, jFirst);
             localRefDelete(pEnvironment, jSecond);
@@ -533,15 +547,15 @@ namespace jni
         template <typename C = Utility, typename T>
         static jobject convert(JNIEnv* pEnvironment, T&& pValue, typename std::enable_if_t<is_tuple<std::decay_t<T>>::value && std::tuple_size<std::decay_t<T>>::value == 9>* = nullptr)
         {
-            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::get<0>(pValue));
-            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::get<1>(pValue));
-            jobject jThird = C::template objectCreate<C>(pEnvironment, std::get<2>(pValue));
-            jobject jFourth = C::template objectCreate<C>(pEnvironment, std::get<3>(pValue));
-            jobject jFifth = C::template objectCreate<C>(pEnvironment, std::get<4>(pValue));
-            jobject jSixth = C::template objectCreate<C>(pEnvironment, std::get<5>(pValue));
-            jobject jSeventh = C::template objectCreate<C>(pEnvironment, std::get<6>(pValue));
-            jobject jEighth = C::template objectCreate<C>(pEnvironment, std::get<7>(pValue));
-            jobject jNinth = C::template objectCreate<C>(pEnvironment, std::get<8>(pValue));
+            jobject jFirst = C::template objectCreate<C>(pEnvironment, std::move(std::get<0>(pValue)));
+            jobject jSecond = C::template objectCreate<C>(pEnvironment, std::move(std::get<1>(pValue)));
+            jobject jThird = C::template objectCreate<C>(pEnvironment, std::move(std::get<2>(pValue)));
+            jobject jFourth = C::template objectCreate<C>(pEnvironment, std::move(std::get<3>(pValue)));
+            jobject jFifth = C::template objectCreate<C>(pEnvironment, std::move(std::get<4>(pValue)));
+            jobject jSixth = C::template objectCreate<C>(pEnvironment, std::move(std::get<5>(pValue)));
+            jobject jSeventh = C::template objectCreate<C>(pEnvironment, std::move(std::get<6>(pValue)));
+            jobject jEighth = C::template objectCreate<C>(pEnvironment, std::move(std::get<7>(pValue)));
+            jobject jNinth = C::template objectCreate<C>(pEnvironment, std::move(std::get<8>(pValue)));
             jobject jObject = pEnvironment->NewObject(mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Nontuple)].first, mMethodIds[static_cast<size_t>(EMethodId::pl_grupapracuj_pracuj_ext_tuple_Nontuple_init)], jFirst, jSecond, jThird, jFourth, jFifth, jSixth, jSeventh, jEighth, jNinth);
             localRefDelete(pEnvironment, jFirst);
             localRefDelete(pEnvironment, jSecond);
@@ -584,6 +598,47 @@ namespace jni
             pEnvironment->SetLongArrayRegion(jArray, 0, static_cast<jsize>(pValue.size()), reinterpret_cast<const jlong*>(pValue.data()));
 
             return jArray;
+        }
+
+        template <typename C = Utility, typename T>
+        static jobjectArray convert(JNIEnv* pEnvironment, std::vector<T>&& pValue, typename std::enable_if_t<std::is_same_v<T, std::string> || std::is_same_v<T, hms::DataBuffer> || is_pair<T>::value || is_tuple<T>::value>* = nullptr)
+        {
+            jclass jClass = nullptr;
+            if constexpr(std::is_same<T, std::string>::value)
+            {
+                jClass = mClasses[static_cast<size_t>(EClass::java_lang_String)].first;
+            }
+            else if constexpr(std::is_same<T, hms::DataBuffer>::value)
+            {
+                jClass = mClasses[static_cast<size_t>(EClass::java_lang_arrayByte)].first;
+            }
+            else if constexpr(is_pair<T>::value)
+            {
+                jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Pair)].first;
+            }
+            else if constexpr(is_tuple<T>::value)
+            {
+                assert(std::tuple_size<T>::value < 10);
+
+                if constexpr(std::tuple_size<T>::value == 2)
+                    jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Pair)].first;
+                else if constexpr(std::tuple_size<T>::value == 3)
+                    jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Triple)].first;
+                else if constexpr(std::tuple_size<T>::value == 4)
+                    jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Quadruple)].first;
+                else if constexpr(std::tuple_size<T>::value == 5)
+                    jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Quintuple)].first;
+                else if constexpr(std::tuple_size<T>::value == 6)
+                    jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Sextuple)].first;
+                else if constexpr(std::tuple_size<T>::value == 7)
+                    jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Septuple)].first;
+                else if constexpr(std::tuple_size<T>::value == 8)
+                    jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Octuple)].first;
+                else if constexpr(std::tuple_size<T>::value == 9)
+                    jClass = mClasses[static_cast<size_t>(EClass::pl_grupapracuj_pracuj_ext_tuple_Nontuple)].first;
+            }
+
+            return arrayObjectCreate(pEnvironment, std::move(pValue), jClass);
         }
 
         template <typename C = Utility, typename T>
@@ -678,6 +733,22 @@ namespace jni
         static jshort convert(JNIEnv* pEnvironment, T pValue, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, jshort>>* = nullptr)
         {
             return pValue;
+        }
+
+        template <typename C = Utility, typename T>
+        static jobjectArray arrayObjectCreate(JNIEnv* pEnvironment, std::vector<T>&& pValue, jclass pClass)
+        {
+            assert(pClass != nullptr);
+
+            jobjectArray jArray = pEnvironment->NewObjectArray(static_cast<jsize>(pValue.size()), pClass, nullptr);
+            for (size_t i = 0; i < pValue.size(); ++i)
+            {
+                auto jValue = C::template objectCreate<C>(pEnvironment, std::move(pValue[i]));
+                pEnvironment->SetObjectArrayElement(jArray, static_cast<jsize>(i), static_cast<jobject>(jValue));
+                localRefDelete(pEnvironment, jValue);
+            }
+
+            return jArray;
         }
 
         template <typename C = Utility, typename T>
