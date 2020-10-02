@@ -779,8 +779,12 @@ namespace hms
     {
         if (!mInitialized)
             return false;
-        
+
+        mWorkingDirectory.clear();
         mData.clear();
+        mStorage.clear();
+        mLoader.clear();
+        mCipher = nullptr;
 
         mInitialized = false;
         

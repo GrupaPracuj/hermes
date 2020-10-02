@@ -1970,8 +1970,8 @@ namespace hms
                 
                 if (info.size() > pFileCountLimit)
                 {
-                    std::rotate(info.begin(), info.begin() + static_cast<int64_t>(info.size() - pFileCountLimit), info.end());
-                    for (auto it = info.begin() + static_cast<int64_t>(pFileCountLimit); it != info.end(); it++)
+                    std::rotate(info.begin(), info.begin() + static_cast<ptrdiff_t>(info.size() - pFileCountLimit), info.end());
+                    for (auto it = info.begin() + static_cast<ptrdiff_t>(pFileCountLimit); it != info.end(); it++)
                     {
                         if (std::remove((*it).mFullFilePath.c_str()) != 0)
                             Hermes::getInstance()->getLogger()->print(ELogLevel::Warning, "Cache failed to delete file at '%'", (*it).mFullFilePath);

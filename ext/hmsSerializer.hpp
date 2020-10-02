@@ -143,7 +143,7 @@ namespace ext
     namespace json
     {
         template <typename T>
-        struct is_deserializable_class : std::false_type{};
+        struct is_serializable_class : std::false_type{};
     
         bool convert(const Json::Value& pSource, std::string& pDestination);
         bool convert(const std::string& pSource, Json::Value& pDestination);
@@ -153,7 +153,7 @@ namespace ext
         {
             bool status = false;
             
-            if constexpr(is_deserializable_class<T>::value)
+            if constexpr(is_serializable_class<T>::value)
                 status = pDestination.deserialize(*pSource);
             
             return status;
@@ -269,7 +269,22 @@ namespace ext
                 
                 return deserialized;
             }
-        
+
+            Json::Value serialize() const
+            {
+                Json::Value array = Json::arrayValue;
+                for (auto it = mMap.cbegin(); it != mMap.cend(); it++)
+                {
+                    Json::Value value;
+                    value[mKey] = it->first;
+                    value[mValue] = it->second;
+
+                    array.append(std::move(value));
+                }
+
+                return array;
+            }
+
         private:
             std::unordered_map<K, V> mMap;
             std::string mKey;
@@ -293,17 +308,25 @@ namespace ext
             {
                 return safeAs<T>(pRoot, mValue, mKey);
             }
-        
+
+            Json::Value serialize() const
+            {
+                Json::Value value;
+                value[mKey] = mValue;
+
+                return value;
+            }
+
         private:
             T mValue{};
             std::string mKey;
         };
         
         template <typename K, typename V>
-        struct is_deserializable_class<Map<K, V>> : std::true_type{};
+        struct is_serializable_class<Map<K, V>> : std::true_type{};
         
         template <typename T>
-        struct is_deserializable_class<Field<T>> : std::true_type{};
+        struct is_serializable_class<Field<T>> : std::true_type{};
         
         template <typename C, typename = std::enable_if_t<!hasRegisteredProperties<C>() && !std::is_pointer<C>::value && (!is_array<C>::value && !is_vector<C>::value)>, typename = void>
         void serialize(Json::Value& pDestination, const C& pSource, const std::string& pName = "");
@@ -342,9 +365,19 @@ namespace ext
         void serialize(Json::Value& pDestination, const C& pSource, const std::string& pName)
         {
             if (pName.length() == 0)
-                pDestination.append(pSource);
+            {
+                if constexpr(is_serializable_class<C>::value)
+                    pDestination.append(pSource.serialize());
+                else
+                    pDestination.append(pSource);
+            }
             else
-                pDestination[pName] = pSource;
+            {
+                if constexpr(is_serializable_class<C>::value)
+                    pDestination[pName] = pSource.serialize();
+                else
+                    pDestination[pName] = pSource;
+            }
         }
         
         template <typename C, typename, typename, typename>
