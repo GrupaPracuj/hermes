@@ -1,8 +1,6 @@
-.gradle
-.idea
+.*
 *.iml
 local.properties
-.externalNativeBuild
 *.iml
 build
 01.HelloWorld/01.HelloWorld

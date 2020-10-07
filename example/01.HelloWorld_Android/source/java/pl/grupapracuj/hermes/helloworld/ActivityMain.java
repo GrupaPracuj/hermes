@@ -6,7 +6,9 @@ package pl.grupapracuj.hermes.helloworld;
 
 import android.app.Activity;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
@@ -14,6 +16,8 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowMetrics;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -72,9 +76,21 @@ public class ActivityMain extends Activity {
     }
 
     private void buildLayout() {
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        final int blockSize = displayMetrics.widthPixels / 10;
+        int width;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+        {
+            WindowMetrics windowMetrics = getWindowManager().getCurrentWindowMetrics();
+            Insets insets = windowMetrics.getWindowInsets().getInsetsIgnoringVisibility(WindowInsets.Type.systemBars());
+            width = windowMetrics.getBounds().width() - insets.left - insets.right;
+        }
+        else
+        {
+            DisplayMetrics displayMetrics = new DisplayMetrics();
+            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+            width = displayMetrics.widthPixels;
+        }
+
+        final int blockSize = width / 10;
         final int orange = Color.rgb(255, 130, 28);
 
         FrameLayout layout = new FrameLayout(this);
@@ -89,7 +105,7 @@ public class ActivityMain extends Activity {
         mTextView.setText("");
         layout.addView(mTextView);
         {
-            FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(displayMetrics.widthPixels - blockSize * 2, blockSize * 3);
+            FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(width - blockSize * 2, blockSize * 3);
             layoutParams.leftMargin = blockSize;
             layoutParams.topMargin = blockSize;
             mTextView.setLayoutParams(layoutParams);
@@ -108,7 +124,7 @@ public class ActivityMain extends Activity {
             mButton.setPadding(0, (int)(mButton.getPaint().getFontMetrics().top - bounds.top - 0.5f) + blockSize / 4, 0, 0);
             mButton.setText(displayName);
 
-            FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(displayMetrics.widthPixels - blockSize * 2, (int)(blockSize * 1.5f));
+            FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(width - blockSize * 2, (int)(blockSize * 1.5f));
             layoutParams.leftMargin = blockSize;
             layoutParams.topMargin = blockSize * 5;
             mButton.setLayoutParams(layoutParams);
