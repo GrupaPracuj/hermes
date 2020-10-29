@@ -1,7 +1,7 @@
 import os
 import shutil
 
-libraryVersion = '1.9.3'
+libraryVersion = '1.9.4'
 libraryName = 'jsoncpp-' + libraryVersion
 
 buildCommonFile = os.path.join('..', '..', 'script', 'build_common.py')
