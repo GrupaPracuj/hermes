@@ -1,8 +1,8 @@
 import os
 import shutil
 
-libraryVersion = '7.74.0'
-libraryName = 'curl-' + libraryVersion
+libraryVersion = 'f37a665b70e02bd6eec37eb7352d25ecf8f79096'#'7.74.0'
+libraryName = 'f37a665b70e02bd6eec37eb7352d25ecf8f79096'
 
 buildCommonFile = os.path.join('..', '..', 'script', 'build_common.py')
 exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, mode = 'exec'))
@@ -10,7 +10,7 @@ exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, 
 settings = Settings()
 
 if configure(settings, os.path.join('..', '..')):
-    if downloadAndExtract('https://curl.haxx.se/download/' + libraryName + '.zip', '', libraryName + '.zip', ''):
+    if downloadAndExtract('https://codeload.github.com/curl/curl/zip/' + libraryName, '', libraryName + '.zip', ''):
         remove('include')
 
         enableSSL = os.path.isdir(os.path.join('..', 'libressl', 'include', 'openssl'))
@@ -39,7 +39,7 @@ if configure(settings, os.path.join('..', '..')):
                 outputLibraryName = 'curl'
                 break
                 
-        os.chdir(libraryName)
+        os.chdir('curl-' + libraryName)
         if buildCMake(['curl'], settings, flagSSL + ' -DCURL_CA_BUNDLE=\'none\' -DCURL_CA_PATH=\'none\' -DBUILD_SHARED_LIBS=OFF -DHTTP_ONLY=ON -DBUILD_CURL_EXE=OFF -DBUILD_TESTING=OFF -DENABLE_MANUAL=OFF', False, 'lib', [outputLibraryName]):
             includePath = os.path.join('include', 'curl')
             shutil.copytree(includePath, os.path.join('..', includePath))
