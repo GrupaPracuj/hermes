@@ -68,7 +68,7 @@ def checkCMake(pDestinationDir):
     if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/cmake'):
         return '/usr/bin/cmake'
 
-    packageVersion = '3.14.4'
+    packageVersion = '3.20.1'
     packageName = 'cmake-' + packageVersion
     packageExtension = ''
     applicationName = ''
@@ -77,21 +77,21 @@ def checkCMake(pDestinationDir):
     destinationDir = os.path.join(pDestinationDir, platformName, 'cmake')
 
     if platformName == 'linux':
-        packageName += '-Linux-x86_64'
+        packageName += '-linux-x86_64'
         packageExtension = '.tar.gz'
         applicationName = 'cmake'
         applicationDestinationPath = os.path.join(destinationDir, 'bin', applicationName)
         applicationSourcePath = os.path.join(destinationDir, packageName, 'bin', applicationName)
         applicationCopyPath = os.path.join(destinationDir, packageName)
     elif platformName == 'darwin':
-        packageName += '-Darwin-x86_64'
+        packageName += '-macos-universal'
         packageExtension = '.tar.gz'
         applicationName = 'cmake'
         applicationDestinationPath = os.path.join(destinationDir, 'CMake.app', 'Contents', 'bin', applicationName)
         applicationSourcePath = os.path.join(destinationDir, packageName, 'CMake.app', 'Contents', 'bin', applicationName)
         applicationCopyPath = os.path.join(destinationDir, packageName)
     elif platformName == 'windows':
-        packageName += '-win64-x64'
+        packageName += '-windows-x86_64'
         packageExtension = '.zip'
         applicationName = 'cmake.exe'
         applicationDestinationPath = os.path.join(destinationDir, 'bin', applicationName)
@@ -158,7 +158,7 @@ def checkNinja(pDestinationDir):
     if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/go'):
         return '/usr/bin/ninja'
 
-    packageVersion = '1.9.0'
+    packageVersion = '1.10.2'
     packageName = 'ninja'
     packageExtension = ''
     applicationName = ''
