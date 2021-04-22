@@ -158,9 +158,25 @@ namespace hms
         res = select(pSockfd + 1, &infd, &outfd, &errfd, &tv);
         return res;
     }
-    
-    /* NetworkRequestHandle */
-    
+
+    class NetworkManager::Certificate
+    {
+    public:
+        Certificate(ENetworkCertificate pType, std::string pData) : mType(pType), mData(std::move(pData)), mBlob({})
+        {
+            if (mType == ENetworkCertificate::Content)
+            {
+                mBlob.data = &mData;
+                mBlob.len = mData.size();
+                mBlob.flags = CURL_BLOB_NOCOPY;
+            }
+        }
+
+        ENetworkCertificate mType = ENetworkCertificate::None; 
+        std::string mData;
+        curl_blob mBlob = {};
+    };
+
     void NetworkRequestHandle::cancel()
     {
         mCancel.store(1);
@@ -170,8 +186,6 @@ namespace hms
     {
         return static_cast<bool>(mCancel.load());
     }
-    
-    /* NetworkWebSocketHandle::ControlBlock */
     
     NetworkWebSocketHandle::ControlBlock::~ControlBlock()
     {
@@ -283,10 +297,10 @@ namespace hms
                         curl_easy_setopt(controlBlock->mHandle, CURLOPT_CONNECT_ONLY, 1L);
                         curl_easy_setopt(controlBlock->mHandle, CURLOPT_SSL_VERIFYPEER, !requestSettings.mFlag[static_cast<size_t>(ENetworkFlag::DisableSSLVerifyPeer)] ? 1L : 0L);
 
-                        if (certificate.first == ENetworkCertificate::Path)
-                            curl_easy_setopt(controlBlock->mHandle, CURLOPT_CAINFO, certificate.second.c_str());
-                        else if (certificate.first == ENetworkCertificate::Content)
-                            curl_easy_setopt(controlBlock->mHandle, CURLOPT_CAINFO_PEM, certificate.second.c_str());
+                        if (certificate->mType == ENetworkCertificate::Path)
+                            curl_easy_setopt(controlBlock->mHandle, CURLOPT_CAINFO, certificate->mData.c_str());
+                        else if (certificate->mType == ENetworkCertificate::Content)
+                            curl_easy_setopt(controlBlock->mHandle, CURLOPT_CAINFO_BLOB, &certificate->mBlob);
                         
                         CURLcode result = curl_easy_perform(controlBlock->mHandle);
                         if (result == CURLE_OK)
@@ -1052,7 +1066,7 @@ namespace hms
     
     /* NetworkManager */
     
-    NetworkManager::NetworkManager()
+    NetworkManager::NetworkManager() : mCertificate(std::make_unique<NetworkManager::Certificate>(ENetworkCertificate::None, ""))
     {
     }
     
@@ -1088,7 +1102,7 @@ namespace hms
                 
                 mThreadPoolId = pThreadPoolId;
                 mWebSocketThreadPoolId = pSocketThreadPoolId;
-                mCertificate = std::move(pCertificate);
+                mCertificate = std::make_unique<NetworkManager::Certificate>(pCertificate.first, std::move(pCertificate.second));
 
                 mInitialized.store(2);
             }
@@ -1177,7 +1191,7 @@ namespace hms
 
             mThreadPoolId = -1;
             mWebSocketThreadPoolId = -1;
-            mCertificate = {ENetworkCertificate::None, ""};
+            mCertificate = std::make_unique<NetworkManager::Certificate>(ENetworkCertificate::None, "");
             
             mCacheInitialized.store(0);
             mTerminateAbort.store(0);
@@ -1300,11 +1314,11 @@ namespace hms
                 {
                     handle = curl_easy_init();
 
-                    curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, CURL_HEADER_CALLBACK);                    
-                    if (strongThis->mCertificate.first == ENetworkCertificate::Path)
-                        curl_easy_setopt(handle, CURLOPT_CAINFO, strongThis->mCertificate.second.c_str());
-                    else if (strongThis->mCertificate.first == ENetworkCertificate::Content)
-                        curl_easy_setopt(handle, CURLOPT_CAINFO_PEM, strongThis->mCertificate.second.c_str());
+                    curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, CURL_HEADER_CALLBACK);
+                    if (strongThis->mCertificate->mType == ENetworkCertificate::Path)
+                        curl_easy_setopt(handle, CURLOPT_CAINFO, strongThis->mCertificate->mData.c_str());
+                    else if (strongThis->mCertificate->mType == ENetworkCertificate::Content)
+                        curl_easy_setopt(handle, CURLOPT_CAINFO_BLOB, &strongThis->mCertificate->mBlob);
 
                     std::lock_guard<std::mutex> lock(strongThis->mHandleMutex);
                     strongThis->mHandle[std::this_thread::get_id()] = handle;

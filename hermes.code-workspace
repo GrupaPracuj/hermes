@@ -81,7 +81,11 @@
 			"memory_resource": "cpp",
 			"random": "cpp",
 			"string": "cpp",
-			"cinttypes": "cpp"
+			"cinttypes": "cpp",
+			"compare": "cpp",
+			"concepts": "cpp",
+			"ranges": "cpp",
+			"stop_token": "cpp"
 		}
 	}
 }

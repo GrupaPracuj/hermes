@@ -1,8 +1,8 @@
 import os
 import shutil
 
-libraryVersion = 'f37a665b70e02bd6eec37eb7352d25ecf8f79096'#'7.74.0'
-libraryName = 'f37a665b70e02bd6eec37eb7352d25ecf8f79096'
+libraryVersion = 'ecc18ad5ec857f2511b6bdd3f06e7584ae95fb21'#'7.74.0'
+libraryName = 'ecc18ad5ec857f2511b6bdd3f06e7584ae95fb21'
 
 buildCommonFile = os.path.join('..', '..', 'script', 'build_common.py')
 exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, mode = 'exec'))

@@ -432,8 +432,31 @@ namespace hms
         friend class Hermes;
         friend NetworkWebSocketHandle;
 
-        struct MultiRequestData
+        class Certificate;
+        
+        class CacheFileData
         {
+        public:
+            class Header
+            {
+            public:
+                uint64_t mTimestamp = 0;
+                uint32_t mLifetime = 0;
+                uint16_t mFlagsAndSize = 0;
+            };
+
+            Header mHeader;
+            
+            bool mStringType = false;
+            bool mIsValid = false;
+            
+            std::string mFullFilePath;
+            std::string mUrl;
+        };
+
+        class MultiRequestData
+        {
+        public:
             std::vector<std::pair<std::string, std::string>> mResponseHeader;
             std::string mResponseMessage;
             DataBuffer mResponseRawData;
@@ -443,23 +466,9 @@ namespace hms
             NetworkRequest* mParam = nullptr;
         };
         
-        struct CacheFileData
+        class RequestSettings
         {
-            struct Header {
-                uint64_t mTimestamp = 0;
-                uint32_t mLifetime = 0;
-                uint16_t mFlagsAndSize = 0;
-            } mHeader;
-            
-            bool mStringType = false;
-            bool mIsValid = false;
-            
-            std::string mFullFilePath;
-            std::string mUrl;
-        };
-        
-        struct RequestSettings
-        {
+        public:
             std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> mFlag = {false, false, false};
             int64_t mTimeout = 0;
             int64_t mProgressTimePeriod = 0;
@@ -502,7 +511,7 @@ namespace hms
 
         int32_t mThreadPoolId = -1;
         int32_t mWebSocketThreadPoolId = -1;
-        std::pair<ENetworkCertificate, std::string> mCertificate = {ENetworkCertificate::None, ""};
+        std::shared_ptr<Certificate> mCertificate;
 
         std::atomic<uint32_t> mInitialized {0};
         std::atomic<uint32_t> mCacheInitialized {0};
