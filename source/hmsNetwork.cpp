@@ -166,7 +166,7 @@ namespace hms
         {
             if (mType == ENetworkCertificate::Content)
             {
-                mBlob.data = &mData;
+                mBlob.data = mData.data();
                 mBlob.len = mData.size();
                 mBlob.flags = CURL_BLOB_NOCOPY;
             }
@@ -1066,7 +1066,7 @@ namespace hms
     
     /* NetworkManager */
     
-    NetworkManager::NetworkManager() : mCertificate(std::make_unique<NetworkManager::Certificate>(ENetworkCertificate::None, ""))
+    NetworkManager::NetworkManager() : mCertificate(std::make_shared<NetworkManager::Certificate>(ENetworkCertificate::None, ""))
     {
     }
     
@@ -1087,7 +1087,7 @@ namespace hms
     
     bool NetworkManager::initialize(int64_t pTimeout, int32_t pThreadPoolId, int32_t pSocketThreadPoolId, std::pair<ENetworkCertificate, std::string> pCertificate)
     {
-        assert(pCertificate.first != ENetworkCertificate::None && pCertificate.second.size() == 0);
+        assert(pCertificate.first == ENetworkCertificate::None || pCertificate.second.size() > 0);
 
         uint32_t initialized = 0;
 
@@ -1102,7 +1102,7 @@ namespace hms
                 
                 mThreadPoolId = pThreadPoolId;
                 mWebSocketThreadPoolId = pSocketThreadPoolId;
-                mCertificate = std::make_unique<NetworkManager::Certificate>(pCertificate.first, std::move(pCertificate.second));
+                mCertificate = std::make_shared<NetworkManager::Certificate>(pCertificate.first, std::move(pCertificate.second));
 
                 mInitialized.store(2);
             }
