@@ -23,6 +23,7 @@ class Settings:
         self.mArchFlagC = []
         self.mArchFlagCXX = []
         self.mArchName = []
+        self.mArchSuffix = []
         self.mTargetSdk = []
         self.mMakeFlag = []
         
@@ -68,7 +69,7 @@ def checkCMake(pDestinationDir):
     if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/cmake'):
         return '/usr/bin/cmake'
 
-    packageVersion = '3.20.1'
+    packageVersion = '3.20.2'
     packageName = 'cmake-' + packageVersion
     packageExtension = ''
     applicationName = ''
@@ -155,7 +156,7 @@ def checkNinja(pDestinationDir):
     print('Check \'Ninja\'...')
 
     platformName = platform.system().lower()
-    if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/go'):
+    if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/ninja'):
         return '/usr/bin/ninja'
 
     packageVersion = '1.10.2'
@@ -300,6 +301,7 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
             pSettings.mArchFlagC = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -pipe -fPIC -fno-strict-aliasing -fstack-protector']
             pSettings.mArchFlagCXX = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -pipe -fPIC -fno-strict-aliasing -fstack-protector']
             pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
+            pSettings.mArchSuffix = ['', '', '', '']
             pSettings.mMakeFlag = ['DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
 
             print('Android API: "' + pSettings.mAndroidApi + '"')
@@ -334,16 +336,16 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
                 return False
 
         if hostDetected:
-            commonFlags = '-miphoneos-version-min=10.0 -pipe -fPIC -fno-strict-aliasing -fstack-protector -gdwarf-2 -fvisibility=hidden -fvisibility-inlines-hidden'
-            commonSimulatorFlags = commonFlags + ' -D__IPHONE_OS_VERSION_MIN_REQUIRED=100000'
+            commonFlags = ' -miphoneos-version-min=12.4 -gdwarf-2 -pipe -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
 
-            pSettings.mArch = ['armv7', 'armv7s', 'arm64', 'i386', 'x86_64']
-            pSettings.mArchFlagASM = ['-arch armv7 ' + commonFlags, '-arch armv7s ' + commonFlags, '-arch arm64 ' + commonFlags, '-arch i386 ' + commonSimulatorFlags, '-arch x86_64 ' + commonSimulatorFlags]
-            pSettings.mArchFlagC = ['-arch armv7 -ObjC ' + commonFlags, '-arch armv7s -ObjC ' + commonFlags, '-arch arm64 -ObjC ' + commonFlags, '-arch i386 -ObjC ' + commonSimulatorFlags, '-arch x86_64 -ObjC ' + commonSimulatorFlags]
-            pSettings.mArchFlagCXX = ['-arch armv7 -ObjC++ -stdlib=libc++ -fno-aligned-allocation ' + commonFlags, '-arch armv7s -ObjC++ -stdlib=libc++ -fno-aligned-allocation ' + commonFlags, '-arch arm64 -ObjC++ -stdlib=libc++ ' + commonFlags, '-arch i386 -ObjC++ -stdlib=libc++ ' + commonSimulatorFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ ' + commonSimulatorFlags]
+            pSettings.mArch = ['arm64', 'arm64', 'x86_64']
+            pSettings.mArchFlagASM = ['-arch arm64 -miphoneos-version-min=12.4', '-arch arm64 -miphoneos-version-min=12.4', '-arch x86_64 -miphoneos-version-min=12.4']
+            pSettings.mArchFlagC = ['-arch arm64 -ObjC' + commonFlags, '-arch arm64 -ObjC' + commonFlags, '-arch x86_64 -ObjC' + commonFlags]
+            pSettings.mArchFlagCXX = ['-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + commonFlags, '-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + commonFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + commonFlags]
             pSettings.mArchName = pSettings.mArch
-            pSettings.mMakeFlag = ['DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
-            pSettings.mTargetSdk = ['iPhoneOS', 'iPhoneOS', 'iPhoneOS', 'iPhoneSimulator', 'iPhoneSimulator']
+            pSettings.mArchSuffix = ['', '-simulator', '']
+            pSettings.mMakeFlag = ['ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1']
+            pSettings.mTargetSdk = ['iPhoneOS', 'iPhoneSimulator', 'iPhoneSimulator']
 
             print('iOS toolchain path: "' + pSettings.mAppleSdkDir + '"')
         else:
@@ -371,10 +373,13 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
                 return False
 
         if hostDetected:
+            commonFlags = ' -pipe -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
+        
             pSettings.mArchFlagASM = ['-m32', '-m64']
-            pSettings.mArchFlagC = ['-m32 -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-m64 -pipe -fPIC -fno-strict-aliasing -fstack-protector']
-            pSettings.mArchFlagCXX = ['-m32 -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-m64 -pipe -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagC = ['-m32' + commonFlags, '-m64' + commonFlags]
+            pSettings.mArchFlagCXX = ['-m32 -fvisibility-inlines-hidden' + commonFlags, '-m64 -fvisibility-inlines-hidden' + commonFlags]
             pSettings.mArchName = ['x86', 'x86_64']
+            pSettings.mArchSuffix = ['', '']
             pSettings.mMakeFlag = ['', 'ARCH64=1']
         else:
             print('Error: Not supported host platform: ' + platformName + ' x86-64' if platform.machine().endswith('64') else ' x86')
@@ -405,11 +410,15 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
                 return False
 
         if hostDetected:
-            pSettings.mArchFlagASM = ['-m64 -mmacosx-version-min=10.7']
-            pSettings.mArchFlagC = ['-m64 -ObjC -mmacosx-version-min=10.7 -pipe -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden -fvisibility-inlines-hidden']
-            pSettings.mArchFlagCXX = ['-m64 -ObjC++ -stdlib=libc++ -mmacosx-version-min=10.7 -pipe -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden -fvisibility-inlines-hidden']
-            pSettings.mArchName = ['x86_64']
-            pSettings.mMakeFlag = ['ARCH64=1']
+            commonFlags = ' -gdwarf-2 -pipe -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
+        
+            pSettings.mArch = ['arm64', 'x86_64']
+            pSettings.mArchFlagASM = ['-arch arm64 -mmacosx-version-min=11.0', '-arch x86_64 -mmacosx-version-min=10.13']
+            pSettings.mArchFlagC = ['-arch arm64 -ObjC -mmacosx-version-min=11.0' + commonFlags, '-arch x86_64 -ObjC -mmacosx-version-min=10.13' + commonFlags]
+            pSettings.mArchFlagCXX = ['-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden -mmacosx-version-min=11.0' + commonFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden -mmacosx-version-min=10.13' + commonFlags]
+            pSettings.mArchName = pSettings.mArch
+            pSettings.mArchSuffix = ['', '']
+            pSettings.mMakeFlag = ['ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1']
         else:
             print('Error: Not supported host platform: ' + platformName + ' x86-64' if platform.machine().endswith('64') else ' x86')
             return False
@@ -504,7 +513,7 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
     pCMakeFlag += '-DCMAKE_BUILD_TYPE=' + configType
 
     for i in range(0, len(pSettings.mArchName)):
-        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget, pSettings.mArchName[i])
+        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget, pSettings.mArchName[i] + pSettings.mArchSuffix[i])
 
         if not os.path.isdir(libraryDir):
             os.makedirs(libraryDir)
@@ -554,7 +563,7 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
         os.chdir('..')
         remove(buildDir)
             
-        print('Build status for ' + pSettings.mArchName[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
+        print('Build status for ' + pSettings.mArchName[i] + pSettings.mArchSuffix[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
         
         status |= buildSuccess
 
@@ -634,7 +643,7 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
         executeCmdCommand(pSettings.mMake + ' clean', workingDir)
 
     for i in range(0, len(pSettings.mArchName)):
-        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget, pSettings.mArchName[i])
+        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget, pSettings.mArchName[i] + pSettings.mArchSuffix[i])
 
         if not os.path.isdir(libraryDir):
             os.makedirs(libraryDir)
@@ -672,7 +681,7 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
         elif platformName == 'windows':
             executeCmdCommand(pSettings.mMake + ' clean', workingDir)
 
-        print('Build status for ' + pSettings.mArchName[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
+        print('Build status for ' + pSettings.mArchName[i] + pSettings.mArchSuffix[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
         
         status |= buildSuccess
 
@@ -825,12 +834,12 @@ def executeLipo(pLibraryName, pSettings):
             lipoLibraries = ''
 
             for j in range(0, len(pSettings.mArchName)):
-                libraryFile = os.path.join(libraryDir, pSettings.mArchName[j], 'lib' + pLibraryName[i] + '.a')                
+                libraryFile = os.path.join(libraryDir, pSettings.mArchName[j] + pSettings.mArchSuffix[j], 'lib' + pLibraryName[i] + '.a')                
                 if os.path.isfile(libraryFile):
-                    lipoLibraries += ' ' + os.path.join(libraryDir, pSettings.mArchName[j], 'lib' + pLibraryName[i] + '.a')
+                    lipoLibraries += ' ' + os.path.join(libraryDir, pSettings.mArchName[j] + pSettings.mArchSuffix[j], 'lib' + pLibraryName[i] + '.a')
 
             if len(lipoLibraries) > 0:
                 executeShellCommand(lipoCommand + lipoLibraries)
 
         for i in range(0, len(pSettings.mArchName)):
-            remove(os.path.join(libraryDir, pSettings.mArchName[i]))
+            remove(os.path.join(libraryDir, pSettings.mArchName[i] + pSettings.mArchSuffix[i]))
