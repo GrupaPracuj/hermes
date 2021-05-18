@@ -611,9 +611,14 @@ def buildCMakeGeneric(pIndex, pSettings, pCMakeFlag):
     platformName = platform.system().lower()
 
     toolchainPath = ''
-    if pSettings.mArchName[pIndex] == 'x86':
-        if pSettings.mBuildTarget == 'linux':
+    if pSettings.mBuildTarget == 'linux':
+        if pSettings.mArchName[pIndex] == 'x86':
             toolchainPath = ' -DCMAKE_TOOLCHAIN_FILE=' + os.path.join(pSettings.mRootDir, 'script', 'linux_x86.toolchain.cmake')
+    elif pSettings.mBuildTarget == 'macos':
+        if pSettings.mArchName[pIndex] == 'arm64':
+            toolchainPath = ' -DCMAKE_TOOLCHAIN_FILE=' + os.path.join(pSettings.mRootDir, 'script', 'macos_arm64.toolchain.cmake')
+        elif pSettings.mArchName[pIndex] == 'arm64':
+            toolchainPath = ' -DCMAKE_TOOLCHAIN_FILE=' + os.path.join(pSettings.mRootDir, 'script', 'macos_x86_64.toolchain.cmake')
 
     cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + toolchainPath + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
 
