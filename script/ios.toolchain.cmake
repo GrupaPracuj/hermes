@@ -10,7 +10,7 @@ else ()
     set(HMS_TARGET "$ENV{_HMS_TARGET}")
 endif ()
 
-set(CMAKE_SYSTEM_NAME "iOS")
+set(CMAKE_SYSTEM_NAME Darwin)
 
 set(CMAKE_C_COMPILER "${HMS_XCODE_PATH}/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang")
 set(CMAKE_CXX_COMPILER "${HMS_XCODE_PATH}/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++")

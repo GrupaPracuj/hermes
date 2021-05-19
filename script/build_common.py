@@ -336,14 +336,16 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
                 return False
 
         if hostDetected:
-            commonFlags = ' -miphoneos-version-min=12.4 -gdwarf-2 -pipe -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
+            commonFlags = ' -D__IPHONE_OS_VERSION_MIN_REQUIRED=120400 -gdwarf-2 -pipe -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
+            deviceFlags = ' -miphoneos-version-min=12.4'
+            simulatorFlags = ' -mios-simulator-version-min=12.4'
 
             pSettings.mArch = ['arm64', 'arm64', 'x86_64']
-            pSettings.mArchFlagASM = ['-arch arm64 -miphoneos-version-min=12.4', '-arch arm64 -miphoneos-version-min=12.4', '-arch x86_64 -miphoneos-version-min=12.4']
-            pSettings.mArchFlagC = ['-arch arm64 -ObjC' + commonFlags, '-arch arm64 -ObjC' + commonFlags, '-arch x86_64 -ObjC' + commonFlags]
-            pSettings.mArchFlagCXX = ['-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + commonFlags, '-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + commonFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + commonFlags]
+            pSettings.mArchFlagASM = ['-arch arm64' + deviceFlags, '-arch arm64' + simulatorFlags, '-arch x86_64' + simulatorFlags]
+            pSettings.mArchFlagC = ['-arch arm64 -ObjC' + commonFlags + deviceFlags, '-arch arm64 -ObjC' + commonFlags + simulatorFlags, '-arch x86_64 -ObjC' + commonFlags + simulatorFlags]
+            pSettings.mArchFlagCXX = ['-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + commonFlags + deviceFlags, '-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + commonFlags + simulatorFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + commonFlags + simulatorFlags]
             pSettings.mArchName = pSettings.mArch
-            pSettings.mArchSuffix = ['', '-simulator', '']
+            pSettings.mArchSuffix = ['', '-simulator', '-simulator']
             pSettings.mMakeFlag = ['ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1']
             pSettings.mTargetSdk = ['iPhoneOS', 'iPhoneSimulator', 'iPhoneSimulator']
 
@@ -567,7 +569,7 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
         
         status |= buildSuccess
 
-    executeLipo(pLibraryName, pSettings)
+    #executeLipo(pLibraryName, pSettings)
         
     return status
 
@@ -690,7 +692,7 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
         
         status |= buildSuccess
 
-    executeLipo(pLibraryName, pSettings)
+    #executeLipo(pLibraryName, pSettings)
 
     return status
     
