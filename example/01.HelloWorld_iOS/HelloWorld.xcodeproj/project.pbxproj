@@ -3,10 +3,18 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 52;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		55468AE72655B3D6001514BB /* aes.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55468AE62655B3D6001514BB /* aes.xcframework */; };
+		55468AEF2655BABD001514BB /* jsoncpp.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55468AE82655BABD001514BB /* jsoncpp.xcframework */; };
+		55468AF02655BABD001514BB /* hmsextmodule.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55468AE92655BABD001514BB /* hmsextmodule.xcframework */; };
+		55468AF12655BABD001514BB /* hermes.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55468AEA2655BABD001514BB /* hermes.xcframework */; };
+		55468AF22655BABD001514BB /* zlib.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55468AEB2655BABD001514BB /* zlib.xcframework */; };
+		55468AF32655BABD001514BB /* hmsextserializer.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55468AEC2655BABD001514BB /* hmsextserializer.xcframework */; };
+		55468AF42655BABD001514BB /* hmsextgzipreader.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55468AED2655BABD001514BB /* hmsextgzipreader.xcframework */; };
+		55468AF52655BABD001514BB /* curl.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55468AEE2655BABD001514BB /* curl.xcframework */; };
 		5560EBA3239A9BB20097C159 /* HelloWorld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5560EBA2239A9BB20097C159 /* HelloWorld.cpp */; };
 		5560EBA5239AA2EB0097C159 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5560EBA4239AA2EB0097C159 /* Security.framework */; };
 		5560EBA7239AA30E0097C159 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5560EBA6239AA30E0097C159 /* libz.tbd */; };
@@ -19,6 +27,14 @@
 /* Begin PBXFileReference section */
 		552BE89C239169AA00D38E84 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = resources/Info.plist; sourceTree = "<group>"; };
 		552BE89E239169AA00D38E84 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = resources/Assets.xcassets; sourceTree = "<group>"; };
+		55468AE62655B3D6001514BB /* aes.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = aes.xcframework; path = ../../lib/ios/aes.xcframework; sourceTree = "<group>"; };
+		55468AE82655BABD001514BB /* jsoncpp.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = jsoncpp.xcframework; path = ../../lib/ios/jsoncpp.xcframework; sourceTree = "<group>"; };
+		55468AE92655BABD001514BB /* hmsextmodule.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = hmsextmodule.xcframework; path = ../../lib/ios/hmsextmodule.xcframework; sourceTree = "<group>"; };
+		55468AEA2655BABD001514BB /* hermes.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = hermes.xcframework; path = ../../lib/ios/hermes.xcframework; sourceTree = "<group>"; };
+		55468AEB2655BABD001514BB /* zlib.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = zlib.xcframework; path = ../../lib/ios/zlib.xcframework; sourceTree = "<group>"; };
+		55468AEC2655BABD001514BB /* hmsextserializer.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = hmsextserializer.xcframework; path = ../../lib/ios/hmsextserializer.xcframework; sourceTree = "<group>"; };
+		55468AED2655BABD001514BB /* hmsextgzipreader.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = hmsextgzipreader.xcframework; path = ../../lib/ios/hmsextgzipreader.xcframework; sourceTree = "<group>"; };
+		55468AEE2655BABD001514BB /* curl.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = curl.xcframework; path = ../../lib/ios/curl.xcframework; sourceTree = "<group>"; };
 		5560EBA1239A9BB20097C159 /* HelloWorld.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = HelloWorld.hpp; path = ../01.HelloWorld/HelloWorld.hpp; sourceTree = "<group>"; };
 		5560EBA2239A9BB20097C159 /* HelloWorld.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HelloWorld.cpp; path = ../01.HelloWorld/HelloWorld.cpp; sourceTree = "<group>"; };
 		5560EBA4239AA2EB0097C159 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
@@ -35,6 +51,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				55468AE72655B3D6001514BB /* aes.xcframework in Frameworks */,
+				55468AF52655BABD001514BB /* curl.xcframework in Frameworks */,
+				55468AF12655BABD001514BB /* hermes.xcframework in Frameworks */,
+				55468AF42655BABD001514BB /* hmsextgzipreader.xcframework in Frameworks */,
+				55468AF02655BABD001514BB /* hmsextmodule.xcframework in Frameworks */,
+				55468AF32655BABD001514BB /* hmsextserializer.xcframework in Frameworks */,
+				55468AEF2655BABD001514BB /* jsoncpp.xcframework in Frameworks */,
+				55468AF22655BABD001514BB /* zlib.xcframework in Frameworks */,
 				5560EBA7239AA30E0097C159 /* libz.tbd in Frameworks */,
 				55BD9A9C2391559200DA16C7 /* CoreFoundation.framework in Frameworks */,
 				5560EBA5239AA2EB0097C159 /* Security.framework in Frameworks */,
@@ -78,6 +102,14 @@
 		55BD9A9A2391559200DA16C7 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				55468AE62655B3D6001514BB /* aes.xcframework */,
+				55468AEE2655BABD001514BB /* curl.xcframework */,
+				55468AEA2655BABD001514BB /* hermes.xcframework */,
+				55468AED2655BABD001514BB /* hmsextgzipreader.xcframework */,
+				55468AE92655BABD001514BB /* hmsextmodule.xcframework */,
+				55468AEC2655BABD001514BB /* hmsextserializer.xcframework */,
+				55468AE82655BABD001514BB /* jsoncpp.xcframework */,
+				55468AEB2655BABD001514BB /* zlib.xcframework */,
 				5560EBA6239AA30E0097C159 /* libz.tbd */,
 				55BD9A9B2391559200DA16C7 /* CoreFoundation.framework */,
 				5560EBA4239AA2EB0097C159 /* Security.framework */,
@@ -223,13 +255,6 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = (
-					"-lhmsextserializer",
-					"-lhermes",
-					"-laes",
-					"-ljsoncpp",
-					"-lcurl",
-				);
 				SDKROOT = iphoneos;
 			};
 			name = Debug;
@@ -289,13 +314,6 @@
 				LIBRARY_SEARCH_PATHS = ../../lib/ios;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				OTHER_LDFLAGS = (
-					"-lhmsextserializer",
-					"-lhermes",
-					"-laes",
-					"-ljsoncpp",
-					"-lcurl",
-				);
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 			};

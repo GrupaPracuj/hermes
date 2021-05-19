@@ -834,13 +834,13 @@ def createXCFramework(pLibraryName, pSettings):
     if pSettings.mBuildTarget == 'ios' or pSettings.mBuildTarget == 'macos':
         libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget)
 
+        uniquePlatformNames = []
+        for j in range(0, len(pSettings.mPlatformName)):
+            if not pSettings.mPlatformName[j] in uniquePlatformNames:
+                uniquePlatformNames.append(pSettings.mPlatformName[j])
+
         for i in range(0, len(pLibraryName)):
             remove(os.path.join(libraryDir, pLibraryName[i] + '.xcframework'))
-
-            uniquePlatformNames = []
-            for j in range(0, len(pSettings.mPlatformName)):
-                if not pSettings.mPlatformName[j] in uniquePlatformNames:
-                    uniquePlatformNames.append(pSettings.mPlatformName[j])
 
             for j in range(0, len(uniquePlatformNames)):
                 platformDir = os.path.join(libraryDir, uniquePlatformNames[j])
@@ -858,9 +858,6 @@ def createXCFramework(pLibraryName, pSettings):
                 if len(parameters) > 0:
                     executeShellCommand(command + parameters)
 
-                for k in range(0, len(archNames)):
-                    remove(os.path.join(platformDir, archNames[k]))
-
             command = 'xcodebuild -create-xcframework -output ' + os.path.join(libraryDir, pLibraryName[i] + '.xcframework')
             parameters = ''
 
@@ -873,5 +870,5 @@ def createXCFramework(pLibraryName, pSettings):
             if len(parameters) > 0:
                 executeShellCommand(command + parameters)
 
-            for j in range(0, len(uniquePlatformNames)):
-                remove(os.path.join(libraryDir, uniquePlatformNames[j]))
+        for i in range(0, len(uniquePlatformNames)):
+            remove(os.path.join(libraryDir, uniquePlatformNames[i]))
