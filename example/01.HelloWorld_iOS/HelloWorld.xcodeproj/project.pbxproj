@@ -17,7 +17,6 @@
 		55468AF52655BABD001514BB /* curl.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55468AEE2655BABD001514BB /* curl.xcframework */; };
 		5560EBA3239A9BB20097C159 /* HelloWorld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5560EBA2239A9BB20097C159 /* HelloWorld.cpp */; };
 		5560EBA5239AA2EB0097C159 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5560EBA4239AA2EB0097C159 /* Security.framework */; };
-		5560EBA7239AA30E0097C159 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 5560EBA6239AA30E0097C159 /* libz.tbd */; };
 		5560EBAD239AC3E50097C159 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5560EBAB239AC3CC0097C159 /* LaunchScreen.storyboard */; };
 		55B244A723918F430017AB52 /* ApplicationMain.mm in Sources */ = {isa = PBXBuildFile; fileRef = 55B244A623918F430017AB52 /* ApplicationMain.mm */; };
 		55BD9A9C2391559200DA16C7 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55BD9A9B2391559200DA16C7 /* CoreFoundation.framework */; };
@@ -38,7 +37,6 @@
 		5560EBA1239A9BB20097C159 /* HelloWorld.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = HelloWorld.hpp; path = ../01.HelloWorld/HelloWorld.hpp; sourceTree = "<group>"; };
 		5560EBA2239A9BB20097C159 /* HelloWorld.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HelloWorld.cpp; path = ../01.HelloWorld/HelloWorld.cpp; sourceTree = "<group>"; };
 		5560EBA4239AA2EB0097C159 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
-		5560EBA6239AA30E0097C159 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		5560EBAB239AC3CC0097C159 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = resources/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		55B244A623918F430017AB52 /* ApplicationMain.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ApplicationMain.mm; sourceTree = "<group>"; };
 		55BD9A6E2391521100DA16C7 /* 01.HelloWorld.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = 01.HelloWorld.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -59,7 +57,6 @@
 				55468AF32655BABD001514BB /* hmsextserializer.xcframework in Frameworks */,
 				55468AEF2655BABD001514BB /* jsoncpp.xcframework in Frameworks */,
 				55468AF22655BABD001514BB /* zlib.xcframework in Frameworks */,
-				5560EBA7239AA30E0097C159 /* libz.tbd in Frameworks */,
 				55BD9A9C2391559200DA16C7 /* CoreFoundation.framework in Frameworks */,
 				5560EBA5239AA2EB0097C159 /* Security.framework in Frameworks */,
 				55BD9A9E239155B400DA16C7 /* UIKit.framework in Frameworks */,
@@ -110,7 +107,6 @@
 				55468AEC2655BABD001514BB /* hmsextserializer.xcframework */,
 				55468AE82655BABD001514BB /* jsoncpp.xcframework */,
 				55468AEB2655BABD001514BB /* zlib.xcframework */,
-				5560EBA6239AA30E0097C159 /* libz.tbd */,
 				55BD9A9B2391559200DA16C7 /* CoreFoundation.framework */,
 				5560EBA4239AA2EB0097C159 /* Security.framework */,
 				55BD9A9D239155B400DA16C7 /* UIKit.framework */,
