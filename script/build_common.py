@@ -315,6 +315,19 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
         if platformName == 'darwin' and platform.machine().endswith('64'):
             hostDetected = True
 
+            xcodeValid = False
+            xcodeVersion = re.split(' |\.', receiveShellOutput('xcodebuild -version'))
+            if len(xcodeVersion) > 1:
+                try:
+                    if int(xcodeVersion[1]) >= 12:
+                        xcodeValid = True
+                except ValueError:
+                    pass
+
+            if not xcodeValid:
+                print('Error: Xcode 12.0 or newer is required.')
+                return False
+
             pSettings.mAppleSdkDir = receiveShellOutput('xcode-select --print-path').rstrip()
             if not os.path.isdir(pSettings.mAppleSdkDir):
                 print('Error: \'Xcode\' not found.')
