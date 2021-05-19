@@ -12,21 +12,23 @@ ifneq ($(OS),Windows_NT)
 			CXXFLAGS += -m32
 			LDFLAGS += -L../../lib/linux/x86
 		endif
-		POSTLDFLAGS := -lssl -lcrypto -pthread
+		LDFLAGS += -lhmsextserializer -lhermes -laes -lcurl -ljsoncpp -lz -lzlib -lssl -lcrypto -pthread
     endif
     ifeq ($(PLATFORM_NAME),Darwin)
-        CXXFLAGS += -m64 -fno-aligned-allocation -fvisibility=hidden -fvisibility-inlines-hidden
+        CXXFLAGS += -m64
 		LDFLAGS += -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks \
-			-L../../lib/macos -framework CoreFoundation -framework Cocoa -framework Security
+			-L../../lib/macos/aes.xcframework/macos-arm64_x86_64 -L../../lib/macos/curl.xcframework/macos-arm64_x86_64 \
+			-L../../lib/macos/hermes.xcframework/macos-arm64_x86_64 -L../../lib/macos/hmsextgzipreader.xcframework/macos-arm64_x86_64 \
+			-L../../lib/macos/hmsextmodule.xcframework/macos-arm64_x86_64 -L../../lib/macos/hmsextserializer.xcframework/macos-arm64_x86_64 \
+			-L../../lib/macos/jsoncpp.xcframework/macos-arm64_x86_64 -L../../lib/macos/zlib.xcframework/macos-arm64_x86_64 \
+			-framework CoreFoundation -framework Cocoa -framework Security -lhmsextserializer -lhermes -laes -lcurl -ljsoncpp -lzlib
     endif
 endif
 
 SRCFILES = $(wildcard *.cpp)
 OBJFILES = $(SRCFILES:%.cpp=%.o)
 
-CXXFLAGS += -std=c++17 -fPIC -fno-strict-aliasing -fstack-protector -I. -I../.. -I../../include -I../../depend/jsoncpp/include
-
-LDFLAGS += -lhmsextserializer -lhermes -laes -lcurl -ljsoncpp -lz -lzlib $(POSTLDFLAGS)
+CXXFLAGS += -std=c++17 -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden -fvisibility-inlines-hidden -I. -I../.. -I../../include -I../../depend/jsoncpp/include
 
 ifndef NDEBUG
 CXXFLAGS += -g -D_DEBUG=1 -DDEBUG=1

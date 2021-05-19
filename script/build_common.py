@@ -298,8 +298,8 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
             pSettings.mHostTag = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
             pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
             pSettings.mArchFlagASM = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
-            pSettings.mArchFlagC = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -pipe -fPIC -fno-strict-aliasing -fstack-protector']
-            pSettings.mArchFlagCXX = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -pipe -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagC = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -fPIC -fno-strict-aliasing -fstack-protector', '-fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagCXX = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -fPIC -fno-strict-aliasing -fstack-protector', '-fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -fPIC -fno-strict-aliasing -fstack-protector']
             pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
             pSettings.mPlatformName = ['', '', '', '']
             pSettings.mMakeFlag = ['DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
@@ -315,6 +315,11 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
         if platformName == 'darwin' and platform.machine().endswith('64'):
             hostDetected = True
 
+            pSettings.mAppleSdkDir = receiveShellOutput('xcode-select --print-path').rstrip()
+            if not os.path.isdir(pSettings.mAppleSdkDir):
+                print('Error: \'Xcode\' not found.')
+                return False
+
             xcodeValid = False
             xcodeVersion = re.split(' |\.', receiveShellOutput('xcodebuild -version'))
             if len(xcodeVersion) > 1:
@@ -326,11 +331,6 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
 
             if not xcodeValid:
                 print('Error: Xcode 12.0 or newer is required.')
-                return False
-
-            pSettings.mAppleSdkDir = receiveShellOutput('xcode-select --print-path').rstrip()
-            if not os.path.isdir(pSettings.mAppleSdkDir):
-                print('Error: \'Xcode\' not found.')
                 return False
 
             pSettings.mMake = checkMake(downloadDir)
@@ -349,7 +349,7 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
                 return False
 
         if hostDetected:
-            commonFlags = ' -D__IPHONE_OS_VERSION_MIN_REQUIRED=120400 -gdwarf-2 -pipe -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
+            commonFlags = ' -D__IPHONE_OS_VERSION_MIN_REQUIRED=120400 -gdwarf-2 -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
             deviceFlags = ' -miphoneos-version-min=12.4'
             simulatorFlags = ' -mios-simulator-version-min=12.4'
 
@@ -388,7 +388,7 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
                 return False
 
         if hostDetected:
-            commonFlags = ' -pipe -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
+            commonFlags = ' -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
         
             pSettings.mArchFlagASM = ['-m32', '-m64']
             pSettings.mArchFlagC = ['-m32' + commonFlags, '-m64' + commonFlags]
@@ -408,6 +408,19 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
             if executeShellCommand('xcode-select -p', False) != 0:
                 print('Error: \'Xcode\' not found.')
                 return False
+
+            xcodeValid = False
+            xcodeVersion = re.split(' |\.', receiveShellOutput('xcodebuild -version'))
+            if len(xcodeVersion) > 1:
+                try:
+                    if int(xcodeVersion[1]) >= 12:
+                        xcodeValid = True
+                except ValueError:
+                    pass
+
+            if not xcodeValid:
+                print('Error: Xcode 12.0 or newer is required.')
+                return False
             
             pSettings.mMake = checkMake(downloadDir)
             if len(pSettings.mMake) == 0:
@@ -425,14 +438,14 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
                 return False
 
         if hostDetected:
-            commonFlags = ' -gdwarf-2 -pipe -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
+            commonFlags = ' -gdwarf-2 -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
         
             pSettings.mArch = ['arm64', 'x86_64']
             pSettings.mArchFlagASM = ['-arch arm64 -mmacosx-version-min=11.0', '-arch x86_64 -mmacosx-version-min=10.13']
             pSettings.mArchFlagC = ['-arch arm64 -ObjC -mmacosx-version-min=11.0' + commonFlags, '-arch x86_64 -ObjC -mmacosx-version-min=10.13' + commonFlags]
             pSettings.mArchFlagCXX = ['-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden -mmacosx-version-min=11.0' + commonFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden -mmacosx-version-min=10.13' + commonFlags]
             pSettings.mArchName = pSettings.mArch
-            pSettings.mPlatformName = ['', '']
+            pSettings.mPlatformName = ['macos', 'macos']
             pSettings.mMakeFlag = ['ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1']
         else:
             print('Error: Not supported host platform: ' + platformName + ' x86-64' if platform.machine().endswith('64') else ' x86')
