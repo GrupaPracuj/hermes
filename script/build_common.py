@@ -23,7 +23,7 @@ class Settings:
         self.mArchFlagC = []
         self.mArchFlagCXX = []
         self.mArchName = []
-        self.mArchSuffix = []
+        self.mPlatformName = []
         self.mTargetSdk = []
         self.mMakeFlag = []
         
@@ -301,7 +301,7 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
             pSettings.mArchFlagC = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -pipe -fPIC -fno-strict-aliasing -fstack-protector']
             pSettings.mArchFlagCXX = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -pipe -fPIC -fno-strict-aliasing -fstack-protector']
             pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
-            pSettings.mArchSuffix = ['', '', '', '']
+            pSettings.mPlatformName = ['', '', '', '']
             pSettings.mMakeFlag = ['DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
 
             print('Android API: "' + pSettings.mAndroidApi + '"')
@@ -345,7 +345,7 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
             pSettings.mArchFlagC = ['-arch arm64 -ObjC' + commonFlags + deviceFlags, '-arch arm64 -ObjC' + commonFlags + simulatorFlags, '-arch x86_64 -ObjC' + commonFlags + simulatorFlags]
             pSettings.mArchFlagCXX = ['-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + commonFlags + deviceFlags, '-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + commonFlags + simulatorFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + commonFlags + simulatorFlags]
             pSettings.mArchName = pSettings.mArch
-            pSettings.mArchSuffix = ['', '-simulator', '-simulator']
+            pSettings.mPlatformName = ['ios', 'ios-simulator', 'ios-simulator']
             pSettings.mMakeFlag = ['ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1']
             pSettings.mTargetSdk = ['iPhoneOS', 'iPhoneSimulator', 'iPhoneSimulator']
 
@@ -381,7 +381,7 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
             pSettings.mArchFlagC = ['-m32' + commonFlags, '-m64' + commonFlags]
             pSettings.mArchFlagCXX = ['-m32 -fvisibility-inlines-hidden' + commonFlags, '-m64 -fvisibility-inlines-hidden' + commonFlags]
             pSettings.mArchName = ['x86', 'x86_64']
-            pSettings.mArchSuffix = ['', '']
+            pSettings.mPlatformName = ['', '']
             pSettings.mMakeFlag = ['', 'ARCH64=1']
         else:
             print('Error: Not supported host platform: ' + platformName + ' x86-64' if platform.machine().endswith('64') else ' x86')
@@ -419,7 +419,7 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
             pSettings.mArchFlagC = ['-arch arm64 -ObjC -mmacosx-version-min=11.0' + commonFlags, '-arch x86_64 -ObjC -mmacosx-version-min=10.13' + commonFlags]
             pSettings.mArchFlagCXX = ['-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden -mmacosx-version-min=11.0' + commonFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden -mmacosx-version-min=10.13' + commonFlags]
             pSettings.mArchName = pSettings.mArch
-            pSettings.mArchSuffix = ['', '']
+            pSettings.mPlatformName = ['', '']
             pSettings.mMakeFlag = ['ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1']
         else:
             print('Error: Not supported host platform: ' + platformName + ' x86-64' if platform.machine().endswith('64') else ' x86')
@@ -515,7 +515,7 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
     pCMakeFlag += '-DCMAKE_BUILD_TYPE=' + configType
 
     for i in range(0, len(pSettings.mArchName)):
-        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget, pSettings.mArchName[i] + pSettings.mArchSuffix[i])
+        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget, pSettings.mPlatformName[i], pSettings.mArchName[i])
 
         if not os.path.isdir(libraryDir):
             os.makedirs(libraryDir)
@@ -565,11 +565,11 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
         os.chdir('..')
         remove(buildDir)
             
-        print('Build status for ' + pSettings.mArchName[i] + pSettings.mArchSuffix[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
+        print('Build status for ' + pSettings.mArchName[i] + (' (' + pSettings.mPlatformName[i] + ')' if len(pSettings.mPlatformName[i]) > 0 else '') + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
         
         status |= buildSuccess
 
-    #executeLipo(pLibraryName, pSettings)
+    createXCFramework(pLibraryName, pSettings)
         
     return status
 
@@ -650,7 +650,7 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
         executeCmdCommand(pSettings.mMake + ' clean', workingDir)
 
     for i in range(0, len(pSettings.mArchName)):
-        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget, pSettings.mArchName[i] + pSettings.mArchSuffix[i])
+        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget, pSettings.mPlatformName[i], pSettings.mArchName[i])
 
         if not os.path.isdir(libraryDir):
             os.makedirs(libraryDir)
@@ -688,11 +688,11 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
         elif platformName == 'windows':
             executeCmdCommand(pSettings.mMake + ' clean', workingDir)
 
-        print('Build status for ' + pSettings.mArchName[i] + pSettings.mArchSuffix[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
+        print('Build status for ' + pSettings.mArchName[i] + (' (' + pSettings.mPlatformName[i] + ')' if len(pSettings.mPlatformName[i]) > 0 else '') + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
         
         status |= buildSuccess
 
-    #executeLipo(pLibraryName, pSettings)
+    createXCFramework(pLibraryName, pSettings)
 
     return status
     
@@ -830,23 +830,48 @@ def buildMakeGeneric(pIndex, pLibraryName, pSettings, pMakeFlag):
 
     return status
 
-def executeLipo(pLibraryName, pSettings):
+def createXCFramework(pLibraryName, pSettings):
     if pSettings.mBuildTarget == 'ios' or pSettings.mBuildTarget == 'macos':
         libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget)
 
         for i in range(0, len(pLibraryName)):
-            remove(os.path.join(libraryDir, 'lib' + pLibraryName[i] + '.a'))
+            remove(os.path.join(libraryDir, pLibraryName[i] + '.xcframework'))
 
-            lipoCommand = 'lipo -create -output ' + os.path.join(libraryDir, 'lib' + pLibraryName[i] + '.a')
-            lipoLibraries = ''
+            uniquePlatformNames = []
+            for j in range(0, len(pSettings.mPlatformName)):
+                if not pSettings.mPlatformName[j] in uniquePlatformNames:
+                    uniquePlatformNames.append(pSettings.mPlatformName[j])
 
-            for j in range(0, len(pSettings.mArchName)):
-                libraryFile = os.path.join(libraryDir, pSettings.mArchName[j] + pSettings.mArchSuffix[j], 'lib' + pLibraryName[i] + '.a')                
-                if os.path.isfile(libraryFile):
-                    lipoLibraries += ' ' + os.path.join(libraryDir, pSettings.mArchName[j] + pSettings.mArchSuffix[j], 'lib' + pLibraryName[i] + '.a')
+            for j in range(0, len(uniquePlatformNames)):
+                platformDir = os.path.join(libraryDir, uniquePlatformNames[j])
 
-            if len(lipoLibraries) > 0:
-                executeShellCommand(lipoCommand + lipoLibraries)
+                command = 'lipo -create -output ' + os.path.join(platformDir, 'lib' + pLibraryName[i] + '.a')
+                parameters = ''
 
-        for i in range(0, len(pSettings.mArchName)):
-            remove(os.path.join(libraryDir, pSettings.mArchName[i] + pSettings.mArchSuffix[i]))
+                archNames = [d for d in os.listdir(platformDir) if os.path.isdir(os.path.join(platformDir, d))]
+                for k in range(0, len(archNames)):
+                    archDir = os.path.join(platformDir, archNames[k])
+                    archFile = os.path.join(archDir, 'lib' + pLibraryName[i] + '.a')
+                    if os.path.isfile(archFile):
+                        parameters += ' ' + archFile
+
+                if len(parameters) > 0:
+                    executeShellCommand(command + parameters)
+
+                for k in range(0, len(archNames)):
+                    remove(os.path.join(platformDir, archNames[k]))
+
+            command = 'xcodebuild -create-xcframework -output ' + os.path.join(libraryDir, pLibraryName[i] + '.xcframework')
+            parameters = ''
+
+            for j in range(0, len(uniquePlatformNames)):
+                platformDir = os.path.join(libraryDir, uniquePlatformNames[j])
+                platformFile = os.path.join(platformDir, 'lib' + pLibraryName[i] + '.a')
+                if os.path.isfile(platformFile):
+                    parameters += ' -library ' + platformFile
+
+            if len(parameters) > 0:
+                executeShellCommand(command + parameters)
+
+            for j in range(0, len(uniquePlatformNames)):
+                remove(os.path.join(libraryDir, uniquePlatformNames[j]))
