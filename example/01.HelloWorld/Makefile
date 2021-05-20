@@ -17,10 +17,10 @@ ifneq ($(OS),Windows_NT)
     ifeq ($(PLATFORM_NAME),Darwin)
         CXXFLAGS += -m64 -mmacosx-version-min=11.0
 		LDFLAGS += -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks \
-			-L../../lib/macos/aes.xcframework/macos-arm64_x86_64 -L../../lib/macos/curl.xcframework/macos-arm64_x86_64 \
-			-L../../lib/macos/hermes.xcframework/macos-arm64_x86_64 -L../../lib/macos/hmsextgzipreader.xcframework/macos-arm64_x86_64 \
-			-L../../lib/macos/hmsextmodule.xcframework/macos-arm64_x86_64 -L../../lib/macos/hmsextserializer.xcframework/macos-arm64_x86_64 \
-			-L../../lib/macos/jsoncpp.xcframework/macos-arm64_x86_64 -L../../lib/macos/zlib.xcframework/macos-arm64_x86_64 \
+			-L../../lib/apple/aes.xcframework/macos-arm64_x86_64 -L../../lib/apple/curl.xcframework/macos-arm64_x86_64 \
+			-L../../lib/apple/hermes.xcframework/macos-arm64_x86_64 -L../../lib/apple/hmsextgzipreader.xcframework/macos-arm64_x86_64 \
+			-L../../lib/apple/hmsextmodule.xcframework/macos-arm64_x86_64 -L../../lib/apple/hmsextserializer.xcframework/macos-arm64_x86_64 \
+			-L../../lib/apple/jsoncpp.xcframework/macos-arm64_x86_64 -L../../lib/apple/zlib.xcframework/macos-arm64_x86_64 \
 			-framework CoreFoundation -framework Cocoa -framework Security -lhmsextserializer -lhermes -laes -lcurl -ljsoncpp -lzlib
     endif
 endif

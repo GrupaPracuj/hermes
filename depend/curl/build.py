@@ -28,7 +28,7 @@ if configure(settings, os.path.join('..', '..')):
                 settings.mArchFlagC[i] += '-I' + includeSSL
 
             flagSSL = '-DCMAKE_USE_OPENSSL=OFF -DSSL_ENABLED=ON -DUSE_OPENSSL=ON -DHAVE_LIBCRYPTO=ON -DHAVE_LIBSSL=ON'
-        elif settings.mBuildTarget == 'ios' or settings.mBuildTarget == 'macos':
+        elif settings.mBuildTarget == 'apple':
             flagSSL = '-DCMAKE_USE_SECTRANSP=ON -DCURL_CA_FALLBACK=ON'
         else:
             flagSSL = '-DCMAKE_USE_OPENSSL=OFF'

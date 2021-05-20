@@ -17,7 +17,7 @@ DESCRIPTION:
 
 VERSION:
 
-  1.2.1
+  1.3.0
 
 SUPPORTED PLATFORMS:
 
@@ -41,14 +41,6 @@ DEPENDENCIES:
   zlib library - https://zlib.net
   base64 code - https://github.com/ReneNyffenegger/cpp-base64
   sha1 code - https://github.com/etodd/sha1
-
-QUICK START (iOS):
-  * Execute 'python3 ./build.py ios' command in $(HERMES_HOME)/depend/jsoncpp, $(HERMES_HOME)/depend/aes,
-    $(HERMES_HOME)/depend/zlib and $(HERMES_HOME)/depend/curl (add 'NDEBUG=1' parameter to build.py
-    to build libraries in the release mode -> 'python3 ./build.py ios NDEBUG=1').
-  * Execute 'python3 ./build.py ios' from $(HERMES_HOME) directory (add 'NDEBUG=1' parameter to build.py
-    to build libraries in the release mode -> 'python3 ./build.py ios NDEBUG=1').
-  * From Xcode open $(HERMES_HOME)/example/01.HelloWorld_iOS project.
   
 QUICK START (Android):
   * Add 'ANDROID_HOME' environment variable with destination path set to AndroidSDK directory.
@@ -58,7 +50,7 @@ QUICK START (Android):
     to build libraries in the release mode -> 'python3 ./build.py android NDEBUG=1').
   * Execute 'python3 ./build.py android' from $(HERMES_HOME) directory (add 'NDEBUG=1' parameter to build.py
     to build libraries in the release mode -> 'python3 ./build.py android NDEBUG=1').
-  * From Android Studio import $(HERMES_HOME)/example/01.HelloWorld_Android project.
+  * From Android Studio import, build and run $(HERMES_HOME)/example/01.HelloWorld_Android project.
 
 QUICK START (Linux):
   * If you want to use SSL with curl, execute 'python3 ./build.py linux NDEBUG=1' command in $(HERMES_HOME)/depend/libressl
@@ -69,13 +61,14 @@ QUICK START (Linux):
     to build libraries in the release mode -> 'python3 ./build.py linux NDEBUG=1').
   * Execute 'make' in $(HERMES_HOME)/example/01.HelloWorld directory and run '01.HelloWorld' application.
 
-QUICK START (macOS):
-  * Execute 'python3 ./build.py macos' command in $(HERMES_HOME)/depend/jsoncpp, $(HERMES_HOME)/depend/aes,
+QUICK START (iOS / macOS):
+  * Execute 'python3 ./build.py apple' command in $(HERMES_HOME)/depend/jsoncpp, $(HERMES_HOME)/depend/aes,
     $(HERMES_HOME)/depend/zlib and $(HERMES_HOME)/depend/curl (add 'NDEBUG=1' parameter to build.py
-    to build libraries in the release mode -> 'python3 ./build.py macos NDEBUG=1').
-  * Execute 'python3 ./build.py macos' from $(HERMES_HOME) directory (add 'NDEBUG=1' parameter to build.py
-    to build libraries in the release mode -> 'python3 ./build.py macos NDEBUG=1').
-  * Execute 'make' in $(HERMES_HOME)/example/01.HelloWorld directory and run '01.HelloWorld' application.
+    to build libraries in the release mode -> 'python3 ./build.py apple NDEBUG=1').
+  * Execute 'python3 ./build.py apple' from $(HERMES_HOME) directory (add 'NDEBUG=1' parameter to build.py
+    to build libraries in the release mode -> 'python3 ./build.py apple NDEBUG=1').
+  * (iOS) From Xcode open, build and run $(HERMES_HOME)/example/01.HelloWorld_iOS project.
+  * (macos) Execute 'make' in $(HERMES_HOME)/example/01.HelloWorld directory and run '01.HelloWorld' application.
 
 MISCELLANEOUS:
   * 'certificate.pem' in '01.HelloWorld' and '01.HelloWorld_Android' came from 'https://curl.haxx.se/docs/caextract.html'
