@@ -15,7 +15,7 @@ ifneq ($(OS),Windows_NT)
 		LDFLAGS += -lhmsextserializer -lhermes -laes -lcurl -ljsoncpp -lzlib -lssl -lcrypto -pthread
     endif
     ifeq ($(PLATFORM_NAME),Darwin)
-        CXXFLAGS += -m64
+        CXXFLAGS += -m64 -mmacosx-version-min=11.0
 		LDFLAGS += -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks \
 			-L../../lib/macos/aes.xcframework/macos-arm64_x86_64 -L../../lib/macos/curl.xcframework/macos-arm64_x86_64 \
 			-L../../lib/macos/hermes.xcframework/macos-arm64_x86_64 -L../../lib/macos/hmsextgzipreader.xcframework/macos-arm64_x86_64 \
@@ -42,7 +42,7 @@ $(APPLICATION_NAME): $(OBJFILES)
 	$(CXX) $(OBJFILES) $(LDFLAGS) -o $@
 
 %.d:%.cpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MM -MF $@ $<
+	$(CXX) $(CXXFLAGS) -MM -MF $@ $<
 
 ifneq ($(MAKECMDGOALS), clean)
 -include $(OBJFILES:.o=.d)
