@@ -29,15 +29,18 @@ set_target_properties(libjsoncpp PROPERTIES IMPORTED_LOCATION ${HERMES_LIBRARY_P
 add_library(libssl STATIC IMPORTED )
 set_target_properties(libssl PROPERTIES IMPORTED_LOCATION ${HERMES_LIBRARY_PATH}/libssl.a)
 
+add_library(libzlib STATIC IMPORTED )
+set_target_properties(libzlib PROPERTIES IMPORTED_LOCATION ${HERMES_LIBRARY_PATH}/libzlib.a)
+
 include_directories(${PROJECT_SOURCE_DIR}/../01.HelloWorld)
 
 file(GLOB SOURCE_LIST
     ${PROJECT_SOURCE_DIR}/../01.HelloWorld/*.cpp
     ${PROJECT_SOURCE_DIR}/../01.HelloWorld/*.hpp
-    source/cpp/*.cpp
-    source/cpp/*.hpp
+    src/main/cpp/*.cpp
+    src/main/cpp/*.hpp
 )
 
 add_library(helloworld SHARED ${SOURCE_LIST})
 
-target_link_libraries(helloworld libhmsextserializer libhmsextjni libhermes libaes libjsoncpp libcurl libssl libcrypto android z log)
+target_link_libraries(helloworld libhmsextserializer libhmsextjni libhermes libaes libcurl libjsoncpp libzlib libssl libcrypto android log)

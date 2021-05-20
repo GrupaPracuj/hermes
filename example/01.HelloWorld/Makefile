@@ -12,7 +12,7 @@ ifneq ($(OS),Windows_NT)
 			CXXFLAGS += -m32
 			LDFLAGS += -L../../lib/linux/x86
 		endif
-		LDFLAGS += -lhmsextserializer -lhermes -laes -lcurl -ljsoncpp -lz -lzlib -lssl -lcrypto -pthread
+		LDFLAGS += -lhmsextserializer -lhermes -laes -lcurl -ljsoncpp -lzlib -lssl -lcrypto -pthread
     endif
     ifeq ($(PLATFORM_NAME),Darwin)
         CXXFLAGS += -m64
