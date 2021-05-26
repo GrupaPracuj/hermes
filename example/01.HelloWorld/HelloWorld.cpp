@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2020 Grupa Pracuj Sp. z o.o.
+// Copyright (C) 2017-2021 Grupa Pracuj Sp. z o.o.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -8,7 +8,7 @@ UserData::UserData(size_t pId) : hms::DataShared(pId)
 {
 };
 
-HelloWorld::HelloWorld(std::function<void(std::function<void()>)> pMainThreadHandler, std::string pCertificatePath)
+HelloWorld::HelloWorld(std::function<void(std::function<void()>)> pMainThreadHandler, std::pair<hms::ENetworkCertificate, std::string> pCertificate)
 {
     auto logger = hms::Hermes::getInstance()->getLogger();
     logger->initialize(hms::ELogLevel::Info, "HelloWorld", nullptr);
@@ -23,12 +23,10 @@ HelloWorld::HelloWorld(std::function<void(std::function<void()>)> pMainThreadHan
     taskManager->initialize({threadInfo}, pMainThreadHandler);
 
     auto networkManager = hms::Hermes::getInstance()->getNetworkManager();
-    networkManager->initialize(10, threadInfo.first, threadInfo.first, {200, 299});
+    networkManager->initialize(10, threadInfo.first, threadInfo.first, std::move(pCertificate));
 
     auto jphNetwork = networkManager->add(static_cast<size_t>(ENetworkAPI::JsonPlaceholder), "JsonPlaceholder", "https://jsonplaceholder.typicode.com/");
     jphNetwork->setDefaultHeader({{"Content-Type", "application/json; charset=utf-8"}});
-
-    hms::Hermes::getInstance()->getNetworkManager()->setCACertificatePath(std::move(pCertificatePath));
 }
 
 HelloWorld::~HelloWorld()

@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2020 Grupa Pracuj Sp. z o.o.
+// Copyright (C) 2017-2021 Grupa Pracuj Sp. z o.o.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -31,6 +31,13 @@ namespace hms
     }
     
     class NetworkManager;
+
+    enum class ENetworkCertificate : int32_t
+    {
+        None = 0,
+        Path,
+        Content
+    };
 
     enum class ENetworkCode : int32_t
     {
@@ -372,7 +379,7 @@ namespace hms
             std::atomic<uint32_t>* mTerminateAbort = nullptr;
         };
     
-        bool initialize(int64_t pTimeout, int32_t pThreadPoolId, int32_t pWebSocketThreadPoolId, std::pair<int32_t, int32_t> pHttpCodeSuccess = {200, 299});
+        bool initialize(int64_t pTimeout, int32_t pThreadPoolId, int32_t pWebSocketThreadPoolId, std::pair<ENetworkCertificate /* type */, std::string /* file path or content */> pCertificate);
         bool terminate();
 
         std::shared_ptr<NetworkAPI> add(size_t pId, std::string pName, std::string pUrl);
@@ -412,9 +419,6 @@ namespace hms
         int64_t getProgressTimePeriod() const;
         void setProgressTimePeriod(int64_t pTimePeriod);
         
-        std::string getCACertificatePath() const;
-        void setCACertificatePath(std::string pPath);
-        
         void appendParameter(std::string& pURL, const std::vector<std::pair<std::string, std::string>>& pParameter) const;
         void decodeURL(std::string& pData) const;
         void encodeURL(std::string& pData) const;
@@ -428,8 +432,31 @@ namespace hms
         friend class Hermes;
         friend NetworkWebSocketHandle;
 
-        struct MultiRequestData
+        class Certificate;
+        
+        class CacheFileData
         {
+        public:
+            class Header
+            {
+            public:
+                uint64_t mTimestamp = 0;
+                uint32_t mLifetime = 0;
+                uint16_t mFlagsAndSize = 0;
+            };
+
+            Header mHeader;
+            
+            bool mStringType = false;
+            bool mIsValid = false;
+            
+            std::string mFullFilePath;
+            std::string mUrl;
+        };
+
+        class MultiRequestData
+        {
+        public:
             std::vector<std::pair<std::string, std::string>> mResponseHeader;
             std::string mResponseMessage;
             DataBuffer mResponseRawData;
@@ -439,26 +466,10 @@ namespace hms
             NetworkRequest* mParam = nullptr;
         };
         
-        struct CacheFileData
+        class RequestSettings
         {
-            struct Header {
-                uint64_t mTimestamp = 0;
-                uint32_t mLifetime = 0;
-                uint16_t mFlagsAndSize = 0;
-            } mHeader;
-            
-            bool mStringType = false;
-            bool mIsValid = false;
-            
-            std::string mFullFilePath;
-            std::string mUrl;
-        };
-        
-        struct RequestSettings
-        {
-            std::pair<int32_t, int32_t> mHttpCodeSuccess = {200, 299};
+        public:
             std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> mFlag = {false, false, false};
-            std::string mCACertificatePath;
             int64_t mTimeout = 0;
             int64_t mProgressTimePeriod = 0;
         };
@@ -476,12 +487,12 @@ namespace hms
         
         std::vector<std::pair<std::string, std::string>> createUniqueHeader(const std::vector<std::pair<std::string, std::string>>& pHeader) const;
 
-        void configureHandle(void* pHandle, ENetworkRequest pRequestType, ENetworkResponse pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody, std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader, int64_t pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer, const std::string pCACertificatePath) const;
+        void configureHandle(void* pHandle, ENetworkRequest pRequestType, ENetworkResponse pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody, std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader, int64_t pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer) const;
         
         void resetHandle(void* pHandle) const;
         
         CacheFileData decodeCacheHeader(const std::string& pFilePath) const;
-        NetworkResponse getResponseFromCache(const std::string& pUrl, int32_t pHttpCodeSuccess);
+        NetworkResponse getResponseFromCache(const std::string& pUrl);
         bool cacheResponse(const NetworkResponse& pResponse, const std::string& pUrl, u_int32_t pLifetime);
 
         std::weak_ptr<NetworkManager> mWeakThis;
@@ -500,6 +511,7 @@ namespace hms
 
         int32_t mThreadPoolId = -1;
         int32_t mWebSocketThreadPoolId = -1;
+        std::shared_ptr<Certificate> mCertificate;
 
         std::atomic<uint32_t> mInitialized {0};
         std::atomic<uint32_t> mCacheInitialized {0};

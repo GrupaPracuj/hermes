@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2020 Grupa Pracuj Sp. z o.o.
+// Copyright (C) 2017-2021 Grupa Pracuj Sp. z o.o.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -63,7 +63,7 @@ namespace hms
 class HelloWorld
 {
 public:
-    HelloWorld(std::function<void(std::function<void()>)> pMainThreadHandler, std::string pCertificatePath);
+    HelloWorld(std::function<void(std::function<void()>)> pMainThreadHandler, std::pair<hms::ENetworkCertificate, std::string> pCertificate);
     ~HelloWorld();
 
     void execute(std::function<void(std::string)> pCallback, int32_t pRequestIndex);

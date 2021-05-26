@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2020 Grupa Pracuj Sp. z o.o.
+// Copyright (C) 2017-2021 Grupa Pracuj Sp. z o.o.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -36,7 +36,7 @@ int main(int pArgumentsCount, char* pArguments[])
     {
         std::lock_guard<std::mutex> lock(mainThreadMutex);
         mainThreadTasks.push(std::move(lpTask));
-    }, "./certificate.pem");
+    }, {hms::ENetworkCertificate::Path, "./certificate.pem"});
 
     for (int32_t i = 1; i < 8; ++i)
     {

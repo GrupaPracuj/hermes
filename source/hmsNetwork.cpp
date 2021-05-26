@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2020 Grupa Pracuj Sp. z o.o.
+// Copyright (C) 2017-2021 Grupa Pracuj Sp. z o.o.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -158,9 +158,25 @@ namespace hms
         res = select(pSockfd + 1, &infd, &outfd, &errfd, &tv);
         return res;
     }
-    
-    /* NetworkRequestHandle */
-    
+
+    class NetworkManager::Certificate
+    {
+    public:
+        Certificate(ENetworkCertificate pType, std::string pData) : mType(pType), mData(std::move(pData)), mBlob({})
+        {
+            if (mType == ENetworkCertificate::Content)
+            {
+                mBlob.data = mData.data();
+                mBlob.len = mData.size();
+                mBlob.flags = CURL_BLOB_NOCOPY;
+            }
+        }
+
+        ENetworkCertificate mType = ENetworkCertificate::None; 
+        std::string mData;
+        curl_blob mBlob = {};
+    };
+
     void NetworkRequestHandle::cancel()
     {
         mCancel.store(1);
@@ -170,8 +186,6 @@ namespace hms
     {
         return static_cast<bool>(mCancel.load());
     }
-    
-    /* NetworkWebSocketHandle::ControlBlock */
     
     NetworkWebSocketHandle::ControlBlock::~ControlBlock()
     {
@@ -256,6 +270,7 @@ namespace hms
         tools::URLTool url(pParam.mUrl);
         curl_socket_t socketfd = 0;
 
+        auto certificate = pNetworkManager->mCertificate;
         NetworkManager::RequestSettings requestSettings;
         {
             std::lock_guard<std::mutex> lock(pNetworkManager->mRequestSettingsMutex);
@@ -266,7 +281,7 @@ namespace hms
         Hermes::getInstance()->getTaskManager()->executeContinuous(pThreadPoolId, [controlBlock]() -> bool
         {
             return controlBlock->mTerminate.load() == 2;
-        }, [pParam = std::move(pParam), controlBlock, url, socketfd, requestSettings = std::move(requestSettings), weakThis]() mutable -> void
+        }, [pParam = std::move(pParam), controlBlock, url, socketfd, certificate = std::move(certificate), requestSettings = std::move(requestSettings), weakThis]() mutable -> void
         {
             auto strongThis = weakThis.lock();
             if (strongThis != nullptr)
@@ -282,8 +297,10 @@ namespace hms
                         curl_easy_setopt(controlBlock->mHandle, CURLOPT_CONNECT_ONLY, 1L);
                         curl_easy_setopt(controlBlock->mHandle, CURLOPT_SSL_VERIFYPEER, !requestSettings.mFlag[static_cast<size_t>(ENetworkFlag::DisableSSLVerifyPeer)] ? 1L : 0L);
 
-                        if (requestSettings.mCACertificatePath.size() > 0)
-                            curl_easy_setopt(controlBlock->mHandle, CURLOPT_CAINFO, requestSettings.mCACertificatePath.c_str());
+                        if (certificate->mType == ENetworkCertificate::Path)
+                            curl_easy_setopt(controlBlock->mHandle, CURLOPT_CAINFO, certificate->mData.c_str());
+                        else if (certificate->mType == ENetworkCertificate::Content)
+                            curl_easy_setopt(controlBlock->mHandle, CURLOPT_CAINFO_BLOB, &certificate->mBlob);
                         
                         CURLcode result = curl_easy_perform(controlBlock->mHandle);
                         if (result == CURLE_OK)
@@ -1049,7 +1066,7 @@ namespace hms
     
     /* NetworkManager */
     
-    NetworkManager::NetworkManager()
+    NetworkManager::NetworkManager() : mCertificate(std::make_shared<NetworkManager::Certificate>(ENetworkCertificate::None, ""))
     {
     }
     
@@ -1068,8 +1085,10 @@ namespace hms
         delete pObject;
     }
     
-    bool NetworkManager::initialize(int64_t pTimeout, int32_t pThreadPoolId, int32_t pSocketThreadPoolId, std::pair<int32_t, int32_t> pHttpCodeSuccess)
+    bool NetworkManager::initialize(int64_t pTimeout, int32_t pThreadPoolId, int32_t pSocketThreadPoolId, std::pair<ENetworkCertificate, std::string> pCertificate)
     {
+        assert(pCertificate.first == ENetworkCertificate::None || pCertificate.second.size() > 0);
+
         uint32_t initialized = 0;
 
         if (mInitialized.compare_exchange_strong(initialized, 1))
@@ -1078,12 +1097,12 @@ namespace hms
             {
                 {
                     std::lock_guard<std::mutex> lock(mRequestSettingsMutex);
-                    mRequestSettings.mHttpCodeSuccess = pHttpCodeSuccess;
                     mRequestSettings.mTimeout = pTimeout;
                 }
                 
                 mThreadPoolId = pThreadPoolId;
                 mWebSocketThreadPoolId = pSocketThreadPoolId;
+                mCertificate = std::make_shared<NetworkManager::Certificate>(pCertificate.first, std::move(pCertificate.second));
 
                 mInitialized.store(2);
             }
@@ -1165,15 +1184,14 @@ namespace hms
             
             {
                 std::lock_guard<std::mutex> lock(mRequestSettingsMutex);
-                mRequestSettings.mHttpCodeSuccess = {200, 299};
                 mRequestSettings.mFlag = {false, false, false};
-                mRequestSettings.mCACertificatePath = "";
                 mRequestSettings.mTimeout = 0;
                 mRequestSettings.mProgressTimePeriod = 0;
             }
 
             mThreadPoolId = -1;
             mWebSocketThreadPoolId = -1;
+            mCertificate = std::make_unique<NetworkManager::Certificate>(ENetworkCertificate::None, "");
             
             mCacheInitialized.store(0);
             mTerminateAbort.store(0);
@@ -1248,7 +1266,7 @@ namespace hms
             {
                 if (lpParam.mAllowCache)
                 {
-                    NetworkResponse response = strongThis->getResponseFromCache(lpParam.mMethod, lpRequestSettings.mHttpCodeSuccess.first);
+                    NetworkResponse response = strongThis->getResponseFromCache(lpParam.mMethod);
                     if (response.mCode == ENetworkCode::OK)
                     {
                         if (lpParam.mCallback != nullptr)
@@ -1295,7 +1313,12 @@ namespace hms
                 if (handle == nullptr)
                 {
                     handle = curl_easy_init();
+
                     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, CURL_HEADER_CALLBACK);
+                    if (strongThis->mCertificate->mType == ENetworkCertificate::Path)
+                        curl_easy_setopt(handle, CURLOPT_CAINFO, strongThis->mCertificate->mData.c_str());
+                    else if (strongThis->mCertificate->mType == ENetworkCertificate::Content)
+                        curl_easy_setopt(handle, CURLOPT_CAINFO_BLOB, &strongThis->mCertificate->mBlob);
 
                     std::lock_guard<std::mutex> lock(strongThis->mHandleMutex);
                     strongThis->mHandle[std::this_thread::get_id()] = handle;
@@ -1330,7 +1353,7 @@ namespace hms
                 strongThis->appendParameter(requestUrl, lpParam.mParameter);
                 
                 strongThis->configureHandle(handle, lpParam.mRequestType, lpParam.mResponseType, requestUrl, lpParam.mRequestBody, &responseMessage, &responseRawData, &responseHeader, header,
-                    lpRequestSettings.mTimeout, lpRequestSettings.mFlag, &progressData, errorBuffer, lpRequestSettings.mCACertificatePath);
+                    lpRequestSettings.mTimeout, lpRequestSettings.mFlag, &progressData, errorBuffer);
                 
                 CURLcode curlCode = CURLE_OK;
                 unsigned step = 0;
@@ -1353,7 +1376,7 @@ namespace hms
                     {
                     case CURLE_OK:
                         curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &httpCode);
-                        code = httpCode >= lpRequestSettings.mHttpCodeSuccess.first && httpCode <= lpRequestSettings.mHttpCodeSuccess.second ? ENetworkCode::OK : ENetworkCode::InvalidHttpCodeRange;
+                        code = httpCode >= 200 && httpCode <= 299 ? ENetworkCode::OK : ENetworkCode::InvalidHttpCodeRange;
                         break;
                     case CURLE_COULDNT_RESOLVE_HOST:
                         code = ENetworkCode::LostConnection;
@@ -1449,7 +1472,7 @@ namespace hms
                     }
                     else
                     {
-                        NetworkResponse response = strongThis->getResponseFromCache(it->mMethod, lpRequestSettings.mHttpCodeSuccess.first);
+                        NetworkResponse response = strongThis->getResponseFromCache(it->mMethod);
                         if (response.mCode != ENetworkCode::OK)
                         {
                             param.push_back(std::move(*it));
@@ -1539,7 +1562,7 @@ namespace hms
                     
                     strongThis->configureHandle(multiRequestData[i].mHandle, param[i].mRequestType, param[i].mResponseType, requestUrl, param[i].mRequestBody, &multiRequestData[i].mResponseMessage,
                         &multiRequestData[i].mResponseRawData, &multiRequestData[i].mResponseHeader, header, lpRequestSettings.mTimeout, lpRequestSettings.mFlag, &multiRequestData[i].mProgressData,
-                        &multiRequestData[i].mErrorBuffer[0], lpRequestSettings.mCACertificatePath);
+                        &multiRequestData[i].mErrorBuffer[0]);
                     
                     curl_multi_add_handle(handle, multiRequestData[i].mHandle);
                 }
@@ -1624,8 +1647,7 @@ namespace hms
                             {
                             case CURLE_OK:
                                 curl_easy_getinfo(message->easy_handle, CURLINFO_RESPONSE_CODE, &httpCode);
-                                code = httpCode >= lpRequestSettings.mHttpCodeSuccess.first && httpCode <= lpRequestSettings.mHttpCodeSuccess.second ? ENetworkCode::OK :
-                                    ENetworkCode::InvalidHttpCodeRange;
+                                code = httpCode >= 200 && httpCode <= 299 ? ENetworkCode::OK : ENetworkCode::InvalidHttpCodeRange;
                                 break;
                             case CURLE_COULDNT_RESOLVE_HOST:
                                 code = ENetworkCode::LostConnection;
@@ -1744,20 +1766,6 @@ namespace hms
         }
     }
     
-    std::string NetworkManager::getCACertificatePath() const
-    {
-        std::lock_guard<std::mutex> lock(mRequestSettingsMutex);
-        return mRequestSettings.mCACertificatePath;
-    }
-    void NetworkManager::setCACertificatePath(std::string pPath)
-    {
-        if (mInitialized.load() == 2)
-        {
-            std::lock_guard<std::mutex> lock(mRequestSettingsMutex);
-            mRequestSettings.mCACertificatePath = std::move(pPath);
-        }
-    }
-    
     void NetworkManager::appendParameter(std::string& pURL, const std::vector<std::pair<std::string, std::string>>& pParameter) const
     {
         bool first = true;
@@ -1848,7 +1856,7 @@ namespace hms
         return header;
     }
 
-    void NetworkManager::configureHandle(void* pHandle, ENetworkRequest pRequestType, ENetworkResponse pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody, std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader, int64_t pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer, const std::string pCACertificatePath) const
+    void NetworkManager::configureHandle(void* pHandle, ENetworkRequest pRequestType, ENetworkResponse pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody, std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader, int64_t pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer) const
     {
         switch (pRequestType)
         {
@@ -1904,9 +1912,6 @@ namespace hms
         curl_easy_setopt(pHandle, CURLOPT_URL, pRequestUrl.c_str());
         curl_easy_setopt(pHandle, CURLOPT_ERRORBUFFER, pErrorBuffer);
         curl_easy_setopt(pHandle, CURLOPT_SSL_VERIFYPEER, !pFlag[static_cast<size_t>(ENetworkFlag::DisableSSLVerifyPeer)] ? 1L : 0L);
-
-        if (pCACertificatePath.size() > 0)
-            curl_easy_setopt(pHandle, CURLOPT_CAINFO, pCACertificatePath.c_str());
 
         if (pProgressData != nullptr)
         {
@@ -2096,7 +2101,7 @@ namespace hms
         return info;
     }
     
-    NetworkResponse NetworkManager::getResponseFromCache(const std::string& pUrl, int32_t pHttpCodeSuccess)
+    NetworkResponse NetworkManager::getResponseFromCache(const std::string& pUrl)
     {
         NetworkResponse response;
         CacheFileData info;
@@ -2136,7 +2141,7 @@ namespace hms
                     }
                     
                     response.mCode = ENetworkCode::OK;
-                    response.mHttpCode = pHttpCodeSuccess;
+                    response.mHttpCode = 200;
                     response.mMethod = pUrl;
                 }
             }

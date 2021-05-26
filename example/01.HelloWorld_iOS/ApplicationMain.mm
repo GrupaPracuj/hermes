@@ -1,3 +1,7 @@
+// Copyright (C) 2017-2021 Grupa Pracuj Sp. z o.o.
+// This file is part of the "Hermes" library.
+// For conditions of distribution and use, see copyright notice in license.txt.
+
 #import <UIKit/UIKit.h>
 
 #include "HelloWorld.hpp"
@@ -55,7 +59,7 @@
     mLabel = nil;
     mButton = nil;
     mOffsetSize = pOffset;
-    mHelloWorld = std::make_unique<HelloWorld>(nullptr, "");
+    mHelloWorld = std::make_unique<HelloWorld>(nullptr, std::make_pair(hms::ENetworkCertificate::None, ""));
     mRequestIndex = 1;
 }
 

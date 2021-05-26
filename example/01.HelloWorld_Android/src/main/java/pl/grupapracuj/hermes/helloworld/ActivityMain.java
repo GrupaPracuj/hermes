@@ -1,10 +1,11 @@
-// Copyright (C) 2017-2020 Grupa Pracuj Sp. z o.o.
+// Copyright (C) 2017-2021 Grupa Pracuj Sp. z o.o.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
 package pl.grupapracuj.hermes.helloworld;
 
 import android.app.Activity;
+import android.content.res.AssetManager;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.Rect;
@@ -13,7 +14,6 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
@@ -21,13 +21,6 @@ import android.view.WindowMetrics;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Arrays;
 
 import pl.grupapracuj.hermes.ext.jni.ObjectNative;
 
@@ -47,18 +40,15 @@ public class ActivityMain extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         buildLayout();
 
-        mNativeHelloWorld = nativeCreate(getClassLoader(), assetCopy("certificate.pem"));
-        mButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View lpView) {
-                mButton.setEnabled(false);
-                mTextView.setText("");
-                nativeExecute(mNativeHelloWorld.pointer(), mRequestIndex);
+        mNativeHelloWorld = nativeCreate(getClassLoader(), getAssets());
+        mButton.setOnClickListener(lpView -> {
+            mButton.setEnabled(false);
+            mTextView.setText("");
+            nativeExecute(mNativeHelloWorld.pointer(), mRequestIndex);
 
-                mRequestIndex++;
-                if (mRequestIndex > 7)
-                    mRequestIndex = 1;
-            }
+            mRequestIndex++;
+            if (mRequestIndex > 7)
+                mRequestIndex = 1;
         });
     }
 
@@ -133,65 +123,6 @@ public class ActivityMain extends Activity {
         setContentView(layout);
     }
 
-    private String assetCopy(String pFilename)
-    {
-        String result = "";
-        boolean fileExist = false;
-
-        try {
-            final String[] list = getResources().getAssets().list("");
-            fileExist = list != null && Arrays.asList(list).contains(pFilename);
-        } catch (IOException ignore) {}
-
-        if (fileExist) {
-            String destinationDirectory = getApplicationInfo().dataDir;
-            String destinationPath = destinationDirectory + "/" + pFilename;
-            InputStream inputStream = null;
-            OutputStream outputStream = null;
-
-            boolean fileNotExist = true;
-            File certificateFile = new File(destinationPath);
-
-            if (certificateFile.exists()) {
-                fileNotExist = certificateFile.delete();
-            }
-
-            if (fileNotExist) {
-                try {
-                    inputStream = getAssets().open(pFilename);
-                    fileExist = certificateFile.createNewFile();
-
-                    if (fileExist) {
-                        outputStream = new FileOutputStream(destinationPath);
-
-                        byte[] buffer = new byte[1024];
-                        int length;
-
-                        while ((length = inputStream.read(buffer)) > 0) {
-                            outputStream.write(buffer, 0, length);
-                        }
-
-                        outputStream.flush();
-                        result = destinationPath;
-                    }
-                } catch (IOException ignore) {
-                } finally {
-                    try {
-                        if (outputStream != null) {
-                            outputStream.close();
-                        }
-
-                        if (inputStream != null) {
-                            inputStream.close();
-                        }
-                    } catch (IOException ignore) {}
-                }
-            }
-        }
-
-        return result;
-    }
-
-    private native ObjectNative nativeCreate(ClassLoader pClassLoader, String pCertificatePath);
+    private native ObjectNative nativeCreate(ClassLoader pClassLoader, AssetManager pAssetManager);
     private native void nativeExecute(long pPointer, int pRequestIndex);
 }
