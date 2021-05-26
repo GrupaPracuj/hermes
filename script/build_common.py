@@ -207,7 +207,7 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
         print('Error: Spaces in a project directory path are not allowed.')
         return False
 
-    for i in range(2, len(sys.argv) - 1):
+    for i in range(1, len(sys.argv) - 1):
         if sys.argv[i] == '-target':
             pSettings.mBuildTarget = sys.argv[i + 1].lower()
         elif sys.argv[i] == '-variant':
@@ -481,7 +481,7 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
     remove(buildDir)
 
     releaseBuild = True
-    for i in range(2, len(sys.argv)):
+    for i in range(1, len(sys.argv)):
         if sys.argv[i] == '-debug':
             releaseBuild = False
             break
@@ -622,7 +622,7 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
     platformName = platform.system().lower()
     
     releaseBuild = True
-    for i in range(2, len(sys.argv)):
+    for i in range(1, len(sys.argv)):
         if sys.argv[i] == '-debug':
             releaseBuild = False
             break
