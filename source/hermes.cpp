@@ -10,7 +10,7 @@ namespace hms
 Hermes::Hermes()
 {
     mVersion[0] = 1;
-    mVersion[1] = 1;
+    mVersion[1] = 3;
     mVersion[2] = 0;
     
     mDataManager = new DataManager();
