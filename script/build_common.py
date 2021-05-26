@@ -10,6 +10,7 @@ class Settings:
         self.mRootDir = ''
         self.mLibDir = ''
         self.mBuildTarget = ''
+        self.mBuildVariant = ''
         self.mAndroidApi = ''
         self.mAndroidNdkDir = ''
         self.mAppleSdkDir = ''
@@ -200,14 +201,20 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
     if sys.version_info < (3, 0):
         print('Error: This script requires Python 3.0 or higher. Please use "python3" command instead of "python".')
         return False
-    
-    if len(sys.argv) < 2 or sys.argv[1] is None or (sys.argv[1] != 'android' and sys.argv[1] != 'linux' and sys.argv[1] != 'apple'):
-        print('Error: Missing or wrong build target. Following targets are supported: "android", "linux", "apple".')
-        return False
-
+        
     workingDir = os.getcwd()
     if workingDir.find(' ') != -1:
         print('Error: Spaces in a project directory path are not allowed.')
+        return False
+
+    for i in range(2, len(sys.argv) - 1):
+        if sys.argv[i] == '-target':
+            pSettings.mBuildTarget = sys.argv[i + 1].lower()
+        elif sys.argv[i] == '-variant':
+            pSettings.mBuildVariant = sys.argv[i + 1].lower()
+    
+    if pSettings.mBuildTarget != 'android' and pSettings.mBuildTarget != 'linux' and pSettings.mBuildTarget != 'apple':
+        print('Error: Missing or wrong build target. Following targets are supported: "android", "linux", "apple".')
         return False
 
     platformName = platform.system().lower()
@@ -218,7 +225,6 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
     else:
         pSettings.mLibDir = os.path.join(workingDir, pRelativeLibDir)
 
-    pSettings.mBuildTarget = sys.argv[1]
     if pSettings.mBuildTarget == 'android':
         hostDetected = False
         
@@ -345,6 +351,10 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
     elif pSettings.mBuildTarget == 'apple':
         hostDetected = False
         
+        if len(pSettings.mBuildVariant) > 0 and pSettings.mBuildVariant != 'ios' and pSettings.mBuildVariant != 'macos':
+            print('Warning: Wrong build variant. Following variants of target "' + pSettings.mBuildTarget + '" are supported: "ios", "macos".');
+            pSettings.mBuildVariant = ''
+        
         if platformName == 'darwin' and platform.machine().endswith('64'):
             hostDetected = True
 
@@ -470,10 +480,10 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
     buildDir = os.path.join(workingDir, 'build_cmake')
     remove(buildDir)
 
-    releaseBuild = False
-    for j in range(2, len(sys.argv)):
-        if sys.argv[j] == 'NDEBUG=1':
-            releaseBuild = True
+    releaseBuild = True
+    for i in range(2, len(sys.argv)):
+        if sys.argv[i] == '-debug':
+            releaseBuild = False
             break
 
     if (len(pCMakeFlag) > 0):
@@ -590,13 +600,13 @@ def buildCMakeApple(pIndex, pSettings, pCMakeFlag):
     platformName = platform.system().lower()
 
     cmakeCommand = ''
-    if pSettings.mPlatformName[pIndex] == 'ios' or pSettings.mPlatformName[pIndex] == 'ios-simulator':
+    if (pSettings.mPlatformName[pIndex] == 'ios' or pSettings.mPlatformName[pIndex] == 'ios-simulator') and pSettings.mBuildVariant != 'macos':
         toolchainPath = os.path.join(pSettings.mRootDir, 'script', 'ios.toolchain.cmake')
         executableDir = os.path.join(pSettings.mAppleSdkDir, 'Toolchains', 'XcodeDefault.xctoolchain', 'usr', 'bin')
         sysrootDir = os.path.join(pSettings.mAppleSdkDir, 'Platforms', pSettings.mTargetSdk[pIndex] + '.platform', 'Developer', 'SDKs', pSettings.mTargetSdk[pIndex] + '.sdk')
         if os.path.isfile(toolchainPath) and os.path.isdir(executableDir) and os.path.isdir(sysrootDir):
             cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -DHMS_XCODE_PATH=' + pSettings.mAppleSdkDir + ' -DHMS_TARGET=' + pSettings.mTargetSdk[pIndex] + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
-    elif pSettings.mPlatformName[pIndex] == 'macos':
+    elif pSettings.mPlatformName[pIndex] == 'macos' and pSettings.mBuildVariant != 'macos':
         toolchainPath = os.path.join(pSettings.mRootDir, 'script', 'macos.toolchain.cmake')
         if os.path.isfile(toolchainPath):
             cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -DHMS_ARCH=' + pSettings.mArch[pIndex] + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
@@ -610,14 +620,18 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
     status = False
     workingDir = os.getcwd()
     platformName = platform.system().lower()
-
-    for j in range(2, len(sys.argv)):
-        if sys.argv[j] == 'NDEBUG=1':
-            if (len(pMakeFlag) > 0):
-                pMakeFlag += ' '
-
-            pMakeFlag += 'NDEBUG=1'
+    
+    releaseBuild = True
+    for i in range(2, len(sys.argv)):
+        if sys.argv[i] == '-debug':
+            releaseBuild = False
             break
+
+    if releaseBuild:
+        if (len(pMakeFlag) > 0):
+            pMakeFlag += ' '
+
+        pMakeFlag += 'NDEBUG=1'
 
     if platformName == 'linux' or platformName == 'darwin':
         executeShellCommand(pSettings.mMake + ' clean')
@@ -764,7 +778,7 @@ def buildMakeApple(pIndex, pLibraryName, pSettings, pMakeFlag):
     platformName = platform.system().lower()
 
     makeExecute = False
-    if pSettings.mPlatformName[pIndex] == 'ios' or pSettings.mPlatformName[pIndex] == 'ios-simulator':
+    if (pSettings.mPlatformName[pIndex] == 'ios' or pSettings.mPlatformName[pIndex] == 'ios-simulator') and pSettings.mBuildVariant != 'macos':
         executableDir = os.path.join(pSettings.mAppleSdkDir, 'Toolchains', 'XcodeDefault.xctoolchain', 'usr', 'bin')
         sysrootDir = os.path.join(pSettings.mAppleSdkDir, 'Platforms', pSettings.mTargetSdk[pIndex] + '.platform', 'Developer', 'SDKs', pSettings.mTargetSdk[pIndex] + '.sdk')
         if os.path.isdir(executableDir) and os.path.isdir(sysrootDir):
@@ -777,7 +791,7 @@ def buildMakeApple(pIndex, pLibraryName, pSettings, pMakeFlag):
             os.environ['CFLAGS'] = os.environ['CFLAGS'] + ' -isysroot ' + sysrootDir
             os.environ['CXXFLAGS'] = os.environ['CXXFLAGS'] + ' -isysroot ' + sysrootDir
             makeExecute = True
-    if pSettings.mPlatformName[pIndex] == 'macos':
+    if pSettings.mPlatformName[pIndex] == 'macos' and pSettings.mBuildVariant != 'ios':
         makeExecute = True
 
     if makeExecute:
