@@ -1,5 +1,5 @@
 
-  Copyright (C) 2017 Grupa Pracuj Sp. z o.o.
+  Copyright (C) 2017-2021 Grupa Pracuj Sp. z o.o.
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages

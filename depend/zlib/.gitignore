@@ -1,8 +1,8 @@
 *
 !.gitignore
 !build.py
+!version.txt
 !Makefile
-!readme.txt
 !include
 !include/*.h
 !source
