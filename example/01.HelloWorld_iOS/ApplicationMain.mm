@@ -59,7 +59,7 @@
     mLabel = nil;
     mButton = nil;
     mOffsetSize = pOffset;
-    mHelloWorld = std::make_unique<HelloWorld>(nullptr, "");
+    mHelloWorld = std::make_unique<HelloWorld>(nullptr, std::make_pair(hms::ENetworkCertificate::None, ""));
     mRequestIndex = 1;
 }
 

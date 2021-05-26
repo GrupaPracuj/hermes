@@ -1,7 +1,7 @@
 import os
 import shutil
 
-libraryVersion = '7.76.1'
+libraryVersion = '7.77.0'
 libraryName = 'curl-' + libraryVersion
 
 buildCommonFile = os.path.join('..', '..', 'script', 'build_common.py')
@@ -33,10 +33,10 @@ if configure(settings, os.path.join('..', '..')):
         else:
             flagSSL = '-DCMAKE_USE_OPENSSL=OFF'
 
-        outputLibraryName = 'curl-d'
-        for j in range(2, len(sys.argv)):
-            if sys.argv[j] == 'NDEBUG=1':
-                outputLibraryName = 'curl'
+        outputLibraryName = 'curl'
+        for i in range(1, len(sys.argv)):
+            if sys.argv[i] == '-debug':
+                outputLibraryName = 'curl-d'
                 break
                 
         os.chdir(libraryName)
