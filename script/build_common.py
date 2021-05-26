@@ -10,6 +10,7 @@ class Settings:
         self.mRootDir = ''
         self.mLibDir = ''
         self.mBuildTarget = ''
+        self.mBuildVariant = ''
         self.mAndroidApi = ''
         self.mAndroidNdkDir = ''
         self.mAppleSdkDir = ''
@@ -23,6 +24,7 @@ class Settings:
         self.mArchFlagC = []
         self.mArchFlagCXX = []
         self.mArchName = []
+        self.mPlatformName = []
         self.mTargetSdk = []
         self.mMakeFlag = []
         
@@ -68,7 +70,7 @@ def checkCMake(pDestinationDir):
     if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/cmake'):
         return '/usr/bin/cmake'
 
-    packageVersion = '3.14.4'
+    packageVersion = '3.20.2'
     packageName = 'cmake-' + packageVersion
     packageExtension = ''
     applicationName = ''
@@ -77,21 +79,21 @@ def checkCMake(pDestinationDir):
     destinationDir = os.path.join(pDestinationDir, platformName, 'cmake')
 
     if platformName == 'linux':
-        packageName += '-Linux-x86_64'
+        packageName += '-linux-x86_64'
         packageExtension = '.tar.gz'
         applicationName = 'cmake'
         applicationDestinationPath = os.path.join(destinationDir, 'bin', applicationName)
         applicationSourcePath = os.path.join(destinationDir, packageName, 'bin', applicationName)
         applicationCopyPath = os.path.join(destinationDir, packageName)
     elif platformName == 'darwin':
-        packageName += '-Darwin-x86_64'
+        packageName += '-macos-universal'
         packageExtension = '.tar.gz'
         applicationName = 'cmake'
         applicationDestinationPath = os.path.join(destinationDir, 'CMake.app', 'Contents', 'bin', applicationName)
         applicationSourcePath = os.path.join(destinationDir, packageName, 'CMake.app', 'Contents', 'bin', applicationName)
         applicationCopyPath = os.path.join(destinationDir, packageName)
     elif platformName == 'windows':
-        packageName += '-win64-x64'
+        packageName += '-windows-x86_64'
         packageExtension = '.zip'
         applicationName = 'cmake.exe'
         applicationDestinationPath = os.path.join(destinationDir, 'bin', applicationName)
@@ -155,10 +157,10 @@ def checkNinja(pDestinationDir):
     print('Check \'Ninja\'...')
 
     platformName = platform.system().lower()
-    if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/go'):
+    if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/ninja'):
         return '/usr/bin/ninja'
 
-    packageVersion = '1.9.0'
+    packageVersion = '1.10.2'
     packageName = 'ninja'
     packageExtension = ''
     applicationName = ''
@@ -199,14 +201,20 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
     if sys.version_info < (3, 0):
         print('Error: This script requires Python 3.0 or higher. Please use "python3" command instead of "python".')
         return False
-    
-    if len(sys.argv) < 2 or sys.argv[1] is None or (sys.argv[1] != 'android' and sys.argv[1] != 'ios' and sys.argv[1] != 'linux' and sys.argv[1] != 'macos'):
-        print('Error: Missing or wrong build target. Following targets are supported: "android", "linux", "macos".')
-        return False
-
+        
     workingDir = os.getcwd()
     if workingDir.find(' ') != -1:
         print('Error: Spaces in a project directory path are not allowed.')
+        return False
+
+    for i in range(1, len(sys.argv) - 1):
+        if sys.argv[i] == '-target':
+            pSettings.mBuildTarget = sys.argv[i + 1].lower()
+        elif sys.argv[i] == '-variant':
+            pSettings.mBuildVariant = sys.argv[i + 1].lower()
+    
+    if pSettings.mBuildTarget != 'android' and pSettings.mBuildTarget != 'linux' and pSettings.mBuildTarget != 'apple':
+        print('Error: Missing or wrong build target. Following targets are supported: "android", "linux", "apple".')
         return False
 
     platformName = platform.system().lower()
@@ -217,7 +225,6 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
     else:
         pSettings.mLibDir = os.path.join(workingDir, pRelativeLibDir)
 
-    pSettings.mBuildTarget = sys.argv[1]
     if pSettings.mBuildTarget == 'android':
         hostDetected = False
         
@@ -297,55 +304,14 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
             pSettings.mHostTag = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
             pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
             pSettings.mArchFlagASM = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
-            pSettings.mArchFlagC = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -pipe -fPIC -fno-strict-aliasing -fstack-protector']
-            pSettings.mArchFlagCXX = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -pipe -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagC = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -fPIC -fno-strict-aliasing -fstack-protector', '-fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagCXX = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -fPIC -fno-strict-aliasing -fstack-protector', '-fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -fPIC -fno-strict-aliasing -fstack-protector']
             pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
+            pSettings.mPlatformName = ['', '', '', '']
             pSettings.mMakeFlag = ['DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
 
             print('Android API: "' + pSettings.mAndroidApi + '"')
             print('Android NDK path: "' + pSettings.mAndroidNdkDir + '"')
-        else:
-            print('Error: Not supported host platform: ' + platformName + ' x86-64' if platform.machine().endswith('64') else ' x86')
-            return False
-    elif pSettings.mBuildTarget == 'ios':
-        hostDetected = False
-        
-        if platformName == 'darwin' and platform.machine().endswith('64'):
-            hostDetected = True
-
-            pSettings.mAppleSdkDir = receiveShellOutput('xcode-select --print-path').rstrip()
-            if not os.path.isdir(pSettings.mAppleSdkDir):
-                print('Error: \'Xcode\' not found.')
-                return False
-
-            pSettings.mMake = checkMake(downloadDir)
-            if len(pSettings.mMake) == 0:
-                print('Error: \'Make\' not found.')
-                return False
-
-            pSettings.mCMake = checkCMake(downloadDir)
-            if len(pSettings.mCMake) == 0:
-                print('Error: \'CMake\' not found.')
-                return False
-
-            pSettings.mNinja = checkNinja(downloadDir)
-            if len(pSettings.mNinja) == 0:
-                print('Error: \'Ninja\' not found.')
-                return False
-
-        if hostDetected:
-            commonFlags = '-miphoneos-version-min=10.0 -pipe -fPIC -fno-strict-aliasing -fstack-protector -gdwarf-2 -fvisibility=hidden -fvisibility-inlines-hidden'
-            commonSimulatorFlags = commonFlags + ' -D__IPHONE_OS_VERSION_MIN_REQUIRED=100000'
-
-            pSettings.mArch = ['armv7', 'armv7s', 'arm64', 'i386', 'x86_64']
-            pSettings.mArchFlagASM = ['-arch armv7 ' + commonFlags, '-arch armv7s ' + commonFlags, '-arch arm64 ' + commonFlags, '-arch i386 ' + commonSimulatorFlags, '-arch x86_64 ' + commonSimulatorFlags]
-            pSettings.mArchFlagC = ['-arch armv7 -ObjC ' + commonFlags, '-arch armv7s -ObjC ' + commonFlags, '-arch arm64 -ObjC ' + commonFlags, '-arch i386 -ObjC ' + commonSimulatorFlags, '-arch x86_64 -ObjC ' + commonSimulatorFlags]
-            pSettings.mArchFlagCXX = ['-arch armv7 -ObjC++ -stdlib=libc++ -fno-aligned-allocation ' + commonFlags, '-arch armv7s -ObjC++ -stdlib=libc++ -fno-aligned-allocation ' + commonFlags, '-arch arm64 -ObjC++ -stdlib=libc++ ' + commonFlags, '-arch i386 -ObjC++ -stdlib=libc++ ' + commonSimulatorFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ ' + commonSimulatorFlags]
-            pSettings.mArchName = pSettings.mArch
-            pSettings.mMakeFlag = ['DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
-            pSettings.mTargetSdk = ['iPhoneOS', 'iPhoneOS', 'iPhoneOS', 'iPhoneSimulator', 'iPhoneSimulator']
-
-            print('iOS toolchain path: "' + pSettings.mAppleSdkDir + '"')
         else:
             print('Error: Not supported host platform: ' + platformName + ' x86-64' if platform.machine().endswith('64') else ' x86')
             return False
@@ -371,24 +337,45 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
                 return False
 
         if hostDetected:
+            commonFlags = ' -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
+        
             pSettings.mArchFlagASM = ['-m32', '-m64']
-            pSettings.mArchFlagC = ['-m32 -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-m64 -pipe -fPIC -fno-strict-aliasing -fstack-protector']
-            pSettings.mArchFlagCXX = ['-m32 -pipe -fPIC -fno-strict-aliasing -fstack-protector', '-m64 -pipe -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagC = ['-m32' + commonFlags, '-m64' + commonFlags]
+            pSettings.mArchFlagCXX = ['-m32 -fvisibility-inlines-hidden' + commonFlags, '-m64 -fvisibility-inlines-hidden' + commonFlags]
             pSettings.mArchName = ['x86', 'x86_64']
+            pSettings.mPlatformName = ['', '']
             pSettings.mMakeFlag = ['', 'ARCH64=1']
         else:
             print('Error: Not supported host platform: ' + platformName + ' x86-64' if platform.machine().endswith('64') else ' x86')
             return False
-    elif pSettings.mBuildTarget == 'macos':
+    elif pSettings.mBuildTarget == 'apple':
         hostDetected = False
+        
+        if len(pSettings.mBuildVariant) > 0 and pSettings.mBuildVariant != 'ios' and pSettings.mBuildVariant != 'macos':
+            print('Warning: Wrong build variant. Following variants of target "' + pSettings.mBuildTarget + '" are supported: "ios", "macos".');
+            pSettings.mBuildVariant = ''
         
         if platformName == 'darwin' and platform.machine().endswith('64'):
             hostDetected = True
 
-            if executeShellCommand('xcode-select -p', False) != 0:
+            pSettings.mAppleSdkDir = receiveShellOutput('xcode-select --print-path').rstrip()
+            if not os.path.isdir(pSettings.mAppleSdkDir):
                 print('Error: \'Xcode\' not found.')
                 return False
-            
+
+            xcodeValid = False
+            xcodeVersion = re.split(' |\.', receiveShellOutput('xcodebuild -version'))
+            if len(xcodeVersion) > 1:
+                try:
+                    if int(xcodeVersion[1]) >= 12:
+                        xcodeValid = True
+                except ValueError:
+                    pass
+
+            if not xcodeValid:
+                print('Error: Xcode 12.0 or newer is required.')
+                return False
+
             pSettings.mMake = checkMake(downloadDir)
             if len(pSettings.mMake) == 0:
                 print('Error: \'Make\' not found.')
@@ -405,13 +392,23 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
                 return False
 
         if hostDetected:
-            pSettings.mArchFlagASM = ['-m64 -mmacosx-version-min=10.7']
-            pSettings.mArchFlagC = ['-m64 -ObjC -mmacosx-version-min=10.7 -pipe -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden -fvisibility-inlines-hidden']
-            pSettings.mArchFlagCXX = ['-m64 -ObjC++ -stdlib=libc++ -mmacosx-version-min=10.7 -pipe -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden -fvisibility-inlines-hidden']
-            pSettings.mArchName = ['x86_64']
-            pSettings.mMakeFlag = ['ARCH64=1']
+            iOScommonFlags = ' -D__IPHONE_OS_VERSION_MIN_REQUIRED=120400 -gdwarf-2 -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
+            iOSdeviceFlags = ' -miphoneos-version-min=12.4'
+            iOSsimulatorFlags = ' -mios-simulator-version-min=12.4'
+            macOScommonFlags = ' -gdwarf-2 -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
+
+            pSettings.mArch = ['arm64', 'arm64', 'x86_64', 'arm64', 'x86_64']
+            pSettings.mArchFlagASM = ['-arch arm64' + iOSdeviceFlags, '-arch arm64' + iOSsimulatorFlags, '-arch x86_64' + iOSsimulatorFlags, '-arch arm64 -mmacosx-version-min=11.0', '-arch x86_64 -mmacosx-version-min=10.13']
+            pSettings.mArchFlagC = ['-arch arm64 -ObjC' + iOScommonFlags + iOSdeviceFlags, '-arch arm64 -ObjC' + iOScommonFlags + iOSsimulatorFlags, '-arch x86_64 -ObjC' + iOScommonFlags + iOSsimulatorFlags, '-arch arm64 -ObjC -mmacosx-version-min=11.0' + macOScommonFlags, '-arch x86_64 -ObjC -mmacosx-version-min=10.13' + macOScommonFlags]
+            pSettings.mArchFlagCXX = ['-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + iOScommonFlags + iOSdeviceFlags, '-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + iOScommonFlags + iOSsimulatorFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + iOScommonFlags + iOSsimulatorFlags, '-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden -mmacosx-version-min=11.0' + macOScommonFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden -mmacosx-version-min=10.13' + macOScommonFlags]
+            pSettings.mArchName = pSettings.mArch
+            pSettings.mPlatformName = ['ios', 'ios-simulator', 'ios-simulator', 'macos', 'macos']
+            pSettings.mMakeFlag = ['ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1']
+            pSettings.mTargetSdk = ['iPhoneOS', 'iPhoneSimulator', 'iPhoneSimulator', '', '']
+
+            print('Toolchain path: "' + pSettings.mAppleSdkDir + '"')
         else:
-            print('Error: Not supported host platform: ' + platformName + ' x86-64' if platform.machine().endswith('64') else ' x86')
+            print('Error: Not supported host platform: ' + platformName + ' arm64/x86-64' if platform.machine().endswith('64') else ' x86')
             return False
     else:
         return False
@@ -483,10 +480,10 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
     buildDir = os.path.join(workingDir, 'build_cmake')
     remove(buildDir)
 
-    releaseBuild = False
-    for j in range(2, len(sys.argv)):
-        if sys.argv[j] == 'NDEBUG=1':
-            releaseBuild = True
+    releaseBuild = True
+    for i in range(1, len(sys.argv)):
+        if sys.argv[i] == '-debug':
+            releaseBuild = False
             break
 
     if (len(pCMakeFlag) > 0):
@@ -504,7 +501,7 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
     pCMakeFlag += '-DCMAKE_BUILD_TYPE=' + configType
 
     for i in range(0, len(pSettings.mArchName)):
-        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget, pSettings.mArchName[i])
+        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget, pSettings.mPlatformName[i], pSettings.mArchName[i])
 
         if not os.path.isdir(libraryDir):
             os.makedirs(libraryDir)
@@ -529,10 +526,10 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
         buildSuccess = False
         if pSettings.mBuildTarget == 'android':
             buildSuccess = buildCMakeAndroid(i, pSettings, cmakeFlag)
-        elif pSettings.mBuildTarget == 'ios':
-            buildSuccess = buildCMakeiOS(i, pSettings, cmakeFlag)
-        elif pSettings.mBuildTarget == 'linux' or pSettings.mBuildTarget == 'macos':
-            buildSuccess = buildCMakeGeneric(i, pSettings, cmakeFlag)
+        elif pSettings.mBuildTarget == 'linux':
+            buildSuccess = buildCMakeLinux(i, pSettings, cmakeFlag)
+        elif pSettings.mBuildTarget == 'apple':
+            buildSuccess = buildCMakeApple(i, pSettings, cmakeFlag)
         
         if buildSuccess:
             buildCommand = pSettings.mCMake + ' --build . --config ' + configType
@@ -554,11 +551,11 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
         os.chdir('..')
         remove(buildDir)
             
-        print('Build status for ' + pSettings.mArchName[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
+        print('Build status for ' + pSettings.mArchName[i] + (' (' + pSettings.mPlatformName[i] + ')' if len(pSettings.mPlatformName[i]) > 0 else '') + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
         
         status |= buildSuccess
 
-    executeLipo(pLibraryName, pSettings)
+    createXCFramework(pLibraryName, pSettings)
         
     return status
 
@@ -582,36 +579,40 @@ def buildCMakeAndroid(pIndex, pSettings, pCMakeFlag):
 
     return status
 
-def buildCMakeiOS(pIndex, pSettings, pCMakeFlag):
-    status = False
-    platformName = platform.system().lower()
-
-    toolchainPath = os.path.join(pSettings.mRootDir, 'script', 'ios.toolchain.cmake')
-    executableDir = os.path.join(pSettings.mAppleSdkDir, 'Toolchains', 'XcodeDefault.xctoolchain', 'usr', 'bin')
-    sysrootDir = os.path.join(pSettings.mAppleSdkDir, 'Platforms', pSettings.mTargetSdk[pIndex] + '.platform', 'Developer', 'SDKs', pSettings.mTargetSdk[pIndex] + '.sdk')
-    if os.path.isfile(toolchainPath) and os.path.isdir(executableDir) and os.path.isdir(sysrootDir):
-        cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -DHMS_XCODE_PATH=' + pSettings.mAppleSdkDir + ' -DHMS_TARGET=' + pSettings.mTargetSdk[pIndex] + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
-
-        if platformName == 'darwin':
-            status = executeShellCommand(cmakeCommand) == 0
-
-    return status
-
-def buildCMakeGeneric(pIndex, pSettings, pCMakeFlag):
+def buildCMakeLinux(pIndex, pSettings, pCMakeFlag):
     status = False
     platformName = platform.system().lower()
 
     toolchainPath = ''
-    if pSettings.mArchName[pIndex] == 'x86':
-        if pSettings.mBuildTarget == 'linux':
-            toolchainPath = ' -DCMAKE_TOOLCHAIN_FILE=' + os.path.join(pSettings.mRootDir, 'script', 'linux_x86.toolchain.cmake')
+    if pSettings.mBuildTarget == 'linux':
+        if pSettings.mArchName[pIndex] == 'x86':
+            toolchainPath = ' -DCMAKE_TOOLCHAIN_FILE=' + os.path.join(pSettings.mRootDir, 'script', 'linux.toolchain.cmake')
 
     cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + toolchainPath + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
 
-    if platformName == 'linux' or platformName == 'darwin':
+    if platformName == 'linux':
         status = executeShellCommand(cmakeCommand) == 0
-    elif platformName == 'windows':
-        status = executeCmdCommand(cmakeCommand, os.getcwd()) == 0
+
+    return status
+
+def buildCMakeApple(pIndex, pSettings, pCMakeFlag):
+    status = False
+    platformName = platform.system().lower()
+
+    cmakeCommand = ''
+    if (pSettings.mPlatformName[pIndex] == 'ios' or pSettings.mPlatformName[pIndex] == 'ios-simulator') and pSettings.mBuildVariant != 'macos':
+        toolchainPath = os.path.join(pSettings.mRootDir, 'script', 'ios.toolchain.cmake')
+        executableDir = os.path.join(pSettings.mAppleSdkDir, 'Toolchains', 'XcodeDefault.xctoolchain', 'usr', 'bin')
+        sysrootDir = os.path.join(pSettings.mAppleSdkDir, 'Platforms', pSettings.mTargetSdk[pIndex] + '.platform', 'Developer', 'SDKs', pSettings.mTargetSdk[pIndex] + '.sdk')
+        if os.path.isfile(toolchainPath) and os.path.isdir(executableDir) and os.path.isdir(sysrootDir):
+            cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -DHMS_XCODE_PATH=' + pSettings.mAppleSdkDir + ' -DHMS_TARGET=' + pSettings.mTargetSdk[pIndex] + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
+    elif pSettings.mPlatformName[pIndex] == 'macos' and pSettings.mBuildVariant != 'macos':
+        toolchainPath = os.path.join(pSettings.mRootDir, 'script', 'macos.toolchain.cmake')
+        if os.path.isfile(toolchainPath):
+            cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -DHMS_ARCH=' + pSettings.mArch[pIndex] + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
+
+    if platformName == 'darwin' and len(cmakeCommand) > 0:
+        status = executeShellCommand(cmakeCommand) == 0
 
     return status
 
@@ -619,14 +620,18 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
     status = False
     workingDir = os.getcwd()
     platformName = platform.system().lower()
-
-    for j in range(2, len(sys.argv)):
-        if sys.argv[j] == 'NDEBUG=1':
-            if (len(pMakeFlag) > 0):
-                pMakeFlag += ' '
-
-            pMakeFlag += 'NDEBUG=1'
+    
+    releaseBuild = True
+    for i in range(1, len(sys.argv)):
+        if sys.argv[i] == '-debug':
+            releaseBuild = False
             break
+
+    if releaseBuild:
+        if (len(pMakeFlag) > 0):
+            pMakeFlag += ' '
+
+        pMakeFlag += 'NDEBUG=1'
 
     if platformName == 'linux' or platformName == 'darwin':
         executeShellCommand(pSettings.mMake + ' clean')
@@ -634,7 +639,7 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
         executeCmdCommand(pSettings.mMake + ' clean', workingDir)
 
     for i in range(0, len(pSettings.mArchName)):
-        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget, pSettings.mArchName[i])
+        libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget, pSettings.mPlatformName[i], pSettings.mArchName[i])
 
         if not os.path.isdir(libraryDir):
             os.makedirs(libraryDir)
@@ -651,10 +656,10 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
         buildSuccess = False
         if pSettings.mBuildTarget == 'android':
             buildSuccess = buildMakeAndroid(i, pLibraryName, pSettings, pMakeFlag)
-        elif pSettings.mBuildTarget == 'ios':
-            buildSuccess = buildMakeiOS(i, pLibraryName, pSettings, pMakeFlag)
-        elif pSettings.mBuildTarget == 'linux' or pSettings.mBuildTarget == 'macos':
-            buildSuccess = buildMakeGeneric(i, pLibraryName, pSettings, pMakeFlag)
+        elif pSettings.mBuildTarget == 'linux':
+            buildSuccess = buildMakeLinux(i, pLibraryName, pSettings, pMakeFlag)
+        elif pSettings.mBuildTarget == 'apple':
+            buildSuccess = buildMakeApple(i, pLibraryName, pSettings, pMakeFlag)
 
         del os.environ['CFLAGS']
         del os.environ['CXXFLAGS']
@@ -672,11 +677,11 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
         elif platformName == 'windows':
             executeCmdCommand(pSettings.mMake + ' clean', workingDir)
 
-        print('Build status for ' + pSettings.mArchName[i] + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
+        print('Build status for ' + pSettings.mArchName[i] + (' (' + pSettings.mPlatformName[i] + ')' if len(pSettings.mPlatformName[i]) > 0 else '') + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
         
         status |= buildSuccess
 
-    executeLipo(pLibraryName, pSettings)
+    createXCFramework(pLibraryName, pSettings)
 
     return status
     
@@ -746,52 +751,7 @@ def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
         
     return status
 
-def buildMakeiOS(pIndex, pLibraryName, pSettings, pMakeFlag):
-    print('Building...')
-    status = False
-    platformName = platform.system().lower()
-
-    executableDir = os.path.join(pSettings.mAppleSdkDir, 'Toolchains', 'XcodeDefault.xctoolchain', 'usr', 'bin')
-    sysrootDir = os.path.join(pSettings.mAppleSdkDir, 'Platforms', pSettings.mTargetSdk[pIndex] + '.platform', 'Developer', 'SDKs', pSettings.mTargetSdk[pIndex] + '.sdk')
-    if os.path.isdir(executableDir) and os.path.isdir(sysrootDir):
-        os.environ['CC'] = os.path.join(executableDir, 'clang')
-        os.environ['CXX'] = os.path.join(executableDir, 'clang++')
-        os.environ['LD'] = os.path.join(executableDir, 'ld')
-        os.environ['AR'] = os.path.join(executableDir, 'ar')
-        os.environ['RANLIB'] = os.path.join(executableDir, 'ranlib')
-        os.environ['STRIP'] = os.path.join(executableDir, 'strip')
-        os.environ['CFLAGS'] = os.environ['CFLAGS'] + ' -isysroot ' + sysrootDir
-        os.environ['CXXFLAGS'] = os.environ['CXXFLAGS'] + ' -isysroot ' + sysrootDir
-
-        makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
-        
-        for j in range(0, len(pLibraryName)):
-            makeCommand += ' lib' + pLibraryName[j] + '.a'
-
-        if len(pSettings.mMakeFlag[pIndex]) > 0:
-            makeCommand += ' ' + pSettings.mMakeFlag[pIndex]
-
-        if len(pMakeFlag) > 0:
-            makeCommand += ' ' + pMakeFlag
-            
-        if len(pMakeFlag) > 0:
-            makeCommand += ' ' + pMakeFlag
-
-        if platformName == 'linux' or platformName == 'darwin':
-            status = executeShellCommand(makeCommand) == 0
-        elif platformName == 'windows':
-            status = executeCmdCommand(makeCommand, os.getcwd()) == 0
-
-        del os.environ['CC']
-        del os.environ['CXX']
-        del os.environ['LD']
-        del os.environ['AR']
-        del os.environ['RANLIB']
-        del os.environ['STRIP']
-        
-    return status
-    
-def buildMakeGeneric(pIndex, pLibraryName, pSettings, pMakeFlag):
+def buildMakeLinux(pIndex, pLibraryName, pSettings, pMakeFlag):
     print('Building...')
     status = False
     platformName = platform.system().lower()
@@ -807,30 +767,97 @@ def buildMakeGeneric(pIndex, pLibraryName, pSettings, pMakeFlag):
     if len(pMakeFlag) > 0:
         makeCommand += ' ' + pMakeFlag
 
-    if platformName == 'linux' or platformName == 'darwin':
+    if platformName == 'linux':
         status = executeShellCommand(makeCommand) == 0
-    elif platformName == 'windows':
-        status = executeCmdCommand(makeCommand, os.getcwd()) == 0
 
     return status
 
-def executeLipo(pLibraryName, pSettings):
-    if pSettings.mBuildTarget == 'ios' or pSettings.mBuildTarget == 'macos':
+def buildMakeApple(pIndex, pLibraryName, pSettings, pMakeFlag):
+    print('Building...')
+    status = False
+    platformName = platform.system().lower()
+
+    makeExecute = False
+    if (pSettings.mPlatformName[pIndex] == 'ios' or pSettings.mPlatformName[pIndex] == 'ios-simulator') and pSettings.mBuildVariant != 'macos':
+        executableDir = os.path.join(pSettings.mAppleSdkDir, 'Toolchains', 'XcodeDefault.xctoolchain', 'usr', 'bin')
+        sysrootDir = os.path.join(pSettings.mAppleSdkDir, 'Platforms', pSettings.mTargetSdk[pIndex] + '.platform', 'Developer', 'SDKs', pSettings.mTargetSdk[pIndex] + '.sdk')
+        if os.path.isdir(executableDir) and os.path.isdir(sysrootDir):
+            os.environ['CC'] = os.path.join(executableDir, 'clang')
+            os.environ['CXX'] = os.path.join(executableDir, 'clang++')
+            os.environ['LD'] = os.path.join(executableDir, 'ld')
+            os.environ['AR'] = os.path.join(executableDir, 'ar')
+            os.environ['RANLIB'] = os.path.join(executableDir, 'ranlib')
+            os.environ['STRIP'] = os.path.join(executableDir, 'strip')
+            os.environ['CFLAGS'] = os.environ['CFLAGS'] + ' -isysroot ' + sysrootDir
+            os.environ['CXXFLAGS'] = os.environ['CXXFLAGS'] + ' -isysroot ' + sysrootDir
+            makeExecute = True
+    if pSettings.mPlatformName[pIndex] == 'macos' and pSettings.mBuildVariant != 'ios':
+        makeExecute = True
+
+    if makeExecute:
+        makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
+        
+        for j in range(0, len(pLibraryName)):
+            makeCommand += ' lib' + pLibraryName[j] + '.a'
+
+        if len(pSettings.mMakeFlag[pIndex]) > 0:
+            makeCommand += ' ' + pSettings.mMakeFlag[pIndex]
+
+        if len(pMakeFlag) > 0:
+            makeCommand += ' ' + pMakeFlag
+
+        if platformName == 'darwin' and makeExecute:
+            status = executeShellCommand(makeCommand) == 0
+
+        if pSettings.mPlatformName[pIndex] == 'ios' or pSettings.mPlatformName[pIndex] == 'ios-simulator':
+            del os.environ['CC']
+            del os.environ['CXX']
+            del os.environ['LD']
+            del os.environ['AR']
+            del os.environ['RANLIB']
+            del os.environ['STRIP']
+        
+    return status
+
+def createXCFramework(pLibraryName, pSettings):
+    if pSettings.mBuildTarget == 'apple':
         libraryDir = os.path.join(pSettings.mLibDir, 'lib', pSettings.mBuildTarget)
 
+        uniquePlatformNames = []
+        for j in range(0, len(pSettings.mPlatformName)):
+            if not pSettings.mPlatformName[j] in uniquePlatformNames:
+                uniquePlatformNames.append(pSettings.mPlatformName[j])
+
         for i in range(0, len(pLibraryName)):
-            remove(os.path.join(libraryDir, 'lib' + pLibraryName[i] + '.a'))
+            remove(os.path.join(libraryDir, pLibraryName[i] + '.xcframework'))
 
-            lipoCommand = 'lipo -create -output ' + os.path.join(libraryDir, 'lib' + pLibraryName[i] + '.a')
-            lipoLibraries = ''
+            for j in range(0, len(uniquePlatformNames)):
+                platformDir = os.path.join(libraryDir, uniquePlatformNames[j])
 
-            for j in range(0, len(pSettings.mArchName)):
-                libraryFile = os.path.join(libraryDir, pSettings.mArchName[j], 'lib' + pLibraryName[i] + '.a')                
-                if os.path.isfile(libraryFile):
-                    lipoLibraries += ' ' + os.path.join(libraryDir, pSettings.mArchName[j], 'lib' + pLibraryName[i] + '.a')
+                command = 'lipo -create -output ' + os.path.join(platformDir, 'lib' + pLibraryName[i] + '.a')
+                parameters = ''
 
-            if len(lipoLibraries) > 0:
-                executeShellCommand(lipoCommand + lipoLibraries)
+                archNames = [d for d in os.listdir(platformDir) if os.path.isdir(os.path.join(platformDir, d))]
+                for k in range(0, len(archNames)):
+                    archDir = os.path.join(platformDir, archNames[k])
+                    archFile = os.path.join(archDir, 'lib' + pLibraryName[i] + '.a')
+                    if os.path.isfile(archFile):
+                        parameters += ' ' + archFile
 
-        for i in range(0, len(pSettings.mArchName)):
-            remove(os.path.join(libraryDir, pSettings.mArchName[i]))
+                if len(parameters) > 0:
+                    executeShellCommand(command + parameters)
+
+            command = 'xcodebuild -create-xcframework -output ' + os.path.join(libraryDir, pLibraryName[i] + '.xcframework')
+            parameters = ''
+
+            for j in range(0, len(uniquePlatformNames)):
+                platformDir = os.path.join(libraryDir, uniquePlatformNames[j])
+                platformFile = os.path.join(platformDir, 'lib' + pLibraryName[i] + '.a')
+                if os.path.isfile(platformFile):
+                    parameters += ' -library ' + platformFile
+
+            if len(parameters) > 0:
+                executeShellCommand(command + parameters)
+
+        for i in range(0, len(uniquePlatformNames)):
+            remove(os.path.join(libraryDir, uniquePlatformNames[i]))

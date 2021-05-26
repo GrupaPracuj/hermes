@@ -12,21 +12,23 @@ ifneq ($(OS),Windows_NT)
 			CXXFLAGS += -m32
 			LDFLAGS += -L../../lib/linux/x86
 		endif
-		POSTLDFLAGS := -lssl -lcrypto -pthread
+		LDFLAGS += -lhmsextserializer -lhermes -laes -lcurl -ljsoncpp -lzlib -lssl -lcrypto -pthread
     endif
     ifeq ($(PLATFORM_NAME),Darwin)
-        CXXFLAGS += -m64 -fno-aligned-allocation -fvisibility=hidden -fvisibility-inlines-hidden
+        CXXFLAGS += -m64 -mmacosx-version-min=11.0
 		LDFLAGS += -F/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks \
-			-L../../lib/macos -framework CoreFoundation -framework Cocoa -framework Security
+			-L../../lib/apple/aes.xcframework/macos-arm64_x86_64 -L../../lib/apple/curl.xcframework/macos-arm64_x86_64 \
+			-L../../lib/apple/hermes.xcframework/macos-arm64_x86_64 -L../../lib/apple/hmsextgzipreader.xcframework/macos-arm64_x86_64 \
+			-L../../lib/apple/hmsextmodule.xcframework/macos-arm64_x86_64 -L../../lib/apple/hmsextserializer.xcframework/macos-arm64_x86_64 \
+			-L../../lib/apple/jsoncpp.xcframework/macos-arm64_x86_64 -L../../lib/apple/zlib.xcframework/macos-arm64_x86_64 \
+			-framework CoreFoundation -framework Cocoa -framework Security -lhmsextserializer -lhermes -laes -lcurl -ljsoncpp -lzlib
     endif
 endif
 
 SRCFILES = $(wildcard *.cpp)
 OBJFILES = $(SRCFILES:%.cpp=%.o)
 
-CXXFLAGS += -std=c++17 -fPIC -fno-strict-aliasing -fstack-protector -I. -I../.. -I../../include -I../../depend/jsoncpp/include
-
-LDFLAGS += -lhmsextserializer -lhermes -laes -lcurl -ljsoncpp -lz -lzlib $(POSTLDFLAGS)
+CXXFLAGS += -std=c++17 -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden -fvisibility-inlines-hidden -I. -I../.. -I../../include -I../../depend/jsoncpp/include
 
 ifndef NDEBUG
 CXXFLAGS += -g -D_DEBUG=1 -DDEBUG=1
@@ -40,7 +42,7 @@ $(APPLICATION_NAME): $(OBJFILES)
 	$(CXX) $(OBJFILES) $(LDFLAGS) -o $@
 
 %.d:%.cpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MM -MF $@ $<
+	$(CXX) $(CXXFLAGS) -MM -MF $@ $<
 
 ifneq ($(MAKECMDGOALS), clean)
 -include $(OBJFILES:.o=.d)

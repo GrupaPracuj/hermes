@@ -1,8 +1,8 @@
 import os
 import shutil
 
-libraryVersion = 'ecc18ad5ec857f2511b6bdd3f06e7584ae95fb21'#'7.74.0'
-libraryName = 'ecc18ad5ec857f2511b6bdd3f06e7584ae95fb21'
+libraryVersion = '7.76.1'
+libraryName = 'curl-' + libraryVersion
 
 buildCommonFile = os.path.join('..', '..', 'script', 'build_common.py')
 exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, mode = 'exec'))
@@ -10,7 +10,7 @@ exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, 
 settings = Settings()
 
 if configure(settings, os.path.join('..', '..')):
-    if downloadAndExtract('https://codeload.github.com/curl/curl/zip/' + libraryName, '', libraryName + '.zip', ''):
+    if downloadAndExtract('https://curl.haxx.se/download/' + libraryName + '.zip', '', libraryName + '.zip', ''):
         remove('include')
 
         enableSSL = os.path.isdir(os.path.join('..', 'libressl', 'include', 'openssl'))
@@ -28,7 +28,7 @@ if configure(settings, os.path.join('..', '..')):
                 settings.mArchFlagC[i] += '-I' + includeSSL
 
             flagSSL = '-DCMAKE_USE_OPENSSL=OFF -DSSL_ENABLED=ON -DUSE_OPENSSL=ON -DHAVE_LIBCRYPTO=ON -DHAVE_LIBSSL=ON'
-        elif settings.mBuildTarget == 'ios' or settings.mBuildTarget == 'macos':
+        elif settings.mBuildTarget == 'apple':
             flagSSL = '-DCMAKE_USE_SECTRANSP=ON -DCURL_CA_FALLBACK=ON'
         else:
             flagSSL = '-DCMAKE_USE_OPENSSL=OFF'
@@ -39,7 +39,7 @@ if configure(settings, os.path.join('..', '..')):
                 outputLibraryName = 'curl'
                 break
                 
-        os.chdir('curl-' + libraryName)
+        os.chdir(libraryName)
         if buildCMake(['curl'], settings, flagSSL + ' -DCURL_CA_BUNDLE=\'none\' -DCURL_CA_PATH=\'none\' -DBUILD_SHARED_LIBS=OFF -DHTTP_ONLY=ON -DBUILD_CURL_EXE=OFF -DBUILD_TESTING=OFF -DENABLE_MANUAL=OFF', False, 'lib', [outputLibraryName]):
             includePath = os.path.join('include', 'curl')
             shutil.copytree(includePath, os.path.join('..', includePath))
