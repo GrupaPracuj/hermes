@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.4.1)
 
+project(helloworld)
+
 SET(CMAKE_CXX_FLAGS_DEBUG "-g -D_DEBUG=1 -DDEBUG=1")
 SET(CMAKE_CXX_FLAGS_RELEASE "-g -O2 -DNDEBUG=1")
 
