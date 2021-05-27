@@ -8,7 +8,7 @@ UserData::UserData(size_t pId) : hms::DataShared(pId)
 {
 };
 
-HelloWorld::HelloWorld(std::function<void(std::function<void()>)> pMainThreadHandler, std::pair<hms::ENetworkCertificate, std::string> pCertificate)
+HelloWorld::HelloWorld(std::function<void(std::function<void()>)> pMainThreadHandler, std::function<std::pair<hms::ENetworkCertificate, std::string>()> pCertificateProvider)
 {
     auto logger = hms::Hermes::getInstance()->getLogger();
     logger->initialize(hms::ELogLevel::Info, "HelloWorld", nullptr);
@@ -23,7 +23,7 @@ HelloWorld::HelloWorld(std::function<void(std::function<void()>)> pMainThreadHan
     taskManager->initialize({threadInfo}, pMainThreadHandler);
 
     auto networkManager = hms::Hermes::getInstance()->getNetworkManager();
-    networkManager->initialize(10, threadInfo.first, threadInfo.first, std::move(pCertificate));
+    networkManager->initialize(10, threadInfo.first, threadInfo.first, pCertificateProvider != nullptr ? pCertificateProvider() : std::make_pair(hms::ENetworkCertificate::None, ""));
 
     auto jphNetwork = networkManager->add(static_cast<size_t>(ENetworkAPI::JsonPlaceholder), "JsonPlaceholder", "https://jsonplaceholder.typicode.com/");
     jphNetwork->setDefaultHeader({{"Content-Type", "application/json; charset=utf-8"}});

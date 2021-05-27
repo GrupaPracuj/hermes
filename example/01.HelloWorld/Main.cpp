@@ -36,7 +36,10 @@ int main(int pArgumentsCount, char* pArguments[])
     {
         std::lock_guard<std::mutex> lock(mainThreadMutex);
         mainThreadTasks.push(std::move(lpTask));
-    }, {hms::ENetworkCertificate::Path, "./certificate.pem"});
+    }, []() -> std::pair<hms::ENetworkCertificate, std::string>
+    {
+        return {hms::ENetworkCertificate::Path, "./certificate.pem"};
+    });
 
     for (int32_t i = 1; i < 8; ++i)
     {

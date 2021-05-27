@@ -6,13 +6,15 @@ extern "C" JNIEXPORT jobject JNICALL Java_pl_grupapracuj_hermes_helloworld_Activ
 {
     hms::ext::jni::Utility::initialize(pEnvironment, pClassLoader);
 
-    auto dataManager = hms::Hermes::getInstance()->getDataManager();
-    dataManager->initialize();
-    dataManager->addStorageReader(std::make_unique<hms::ext::jni::AAssetStorageReader>(pEnvironment, pAssetManager, "assets/"));
+    auto helloWorld = std::make_shared<HelloWorld>(nullptr, [pEnvironment, pAssetManager]() -> std::pair<hms::ENetworkCertificate, std::string>
+    {
+        std::string content;
+        auto dataManager = hms::Hermes::getInstance()->getDataManager();
+        dataManager->addStorageReader(std::make_unique<hms::ext::jni::AAssetStorageReader>(pEnvironment, pAssetManager, "assets/"));
+        dataManager->readFile("assets/certificate.pem", content);
 
-    std::string certificate;
-    dataManager->readFile("assets/certificate.pem", certificate);
-    auto helloWorld = std::make_shared<HelloWorld>(nullptr, std::make_pair(hms::ENetworkCertificate::Content, std::move(certificate)));
+        return {hms::ENetworkCertificate::Content, std::move(content)};
+    });
 
     return hms::ext::jni::Utility::convert(pEnvironment, hms::ext::jni::ObjectNativeWrapper(helloWorld));
 }
