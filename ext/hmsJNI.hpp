@@ -76,12 +76,26 @@ namespace jni
         template<typename T>
         static jobject create(T pObject, JNIEnv* pEnvironment, jclass pClass = nullptr)
         {
-            auto container = new Container<T>();
-            container->mObject = std::move(pObject);
+            jobject result = nullptr;
 
-            auto result = object(reinterpret_cast<jlong>(container), pEnvironment, pClass);
-            if (result == nullptr)
-                delete container;
+            auto container = new (std::nothrow) Container<T>();
+            if (container != nullptr)
+            {
+                container->mObject = std::move(pObject);
+
+                try
+                {
+                    result = object(static_cast<void*>(container), pEnvironment, pClass);
+                }
+                catch (const std::exception& lpException)
+                {
+                    delete container;
+                    throw;
+                }
+
+                if (result == nullptr)
+                    delete container;
+            }
 
             return result;
         }
@@ -95,9 +109,6 @@ namespace jni
         template<typename T>
         static T& get(jlong pPointer)
         {
-            if (pPointer <= 0)
-                throw std::invalid_argument("hmsJNI: parameter is null");
-
             auto container = reinterpret_cast<Container<T>*>(pPointer);
             return container->mObject;
         }
@@ -119,7 +130,7 @@ namespace jni
             T mObject;
         };
 
-        static jobject object(jlong pPointer, JNIEnv* pEnvironment, jclass pClass);
+        static jobject object(void* pObject, JNIEnv* pEnvironment, jclass pClass);
         static jlong pointer(jobject pObject, JNIEnv* pEnvironment);
     };
 
@@ -360,16 +371,7 @@ namespace jni
         template <typename T>
         static std::shared_ptr<T> module(jlong pPointer, typename std::enable_if_t<std::is_base_of<hms::ext::ModuleShared, T>::value>* = nullptr)
         {
-            std::shared_ptr<T> result = nullptr;
-
-            try
-            {
-                if (pPointer > 0)
-                    result = std::static_pointer_cast<T>(hms::ext::jni::ObjectNative::get<std::weak_ptr<hms::ext::ModuleShared>>(pPointer).lock());
-            }
-            catch (const std::exception& lpException) {}
-
-            return result;
+            return std::static_pointer_cast<T>(hms::ext::jni::ObjectNative::get<std::weak_ptr<hms::ext::ModuleShared>>(pPointer).lock());
         }
 
         template <typename C = Utility, typename T>
@@ -381,29 +383,13 @@ namespace jni
         template <typename C = Utility, typename T>
         static jobject convert(JNIEnv* pEnvironment, hms::ext::jni::ObjectNativeWrapper<T>&& pValue)
         {
-            jobject result = nullptr;
-
-            try
-            {
-                result = hms::ext::jni::ObjectNative::create<T>(std::move(pValue.mData), pEnvironment, mClasses[static_cast<size_t>(EClass::pl_grupapracuj_hermes_ext_jni_ObjectNative)].first);
-            }
-            catch (const std::exception& lpException) {}
-
-            return result;
+            return hms::ext::jni::ObjectNative::create<T>(std::move(pValue.mData), pEnvironment, mClasses[static_cast<size_t>(EClass::pl_grupapracuj_hermes_ext_jni_ObjectNative)].first);
         }
 
         template <typename C = Utility, typename T>
         static jobject convert(JNIEnv* pEnvironment, const hms::ext::jni::ObjectNativeWrapper<T>& pValue)
         {
-            jobject result = nullptr;
-
-            try
-            {
-                result = hms::ext::jni::ObjectNative::create<T>(pValue.mData, pEnvironment, mClasses[static_cast<size_t>(EClass::pl_grupapracuj_hermes_ext_jni_ObjectNative)].first);
-            }
-            catch (const std::exception& lpException) {}
-
-            return result;
+            return hms::ext::jni::ObjectNative::create<T>(pValue.mData, pEnvironment, mClasses[static_cast<size_t>(EClass::pl_grupapracuj_hermes_ext_jni_ObjectNative)].first);
         }
 
         template <typename C = Utility, typename T>

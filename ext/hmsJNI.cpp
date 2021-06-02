@@ -8,8 +8,7 @@
 
 extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_ext_jni_ObjectNative_nativeDestroy(JNIEnv* pEnvironment, jobject pObject, jlong pPointer)
 {
-    if (pPointer > 0)
-        delete reinterpret_cast<hms::ext::jni::ObjectNative::ContainerGeneric*>(pPointer);
+    delete reinterpret_cast<hms::ext::jni::ObjectNative::ContainerGeneric*>(pPointer);
 }
 
 namespace hms
@@ -191,10 +190,10 @@ namespace jni
 
     /* ObjectNative */
 
-    jobject ObjectNative::object(jlong pPointer, JNIEnv* pEnvironment, jclass pClass)
+    jobject ObjectNative::object(void* pObject, JNIEnv* pEnvironment, jclass pClass)
     {
-        if (pPointer <= 0 || pEnvironment == nullptr)
-            throw std::invalid_argument("hmsJNI: one or more parameter is null");
+        if (pEnvironment == nullptr)
+            throw std::invalid_argument("hmsJNI: parameter is null");
 
         bool deleteLocalRef = false;
         jclass classJNI = pClass;
@@ -238,7 +237,7 @@ namespace jni
                 throw std::runtime_error("hmsJNI: JNI method 'NewObject' failed");
             }
 
-            pEnvironment->SetLongField(result, fieldPointerJNI, pPointer);
+            pEnvironment->SetLongField(result, fieldPointerJNI, reinterpret_cast<jlong>(pObject));
             if (pEnvironment->ExceptionCheck())
             {
                 if (deleteLocalRef)

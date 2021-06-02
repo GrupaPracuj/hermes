@@ -5,14 +5,18 @@
 package pl.grupapracuj.hermes.ext.jni;
 
 public class ObjectNative {
+    private boolean mDestroy = true;
     private long mPointer = 0;
 
-    public ObjectNative() {
+    private ObjectNative() {
     }
 
     public void destroy() {
-        nativeDestroy(mPointer);
-        mPointer = 0;
+        if (mDestroy) {
+            nativeDestroy(mPointer);
+            mPointer = 0;
+            mDestroy = false;
+        }
     }
 
     public long pointer() {
