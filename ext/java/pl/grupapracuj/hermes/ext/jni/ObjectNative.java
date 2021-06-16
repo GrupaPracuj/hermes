@@ -5,21 +5,24 @@
 package pl.grupapracuj.hermes.ext.jni;
 
 public class ObjectNative {
-    private boolean mDestroy = true;
+    private boolean mInvalid = false;
     private long mPointer = 0;
 
     private ObjectNative() {
     }
 
     public void destroy() {
-        if (mDestroy) {
+        if (!mInvalid) {
             nativeDestroy(mPointer);
             mPointer = 0;
-            mDestroy = false;
+            mInvalid = true;
         }
     }
 
     public long pointer() {
+        if (mInvalid)
+            throw new IllegalStateException("hmsJNI: pointer was invalidated");
+
         return mPointer;
     }
 
