@@ -1520,8 +1520,12 @@ namespace hms
                     multiRequestData[i].mErrorBuffer.resize(CURL_ERROR_SIZE);
                     multiRequestData[i].mErrorBuffer[0] = 0;
 
-                    curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_HEADERFUNCTION, CURL_HEADER_CALLBACK);
                     curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_PRIVATE, &multiRequestData[i]);
+                    curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_HEADERFUNCTION, CURL_HEADER_CALLBACK);
+                    if (strongThis->mCertificate->mType == ENetworkCertificate::Path)
+                        curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_CAINFO, strongThis->mCertificate->mData.c_str());
+                    else if (strongThis->mCertificate->mType == ENetworkCertificate::Content)
+                        curl_easy_setopt(multiRequestData[i].mHandle, CURLOPT_CAINFO_BLOB, &strongThis->mCertificate->mBlob);
                     
                     auto uniqueHeader = strongThis->createUniqueHeader(param[i].mHeader);
 
