@@ -26,5 +26,9 @@ public class ObjectNative {
         return mPointer;
     }
 
+    public boolean valid() {
+        return !mInvalid;
+    }
+
     private native void nativeDestroy(long pPointer);
 }
