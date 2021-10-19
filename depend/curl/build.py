@@ -1,7 +1,7 @@
 import os
 import shutil
 
-libraryVersion = '7.77.0'
+libraryVersion = '7.79.1'
 libraryName = 'curl-' + libraryVersion
 
 buildCommonFile = os.path.join('..', '..', 'script', 'build_common.py')
