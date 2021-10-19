@@ -292,20 +292,20 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
 
             try:
                 with open(os.path.join(pSettings.mAndroidNdkDir, 'source.properties'), 'r') as fileSourceProperties:
-                    if not re.compile(r'^Pkg\.Desc = Android NDK\nPkg\.Revision = (19|[2-9]\d|[1-9]\d{2,})\.([0-9]+)\.([0-9]+)(-beta([0-9]+))?').match(fileSourceProperties.read()):
+                    if not re.compile(r'^Pkg\.Desc = Android NDK\nPkg\.Revision = (2[2-9]|[3-9]\d|[1-9]\d{2,})\.([0-9]+)\.([0-9]+)(-beta([0-9]+))?').match(fileSourceProperties.read()):
                         validNdk = False
             except:
                 validNdk = False
 
             if not validNdk:
-                print('Error: Android NDK 19 or newer is required.')
+                print('Error: Android NDK 22 or newer is required.')
                 return False
             
             pSettings.mHostTag = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
             pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
-            pSettings.mArchFlagASM = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt']
-            pSettings.mArchFlagC = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -fPIC -fno-strict-aliasing -fstack-protector', '-fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -fPIC -fno-strict-aliasing -fstack-protector']
-            pSettings.mArchFlagCXX = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -fPIC -fno-strict-aliasing -fstack-protector', '-fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -mtune=intel -msse3 -mfpmath=sse -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -mtune=intel -msse4.2 -mpopcnt -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagASM = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -msse3 -mfpmath=sse', '-march=x86-64 -m64 -msse4.2 -mpopcnt']
+            pSettings.mArchFlagC = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -fPIC -fno-strict-aliasing -fstack-protector', '-fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -msse3 -mfpmath=sse -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -msse4.2 -mpopcnt -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagCXX = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -fPIC -fno-strict-aliasing -fstack-protector', '-fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -msse3 -mfpmath=sse -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -msse4.2 -mpopcnt -fPIC -fno-strict-aliasing -fstack-protector']
             pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
             pSettings.mPlatformName = ['', '', '', '']
             pSettings.mMakeFlag = ['DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
@@ -699,20 +699,21 @@ def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
         toolchainDir = os.path.join(toolchainDir, 'windows-x86_64', 'bin')
 
     if os.path.isdir(toolchainDir):
-        executablePrefix = os.path.join(toolchainDir, pSettings.mHostTag[pIndex])
+        llvmPrefix = os.path.join(toolchainDir, 'llvm')
+        if pSettings.mHostTag[pIndex] != 'arm-linux-androideabi':
+            clangPrefix = os.path.join(toolchainDir, pSettings.mHostTag[pIndex])
+        else:
+            clangPrefix = os.path.join(toolchainDir, 'armv7a-linux-androideabi')
 
         androidApi = pSettings.mAndroidApi
         if (int(androidApi) < 21 and (pSettings.mArchName[pIndex] == 'arm64-v8a' or pSettings.mArchName[pIndex] == 'x86_64')):
             androidApi = '21'
             print('Force Android API: \"21\" for architecture \"' + pSettings.mArchName[pIndex] + '\".')
 
-        os.environ['LD'] = executablePrefix + '-ld'
-        os.environ['AR'] = executablePrefix + '-ar'
-        os.environ['RANLIB'] = executablePrefix + '-ranlib'
-        os.environ['STRIP'] = executablePrefix + '-strip'
-
-        if pSettings.mHostTag[pIndex] == 'arm-linux-androideabi':
-            executablePrefix = os.path.join(toolchainDir, 'armv7a-linux-androideabi')
+        os.environ['LD'] = llvmPrefix + '-ld'
+        os.environ['AR'] = llvmPrefix + '-ar'
+        os.environ['RANLIB'] = llvmPrefix + '-ranlib'
+        os.environ['STRIP'] = llvmPrefix + '-strip'
 
         cxxSuffix = '-clang++'
         ccSuffix = '-clang'
@@ -720,8 +721,8 @@ def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
             cxxSuffix += '.cmd'
             ccSuffix += '.cmd'
 
-        os.environ['CXX'] = executablePrefix + androidApi + cxxSuffix
-        os.environ['CC'] = executablePrefix + androidApi + ccSuffix
+        os.environ['CXX'] = clangPrefix + androidApi + cxxSuffix
+        os.environ['CC'] = clangPrefix + androidApi + ccSuffix
 
         makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
         
