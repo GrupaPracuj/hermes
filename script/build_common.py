@@ -598,7 +598,7 @@ def buildCMakeApple(pIndex, pSettings, pCMakeFlag):
         sysrootDir = os.path.join(pSettings.mAppleSdkDir, 'Platforms', pSettings.mTargetSdk[pIndex] + '.platform', 'Developer', 'SDKs', pSettings.mTargetSdk[pIndex] + '.sdk')
         if os.path.isfile(toolchainPath) and os.path.isdir(executableDir) and os.path.isdir(sysrootDir):
             cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -DHMS_XCODE_PATH=' + pSettings.mAppleSdkDir + ' -DHMS_TARGET=' + pSettings.mTargetSdk[pIndex] + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
-    elif pSettings.mPlatformName[pIndex] == 'macos' and pSettings.mBuildVariant != 'macos':
+    elif pSettings.mPlatformName[pIndex] == 'macos' and pSettings.mBuildVariant != 'ios':
         toolchainPath = os.path.join(pSettings.mRootDir, 'script', 'macos.toolchain.cmake')
         if os.path.isfile(toolchainPath):
             cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -DHMS_ARCH=' + pSettings.mArch[pIndex] + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
