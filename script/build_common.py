@@ -420,22 +420,18 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
     return True
 
 def executeShellCommand(pCommandLine, pShowOutput = True):
-    process = subprocess.Popen(pCommandLine, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)        
+    process = subprocess.Popen(pCommandLine, stderr = subprocess.PIPE, shell = True)
     output, error = process.communicate()
     returnCode = process.wait()
     
     if pShowOutput:
-        returnText = output.decode()
-        if len(returnText) > 0:
-            print(returnText)
-
-        if returnCode != 0:
-            print('Error message:\n' + error.decode("utf-8"))
+        if returnCode != 0 and len(error) > 0:
+            print('\nError message:\n' + error.decode("utf-8"))
     
     return returnCode
 
 def receiveShellOutput(pCommandLine):
-    process = subprocess.Popen(pCommandLine, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True)        
+    process = subprocess.Popen(pCommandLine, stdout = subprocess.PIPE, shell = True)
     output, error = process.communicate()
     process.wait()
     
@@ -447,17 +443,13 @@ def executeCmdCommand(pCommandLine, pWorkingDir, pShowOutput = True):
     exit
     """
 
-    process = subprocess.Popen(["cmd", "/q", "/k", "echo off"], stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = pWorkingDir, shell = True)
+    process = subprocess.Popen(["cmd", "/q", "/k", "echo off"], stdin = subprocess.PIPE, stderr = subprocess.PIPE, cwd = pWorkingDir, shell = True)
     process.stdin.write(commandLine)
     output, error = process.communicate()
     returnCode = process.wait()
     
     if pShowOutput:
-        returnText = output.decode()
-        if len(returnText) > 0:
-            print(returnText)
-
-        if returnCode != 0:
+        if returnCode != 0 and len(error) > 0:
             print('Error message:\n' + error.decode("utf-8"))
     
     return returnCode
@@ -551,7 +543,7 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
         os.chdir('..')
         remove(buildDir)
             
-        print('Build status for ' + pSettings.mArchName[i] + (' (' + pSettings.mPlatformName[i] + ')' if len(pSettings.mPlatformName[i]) > 0 else '') + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
+        print('\nBuild status for ' + pSettings.mArchName[i] + (' (' + pSettings.mPlatformName[i] + ')' if len(pSettings.mPlatformName[i]) > 0 else '') + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
         
         status |= buildSuccess
 
@@ -677,7 +669,7 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
         elif platformName == 'windows':
             executeCmdCommand(pSettings.mMake + ' clean', workingDir)
 
-        print('Build status for ' + pSettings.mArchName[i] + (' (' + pSettings.mPlatformName[i] + ')' if len(pSettings.mPlatformName[i]) > 0 else '') + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
+        print('\nBuild status for ' + pSettings.mArchName[i] + (' (' + pSettings.mPlatformName[i] + ')' if len(pSettings.mPlatformName[i]) > 0 else '') + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
         
         status |= buildSuccess
 
