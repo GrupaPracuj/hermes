@@ -15,7 +15,7 @@ This software is provided 'as is' with no explicit or implied warranties
 in respect of its operation, including, but not limited to, correctness
 and fitness for purpose.
 ---------------------------------------------------------------------------
-Issue Date: 20/12/2007
+Issue Date: 02/09/2018
 
  This file contains the definitions required to use AES in C. See aesopt.h
  for optimisation details.
@@ -38,7 +38,13 @@ extern "C"
 #define AES_192     /* if a fast 192 bit key scheduler is needed     */
 #define AES_256     /* if a fast 256 bit key scheduler is needed     */
 #define AES_VAR     /* if variable key size scheduler is needed      */
-#define AES_MODES   /* if support is needed for modes                */
+#if 1
+#  define AES_MODES /* if support is needed for modes in the C code  */
+#endif              /* (these will use AES_NI if it is present)      */
+#if 0               /* add this to make direct calls to the AES_NI   */
+#                   /* implemented CBC and CTR modes available       */
+#   define ADD_AESNI_MODE_CALLS
+#endif
 
 /* The following must also be set in assembler files if being used   */
 
@@ -73,6 +79,13 @@ typedef union
     uint8_t b[4];
 } aes_inf;
 
+/* Macros for detecting whether a given context was initialized for  */
+/* use with encryption or decryption code. These should only be used */
+/* by e.g. language bindings which lose type information when the    */
+/* context pointer is passed to the calling language's runtime.      */
+#define IS_ENCRYPTION_CTX(cx) (((cx)->inf.b[2] & (uint8_t)0x01) == 1)
+#define IS_DECRYPTION_CTX(cx) (((cx)->inf.b[2] & (uint8_t)0x01) == 0)
+
 #ifdef _MSC_VER
 #  pragma warning( disable : 4324 )
 #endif
@@ -88,12 +101,10 @@ typedef union
 typedef struct ALIGNED_(16)
 {   uint32_t ks[KS_LENGTH];
     aes_inf inf;
-} aes_encrypt_ctx;
+} aes_crypt_ctx;
 
-typedef struct ALIGNED_(16)
-{   uint32_t ks[KS_LENGTH];
-    aes_inf inf;
-} aes_decrypt_ctx;
+typedef aes_crypt_ctx aes_encrypt_ctx;
+typedef aes_crypt_ctx aes_decrypt_ctx;
 
 #ifdef _MSC_VER
 #  pragma warning( default : 4324 )
@@ -207,10 +218,6 @@ AES_RETURN aes_ctr_crypt(const unsigned char *ibuf, unsigned char *obuf,
 
 #endif
 
-#if 0
-#  define ADD_AESNI_MODE_CALLS
-#endif
-
 #if 0 && defined( ADD_AESNI_MODE_CALLS )
 #  define USE_AES_CONTEXT
 #endif
@@ -253,7 +260,7 @@ void aes_CBC_decrypt(const unsigned char *in,
     unsigned char *key,
     int number_of_rounds);
 
-void AES_CTR_encrypt(const unsigned char *in,
+void aes_CTR_encrypt(const unsigned char *in,
     unsigned char *out,
     const unsigned char ivec[8],
     const unsigned char nonce[4],

@@ -51,11 +51,11 @@ extern "C"
 #if ( FUNCS_IN_C & ENCRYPTION_IN_C )
 
 /* Visual C++ .Net v7.1 provides the fastest encryption code when using
-   Pentium optimiation with small code but this is poor for decryption
+   Pentium optimisation with small code but this is poor for decryption
    so we need to control this with the following VC++ pragmas
 */
 
-#if defined( _MSC_VER ) && !defined( _WIN64 )
+#if defined( _MSC_VER ) && !defined( _WIN64 ) && !defined( __clang__ )
 #pragma optimize( "s", on )
 #endif
 
@@ -136,7 +136,7 @@ AES_RETURN aes_xi(encrypt)(const unsigned char *in, unsigned char *out, const ae
 
 #if (ENC_UNROLL == PARTIAL)
     {   uint32_t    rnd;
-        for(rnd = 0; rnd < (cx->inf.b[0] >> 5) - 1; ++rnd)
+        for(rnd = 0; rnd < (cx->inf.b[0] >> 5) - 1ul; ++rnd)
         {
             kp += N_COLS;
             round(fwd_rnd, b1, b0, kp);
@@ -147,7 +147,7 @@ AES_RETURN aes_xi(encrypt)(const unsigned char *in, unsigned char *out, const ae
         round(fwd_rnd,  b1, b0, kp);
 #else
     {   uint32_t    rnd;
-        for(rnd = 0; rnd < (cx->inf.b[0] >> 4) - 1; ++rnd)
+        for(rnd = 0; rnd < (cx->inf.b[0] >> 4) - 1ul; ++rnd)
         {
             kp += N_COLS;
             round(fwd_rnd, b1, b0, kp);
@@ -168,11 +168,11 @@ AES_RETURN aes_xi(encrypt)(const unsigned char *in, unsigned char *out, const ae
 #if ( FUNCS_IN_C & DECRYPTION_IN_C)
 
 /* Visual C++ .Net v7.1 provides the fastest encryption code when using
-   Pentium optimiation with small code but this is poor for decryption
+   Pentium optimisation with small code but this is poor for decryption
    so we need to control this with the following VC++ pragmas
 */
 
-#if defined( _MSC_VER ) && !defined( _WIN64 )
+#if defined( _MSC_VER ) && !defined( _WIN64 ) && !defined( __clang__ )
 #pragma optimize( "t", on )
 #endif
 
@@ -212,7 +212,7 @@ AES_RETURN aes_xi(encrypt)(const unsigned char *in, unsigned char *out, const ae
 #endif
 
 /* This code can work with the decryption key schedule in the   */
-/* order that is used for encrytpion (where the 1st decryption  */
+/* order that is used for encryption (where the 1st decryption  */
 /* round key is at the high end ot the schedule) or with a key  */
 /* schedule that has been reversed to put the 1st decryption    */
 /* round key at the low end of the schedule in memory (when     */
@@ -267,7 +267,7 @@ AES_RETURN aes_xi(decrypt)(const unsigned char *in, unsigned char *out, const ae
 
 #if (DEC_UNROLL == PARTIAL)
     {   uint32_t    rnd;
-        for(rnd = 0; rnd < (cx->inf.b[0] >> 5) - 1; ++rnd)
+        for(rnd = 0; rnd < (cx->inf.b[0] >> 5) - 1ul; ++rnd)
         {
             kp = rnd_key(1);
             round(inv_rnd, b1, b0, kp);
@@ -278,7 +278,7 @@ AES_RETURN aes_xi(decrypt)(const unsigned char *in, unsigned char *out, const ae
         round(inv_rnd, b1, b0, kp);
 #else
     {   uint32_t    rnd;
-        for(rnd = 0; rnd < (cx->inf.b[0] >> 4) - 1; ++rnd)
+        for(rnd = 0; rnd < (cx->inf.b[0] >> 4) - 1ul; ++rnd)
         {
             kp = rnd_key(1);
             round(inv_rnd, b1, b0, kp);

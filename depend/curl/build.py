@@ -1,7 +1,7 @@
 import os
 import shutil
 
-libraryVersion = '7.79.1'
+libraryVersion = '7.81.0'
 libraryName = 'curl-' + libraryVersion
 
 buildCommonFile = os.path.join('..', '..', 'script', 'build_common.py')
@@ -27,11 +27,11 @@ if configure(settings, os.path.join('..', '..')):
                 
                 settings.mArchFlagC[i] += '-I' + includeSSL
 
-            flagSSL = '-DCMAKE_USE_OPENSSL=OFF -DSSL_ENABLED=ON -DUSE_OPENSSL=ON -DHAVE_LIBCRYPTO=ON -DHAVE_LIBSSL=ON'
+            flagSSL = '-DCURL_USE_OPENSSL=OFF -DSSL_ENABLED=ON -DUSE_OPENSSL=ON -DHAVE_LIBCRYPTO=ON -DHAVE_LIBSSL=ON'
         elif settings.mBuildTarget == 'apple':
-            flagSSL = '-DCMAKE_USE_SECTRANSP=ON -DCURL_CA_FALLBACK=ON'
+            flagSSL = '-DCURL_USE_SECTRANSP=ON -DCURL_CA_FALLBACK=ON'
         else:
-            flagSSL = '-DCMAKE_USE_OPENSSL=OFF'
+            flagSSL = '-DCURL_USE_OPENSSL=OFF'
 
         outputLibraryName = 'curl'
         for i in range(1, len(sys.argv)):
