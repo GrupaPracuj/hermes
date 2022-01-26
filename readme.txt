@@ -17,7 +17,7 @@ DESCRIPTION:
 
 VERSION:
 
-  1.3.0
+  1.3.1
 
 SUPPORTED PLATFORMS:
 
@@ -27,7 +27,7 @@ LICENSE:
 
   zlib
 
-CREDITS:
+CONTRIBUTORS:
 
   Patryk Nadrowski <nadro-linux@wp.pl>
   Sebastian Markowski <kansaidragon@gmail.com>

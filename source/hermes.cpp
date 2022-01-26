@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2021 Grupa Pracuj S.A.
+// Copyright (C) 2017-2022 Grupa Pracuj S.A.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -11,7 +11,7 @@ Hermes::Hermes()
 {
     mVersion[0] = 1;
     mVersion[1] = 3;
-    mVersion[2] = 0;
+    mVersion[2] = 1;
     
     mDataManager = new DataManager();
     mNetworkManager = std::shared_ptr<NetworkManager>(new NetworkManager(), std::bind(&Hermes::invokeDelete<NetworkManager>, std::placeholders::_1));
