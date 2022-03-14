@@ -70,7 +70,7 @@ def checkCMake(pDestinationDir):
     if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/cmake'):
         return '/usr/bin/cmake'
 
-    packageVersion = '3.20.2'
+    packageVersion = '3.22.3'
     packageName = 'cmake-' + packageVersion
     packageExtension = ''
     applicationName = ''
@@ -393,8 +393,8 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
 
         if hostDetected:
             iOScommonFlags = ' -D__IPHONE_OS_VERSION_MIN_REQUIRED=120400 -gdwarf-2 -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
-            iOSdeviceFlags = ' -miphoneos-version-min=12.4'
-            iOSsimulatorFlags = ' -mios-simulator-version-min=12.4'
+            iOSdeviceFlags = ' -miphoneos-version-min=13.0'
+            iOSsimulatorFlags = ' -mios-simulator-version-min=13.0'
             macOScommonFlags = ' -gdwarf-2 -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
 
             pSettings.mArch = ['arm64', 'arm64', 'x86_64', 'arm64', 'x86_64']
@@ -562,7 +562,7 @@ def buildCMakeAndroid(pIndex, pSettings, pCMakeFlag):
             androidApi = '21'
             print('Force Android API: \"21\" for architecture \"' + pSettings.mArchName[pIndex] + '\".')
 
-        cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DANDROID_ABI=' + pSettings.mArchName[pIndex] + ' -DANDROID_NATIVE_API_LEVEL=' + androidApi + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
+        cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DANDROID_ABI=' + pSettings.mArchName[pIndex] + ' -DANDROID_PLATFORM=' + androidApi + ' -DANDROID_NATIVE_API_LEVEL=' + androidApi + ' -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
 
         if platformName == 'linux' or platformName == 'darwin':
             status = executeShellCommand(cmakeCommand) == 0
