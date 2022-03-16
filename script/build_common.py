@@ -67,8 +67,8 @@ def checkCMake(pDestinationDir):
     print('Check \'CMake\'...')
 
     platformName = platform.system().lower()
-    if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/cmake'):
-        return '/usr/bin/cmake'
+    if (platformName == 'linux' or platformName == 'darwin') and checkShellCommand('cmake --version'):
+        return 'cmake'
 
     packageVersion = '3.22.3'
     packageName = 'cmake-' + packageVersion
@@ -119,8 +119,8 @@ def checkMake(pDestinationDir):
 
     platformName = platform.system().lower()
     if (platformName == 'linux' or platformName == 'darwin'):
-        if os.path.isfile('/usr/bin/make'):
-            return '/usr/bin/make'
+        if checkShellCommand('make --version'):
+            return 'make'
         else:
             return ''
 
@@ -157,8 +157,8 @@ def checkNinja(pDestinationDir):
     print('Check \'Ninja\'...')
 
     platformName = platform.system().lower()
-    if (platformName == 'linux' or platformName == 'darwin') and os.path.isfile('/usr/bin/ninja'):
-        return '/usr/bin/ninja'
+    if (platformName == 'linux' or platformName == 'darwin') and checkShellCommand('ninja --version'):
+        return 'ninja'
 
     packageVersion = '1.10.2'
     packageName = 'ninja'
@@ -418,6 +418,12 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
     print('Available CPU cores: ' + pSettings.mCoreCount)
     
     return True
+
+def checkShellCommand(pCommandLine):
+    process = subprocess.Popen(pCommandLine, stdout = open(os.devnull, 'w'), stderr = subprocess.PIPE, shell = True)
+    process.wait()
+
+    return process.returncode == 0
 
 def executeShellCommand(pCommandLine, pShowOutput = True):
     process = subprocess.Popen(pCommandLine, stderr = subprocess.PIPE, shell = True)
