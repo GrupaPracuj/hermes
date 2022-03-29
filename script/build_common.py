@@ -392,7 +392,7 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
                 return False
 
         if hostDetected:
-            iOScommonFlags = ' -D__IPHONE_OS_VERSION_MIN_REQUIRED=120400 -gdwarf-2 -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
+            iOScommonFlags = ' -D__IPHONE_OS_VERSION_MIN_REQUIRED=130000 -gdwarf-2 -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
             iOSdeviceFlags = ' -miphoneos-version-min=13.0'
             iOSsimulatorFlags = ' -mios-simulator-version-min=13.0'
             macOScommonFlags = ' -gdwarf-2 -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
