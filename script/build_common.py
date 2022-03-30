@@ -303,9 +303,9 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
             
             pSettings.mHostTag = ['arm-linux-androideabi', 'aarch64-linux-android', 'i686-linux-android', 'x86_64-linux-android']
             pSettings.mArch = ['android-armeabi', 'android64-aarch64', 'android-x86', 'android64']
-            pSettings.mArchFlagASM = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '', '-march=i686 -m32 -msse3 -mfpmath=sse', '-march=x86-64 -m64 -msse4.2 -mpopcnt']
-            pSettings.mArchFlagC = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -fPIC -fno-strict-aliasing -fstack-protector', '-fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -msse3 -mfpmath=sse -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -msse4.2 -mpopcnt -fPIC -fno-strict-aliasing -fstack-protector']
-            pSettings.mArchFlagCXX = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -fPIC -fno-strict-aliasing -fstack-protector', '-fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -msse3 -mfpmath=sse -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -msse4.2 -mpopcnt -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagASM = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon', '-march=armv8-a', '-march=i686 -m32 -msse3 -mfpmath=sse', '-march=x86-64 -m64 -msse4.2 -mpopcnt']
+            pSettings.mArchFlagC = ['-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -fPIC -fno-strict-aliasing -fstack-protector', '-march=armv8-a -fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -m32 -msse3 -mfpmath=sse -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -m64 -msse4.2 -mpopcnt -fPIC -fno-strict-aliasing -fstack-protector']
+            pSettings.mArchFlagCXX = ['-march=armv7-a -std=c++17 -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon -fPIC -fno-strict-aliasing -fstack-protector', '-march=armv8-a -std=c++17 -fPIC -fno-strict-aliasing -fstack-protector', '-march=i686 -std=c++17 -m32 -msse3 -mfpmath=sse -fPIC -fno-strict-aliasing -fstack-protector', '-march=x86-64 -std=c++17 -m64 -msse4.2 -mpopcnt -fPIC -fno-strict-aliasing -fstack-protector']
             pSettings.mArchName = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
             pSettings.mPlatformName = ['', '', '', '']
             pSettings.mMakeFlag = ['DSYM=1', 'ARCH64=1 DSYM=1', 'DSYM=1', 'ARCH64=1 DSYM=1']
@@ -341,7 +341,7 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
         
             pSettings.mArchFlagASM = ['-m32', '-m64']
             pSettings.mArchFlagC = ['-m32' + commonFlags, '-m64' + commonFlags]
-            pSettings.mArchFlagCXX = ['-m32 -fvisibility-inlines-hidden' + commonFlags, '-m64 -fvisibility-inlines-hidden' + commonFlags]
+            pSettings.mArchFlagCXX = ['-std=c++17 -m32 -fvisibility-inlines-hidden' + commonFlags, '-std=c++17 -m64 -fvisibility-inlines-hidden' + commonFlags]
             pSettings.mArchName = ['x86', 'x86_64']
             pSettings.mPlatformName = ['', '']
             pSettings.mMakeFlag = ['', 'ARCH64=1']
@@ -392,7 +392,7 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
                 return False
 
         if hostDetected:
-            iOScommonFlags = ' -D__IPHONE_OS_VERSION_MIN_REQUIRED=130000 -gdwarf-2 -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
+            iOScommonFlags = ' -gdwarf-2 -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden -D__IPHONE_OS_VERSION_MIN_REQUIRED=130000'
             iOSdeviceFlags = ' -miphoneos-version-min=13.0'
             iOSsimulatorFlags = ' -mios-simulator-version-min=13.0'
             macOScommonFlags = ' -gdwarf-2 -fPIC -fno-strict-aliasing -fstack-protector -fvisibility=hidden'
@@ -400,7 +400,7 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
             pSettings.mArch = ['arm64', 'arm64', 'x86_64', 'arm64', 'x86_64']
             pSettings.mArchFlagASM = ['-arch arm64' + iOSdeviceFlags, '-arch arm64' + iOSsimulatorFlags, '-arch x86_64' + iOSsimulatorFlags, '-arch arm64 -mmacosx-version-min=11.0', '-arch x86_64 -mmacosx-version-min=10.13']
             pSettings.mArchFlagC = ['-arch arm64 -ObjC' + iOScommonFlags + iOSdeviceFlags, '-arch arm64 -ObjC' + iOScommonFlags + iOSsimulatorFlags, '-arch x86_64 -ObjC' + iOScommonFlags + iOSsimulatorFlags, '-arch arm64 -ObjC -mmacosx-version-min=11.0' + macOScommonFlags, '-arch x86_64 -ObjC -mmacosx-version-min=10.13' + macOScommonFlags]
-            pSettings.mArchFlagCXX = ['-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + iOScommonFlags + iOSdeviceFlags, '-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + iOScommonFlags + iOSsimulatorFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden' + iOScommonFlags + iOSsimulatorFlags, '-arch arm64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden -mmacosx-version-min=11.0' + macOScommonFlags, '-arch x86_64 -ObjC++ -stdlib=libc++ -fvisibility-inlines-hidden -mmacosx-version-min=10.13' + macOScommonFlags]
+            pSettings.mArchFlagCXX = ['-arch arm64 -std=c++17 -ObjC++ -fvisibility-inlines-hidden' + iOScommonFlags + iOSdeviceFlags, '-arch arm64 -std=c++17 -ObjC++ -fvisibility-inlines-hidden' + iOScommonFlags + iOSsimulatorFlags, '-arch x86_64 -std=c++17 -ObjC++ -fvisibility-inlines-hidden' + iOScommonFlags + iOSsimulatorFlags, '-arch arm64 -std=c++17 -ObjC++ -fvisibility-inlines-hidden -mmacosx-version-min=11.0' + macOScommonFlags, '-arch x86_64 -std=c++17 -ObjC++ -fvisibility-inlines-hidden -mmacosx-version-min=10.13' + macOScommonFlags]
             pSettings.mArchName = pSettings.mArch
             pSettings.mPlatformName = ['ios', 'ios-simulator', 'ios-simulator', 'macos', 'macos']
             pSettings.mMakeFlag = ['ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1', 'ARCH64=1 DSYM=1']
