@@ -2,8 +2,8 @@
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
-#ifndef _LOGGER_HPP_
-#define _LOGGER_HPP_
+#ifndef _HMS_LOGGER_HPP_
+#define _HMS_LOGGER_HPP_
 
 #include <string>
 #include <vector>

@@ -14,87 +14,6 @@
 namespace hms
 {
 
-    /* DataBuffer */
-    
-    DataBuffer::DataBuffer(size_t pCapacity) : mCapacity(pCapacity), mSize(0), mData(mCapacity > 0 ? new unsigned char[mCapacity] : nullptr)
-    {
-    }
-    
-    DataBuffer::DataBuffer(const DataBuffer& pOther) : mCapacity(pOther.mCapacity), mSize(pOther.mSize), mData(mCapacity > 0 ? new unsigned char[mCapacity] : nullptr)
-    {
-        std::copy(pOther.mData, pOther.mData + mSize, mData);
-    }
-    
-    DataBuffer::DataBuffer(DataBuffer&& pOther) : DataBuffer()
-    {
-        swap(*this, pOther);
-    }
-    
-    DataBuffer::~DataBuffer()
-    {
-        delete[] mData;
-    }
-    
-    DataBuffer& DataBuffer::operator=(DataBuffer pOther)
-    {
-        swap(*this, pOther);
-        
-        return *this;
-    }
-    
-    void DataBuffer::clear()
-    {
-        mSize = 0;
-    }
-    
-    const void* DataBuffer::data() const
-    {
-        return mData;
-    }
-    
-    void DataBuffer::pop_back(size_t pCount, bool pShrinkToFit)
-    {
-        if (pCount != 0)
-        {
-            mSize = pCount < mSize ? mSize - pCount : 0;
-            
-            if (pShrinkToFit)
-                reallocate(mSize);
-        }
-    }
-    
-    size_t DataBuffer::size() const
-    {
-        return mSize;
-    }
-    
-    void DataBuffer::reallocate(size_t pCapacity)
-    {
-        if (pCapacity != mCapacity)
-        {
-            if (pCapacity > 0)
-            {
-                unsigned char* data = new unsigned char[pCapacity];
-                const size_t size = std::min(mSize, pCapacity);
-                
-                if (size > 0)
-                    std::copy(mData, mData + size, data);
-                
-                delete[] mData;
-                mData = data;
-                mSize = size;
-            }
-            else
-            {
-                delete[] mData;
-                mData = nullptr;
-                mSize = 0;
-            }
-            
-            mCapacity = pCapacity;
-        }
-    }
-    
     /* DataShared */
     
     DataShared::DataShared(size_t pId) : mId(pId), mCryptoMode(crypto::ECryptoMode::None)
@@ -184,7 +103,7 @@ namespace hms
         return writeCount;
     }
     
-    size_t FileWriter::write(const DataBuffer& pBuffer)
+    size_t FileWriter::write(const std::vector<uint8_t>& pBuffer)
     {
         size_t writeCount = 0;
         
@@ -309,7 +228,7 @@ namespace hms
         return writeCount;
     }
     
-    size_t MemoryWriter::write(const DataBuffer& pBuffer)
+    size_t MemoryWriter::write(const std::vector<uint8_t>& pBuffer)
     {
         size_t writeCount = 0;
         
@@ -420,12 +339,12 @@ namespace hms
         }
     }
     
-    void FileReader::read(DataBuffer& pBuffer)
+    void FileReader::read(std::vector<uint8_t>& pBuffer)
     {
         read(pBuffer, mSize - mPosition);
     }
     
-    void FileReader::read(DataBuffer& pBuffer, size_t pSize)
+    void FileReader::read(std::vector<uint8_t>& pBuffer, size_t pSize)
     {
         if (mStream.is_open())
         {
@@ -437,7 +356,7 @@ namespace hms
             do
             {
                 mStream.read(buff, static_cast<std::streamsize>(std::min(pSize - read, readMaxSize)));
-                pBuffer.push_back(buff, static_cast<size_t>(mStream.gcount()));
+                pBuffer.insert(pBuffer.end(), buff, buff + static_cast<size_t>(mStream.gcount()));
                 read += static_cast<size_t>(mStream.gcount());
                 
                 if (!mStream.good())
@@ -547,19 +466,19 @@ namespace hms
         }
     }
     
-    void MemoryReader::read(DataBuffer& pBuffer)
+    void MemoryReader::read(std::vector<uint8_t>& pBuffer)
     {
         read(pBuffer, mSize - mPosition);
     }
     
-    void MemoryReader::read(DataBuffer& pBuffer, size_t pSize)
+    void MemoryReader::read(std::vector<uint8_t>& pBuffer, size_t pSize)
     {
         if (mBuffer != nullptr)
         {
             size_t readCount = mPosition + pSize > mSize ? mSize - mPosition : pSize;
             if (readCount > 0)
             {
-                pBuffer.push_back(reinterpret_cast<const char*>(mBuffer) + mPosition, readCount);
+                pBuffer.insert(pBuffer.end(), reinterpret_cast<const char*>(mBuffer) + mPosition, reinterpret_cast<const char*>(mBuffer) + mPosition + readCount);
                 mPosition += readCount;
             }
         }
@@ -879,7 +798,7 @@ namespace hms
         return status;
     }
     
-    bool DataManager::readFile(const std::string& pFileName, DataBuffer& pDataBuffer, crypto::ECryptoMode pCryptoMode) const
+    bool DataManager::readFile(const std::string& pFileName, std::vector<uint8_t>& pDataBuffer, crypto::ECryptoMode pCryptoMode) const
     {
         assert(pFileName.size() > 0);
         
@@ -902,7 +821,7 @@ namespace hms
                     eofCount++;
         
                 if (eofCount != 0)
-                    pDataBuffer.pop_back(eofCount);
+                    pDataBuffer.erase(pDataBuffer.end() - eofCount, pDataBuffer.end());
                 
                 // TODO find reliable way to clear strings without compiler optimizing it away
                 key.clear();
@@ -955,14 +874,14 @@ namespace hms
         return status;
     }
     
-    bool DataManager::writeFile(const std::string& pFileName, const DataBuffer& pDataBuffer, crypto::ECryptoMode pCryptoMode, bool pClearContent) const
+    bool DataManager::writeFile(const std::string& pFileName, const std::vector<uint8_t>& pDataBuffer, crypto::ECryptoMode pCryptoMode, bool pClearContent) const
     {
         assert(pFileName.size() > 0);
         
         bool status = false;
         auto writer = getDataWriter(pFileName, !pClearContent);
-        const DataBuffer* dataBufferPtr = &pDataBuffer;
-        DataBuffer tmpDataBuffer;
+        const std::vector<uint8_t>* dataBufferPtr = &pDataBuffer;
+        std::vector<uint8_t> tmpDataBuffer;
         
         if (writer->isOpen())
         {
@@ -977,7 +896,7 @@ namespace hms
                 {
                     tmpDataBuffer = *dataBufferPtr;
                     const std::string fill(blockLength - fillCount, '\x03');
-                    tmpDataBuffer.push_back(fill.data(), fill.size());
+                    tmpDataBuffer.insert(tmpDataBuffer.end(), fill.begin(), fill.end());
                     dataBufferPtr = &tmpDataBuffer;
                 }
                 

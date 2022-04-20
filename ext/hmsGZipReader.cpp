@@ -106,7 +106,7 @@ namespace ext
                         const uint8_t extra = 1 << 2;
                         const uint8_t fileName = 1 << 3;
                         const uint8_t comment = 1 << 4;
-                        DataBuffer compressedData;
+                        std::vector<uint8_t> compressedData;
                         uint32_t crc = 0;
                         uint32_t uncompressedSize = 0;
                         auto readUntilZero = [](DataReader& lpReader) -> void
@@ -145,7 +145,7 @@ namespace ext
                         {
                             const size_t chunkSize = 1024 * 256;
                             Bytef chunk[chunkSize];
-                            DataBuffer output;
+                            std::vector<uint8_t> output;
                             
                             z_stream stream;
                             stream.zalloc = Z_NULL;
@@ -165,8 +165,8 @@ namespace ext
                                     
                                     if (!(error == Z_OK || error == Z_STREAM_END))
                                         break;
-                                    
-                                    output.push_back(chunk, chunkSize - stream.avail_out);
+
+                                    output.insert(output.end(), chunk, chunk + (chunkSize - stream.avail_out));
                                 }
                                 while (stream.avail_out == 0 && error != Z_STREAM_END);
 
@@ -175,7 +175,7 @@ namespace ext
                             
                             if (error != Z_STREAM_END)
                             {
-                                Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "Gzip decompress error %", error);
+                                Hermes::getInstance()->getLogger()->print(ELogLevel::Error, "gzip decompress error %", error);
                             }
                             else
                             {

@@ -124,12 +124,12 @@ namespace jni
             pText.resize(offset + readBytes);
     }
 
-    void AAssetReader::read(DataBuffer& pBuffer)
+    void AAssetReader::read(std::vector<uint8_t>& pBuffer)
     {
         read(pBuffer, static_cast<size_t>(AAsset_getRemainingLength(mAsset)));
     }
 
-    void AAssetReader::read(DataBuffer& pBuffer, size_t pSize)
+    void AAssetReader::read(std::vector<uint8_t>& pBuffer, size_t pSize)
     {
         const size_t size = getSize();
         const size_t position = getPosition();
@@ -145,7 +145,7 @@ namespace jni
             if (r < 0)
                 break;
         
-            pBuffer.push_back(buff, static_cast<size_t>(r));
+            pBuffer.insert(pBuffer.end(), buff, buff + static_cast<size_t>(r));
             read += r;
         }
         while (read < readCount);

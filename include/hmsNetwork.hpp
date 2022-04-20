@@ -2,10 +2,8 @@
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
-#ifndef _NETWORK_HPP_
-#define _NETWORK_HPP_
-
-#include "hmsData.hpp"
+#ifndef _HMS_NETWORK_HPP_
+#define _HMS_NETWORK_HPP_
 
 #include <array>
 #include <atomic>
@@ -108,7 +106,7 @@ namespace hms
         int32_t mHttpCode = -1;
         std::vector<std::pair<std::string, std::string>> mHeader;
         std::string mMessage;
-        DataBuffer mRawData;
+        std::vector<uint8_t> mRawData;
         std::unique_ptr<NetworkResponseDataTaskBackground> mDataTaskBackground;
         std::string mMethod;
     };
@@ -459,7 +457,7 @@ namespace hms
         public:
             std::vector<std::pair<std::string, std::string>> mResponseHeader;
             std::string mResponseMessage;
-            DataBuffer mResponseRawData;
+            std::vector<uint8_t> mResponseRawData;
             ProgressData mProgressData;
             void* mHandle = nullptr;
             std::vector<char> mErrorBuffer;
@@ -487,7 +485,7 @@ namespace hms
         
         std::vector<std::pair<std::string, std::string>> createUniqueHeader(const std::vector<std::pair<std::string, std::string>>& pHeader) const;
 
-        void configureHandle(void* pHandle, ENetworkRequest pRequestType, ENetworkResponse pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody, std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader, int64_t pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer) const;
+        void configureHandle(void* pHandle, ENetworkRequest pRequestType, ENetworkResponse pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody, std::string* pResponseMessage, std::vector<uint8_t>* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader, int64_t pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer) const;
         
         void resetHandle(void* pHandle) const;
         

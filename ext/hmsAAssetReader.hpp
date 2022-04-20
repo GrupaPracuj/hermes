@@ -6,6 +6,7 @@
 #define _HMS_AASSET_READER_HPP_
 
 #include "hmsData.hpp"
+
 #include <android/asset_manager_jni.h>
 
 namespace hms
@@ -58,8 +59,8 @@ namespace jni
         virtual size_t read(void* pBuffer, size_t pSize) override;
         virtual void read(std::string& pText) override;
         virtual void read(std::string& pText, size_t pSize) override;
-        virtual void read(DataBuffer& pBuffer) override;
-        virtual void read(DataBuffer& pBuffer, size_t pSize) override;
+        virtual void read(std::vector<uint8_t>& pBuffer) override;
+        virtual void read(std::vector<uint8_t>& pBuffer, size_t pSize) override;
         
         virtual bool seek(int64_t pPosition, bool pRelative = false) override;
         

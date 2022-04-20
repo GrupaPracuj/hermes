@@ -4,8 +4,6 @@
 
 #include "hmsJNI.hpp"
 
-#include "hmsData.hpp"
-
 extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_ext_jni_ObjectNative_nativeDestroy(JNIEnv* pEnvironment, jobject pObject, jlong pPointer)
 {
     delete reinterpret_cast<hms::ext::jni::ObjectNative::ContainerGeneric*>(pPointer);
@@ -367,15 +365,6 @@ namespace jni
         pEnvironment->DeleteLocalRef(jClassLoaderClass);
 
         return true;
-    }
-
-    jbyteArray Utility::convertHmsDataBuffer(JNIEnv* pEnvironment, const hms::DataBuffer& pValue)
-    {
-        jbyteArray jArray = pEnvironment->NewByteArray(static_cast<jsize>(pValue.size()));
-        if (pValue.size() != 0)
-            pEnvironment->SetByteArrayRegion(jArray, 0, static_cast<jsize>(pValue.size()), static_cast<const jbyte*>(pValue.data()));
-
-        return jArray;
     }
 
     std::string Utility::jconvert(JNIEnv* pEnvironment, jstring pValue)

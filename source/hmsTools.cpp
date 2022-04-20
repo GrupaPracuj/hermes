@@ -165,13 +165,13 @@ namespace crypto
 {
     // base64 code from http://www.adp-gmbh.ch/cpp/common/base64.html
     
-    std::string encodeBase64(unsigned char const* bytes_to_encode, size_t in_len)
+    std::string encodeBase64(uint8_t const* bytes_to_encode, size_t in_len)
     {
         std::string ret;
         int i = 0;
         int j = 0;
-        unsigned char char_array_3[3];
-        unsigned char char_array_4[4];
+        uint8_t char_array_3[3];
+        uint8_t char_array_4[4];
         
         const std::string base64_chars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -540,7 +540,7 @@ namespace crypto
         // TODO: make proper crypto random generator
         std::string data(pLength, 0);
         
-        std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char> engine;
+        std::independent_bits_engine<std::default_random_engine, CHAR_BIT, uint8_t> engine;
         engine.seed(std::chrono::high_resolution_clock::now().time_since_epoch().count());
         
         std::generate(data.begin(), data.end(), std::ref(engine));
@@ -548,22 +548,22 @@ namespace crypto
         return data;
     }
     
-    std::vector<unsigned char> cbc_encrypt(const unsigned char* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV)
+    std::vector<uint8_t> cbc_encrypt(const uint8_t* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV)
     {
-        std::vector<unsigned char> result;
+        std::vector<uint8_t> result;
         const size_t blockLength = 16;
         
         if (pDataSize % blockLength == 0)
         {
             aes_encrypt_ctx context[1];
-            aes_encrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
+            aes_encrypt_key256(reinterpret_cast<const uint8_t*>(pKey.c_str()), context);
             
             auto currBuffer = pData;
-            unsigned char outBuffer[blockLength] = {0};
+            uint8_t outBuffer[blockLength] = {0};
             size_t offset = 0;
             
             for (size_t i = 0; i < blockLength; ++i)
-                outBuffer[i] = static_cast<unsigned char>(pIV[i]);
+                outBuffer[i] = static_cast<uint8_t>(pIV[i]);
             
             while (offset + blockLength <= pDataSize)
             {
@@ -585,18 +585,18 @@ namespace crypto
         return result;
     }
     
-    std::vector<unsigned char> cbc_decrypt(const unsigned char* pData, size_t pDataSize, const std::string pKey, const std::string pIV)
+    std::vector<uint8_t> cbc_decrypt(const uint8_t* pData, size_t pDataSize, const std::string pKey, const std::string pIV)
     {
-        std::vector<unsigned char> result;
+        std::vector<uint8_t> result;
         const size_t blockLength = 16;
         
         if (pDataSize % blockLength == 0)
         {
             aes_decrypt_ctx context[1];
-            aes_decrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
+            aes_decrypt_key256(reinterpret_cast<const uint8_t*>(pKey.c_str()), context);
             
-            auto prevBuffer = reinterpret_cast<const unsigned char*>(pIV.c_str());
-            unsigned char outBuffer[blockLength] = {0};
+            auto prevBuffer = reinterpret_cast<const uint8_t*>(pIV.c_str());
+            uint8_t outBuffer[blockLength] = {0};
             size_t offset = 0;
             result.reserve(pDataSize);
             
@@ -620,18 +620,18 @@ namespace crypto
         return result;
     }
     
-    std::vector<unsigned char> ofb_crypt(const unsigned char* pData, size_t pDataSize, const std::string pKey, const std::string pIV)
+    std::vector<uint8_t> ofb_crypt(const uint8_t* pData, size_t pDataSize, const std::string pKey, const std::string pIV)
     {
-        std::vector<unsigned char> result;
+        std::vector<uint8_t> result;
         const size_t blockLength = 16;
         
         if (pDataSize >= blockLength)
         {
             aes_encrypt_ctx context[1];
-            aes_encrypt_key256(reinterpret_cast<const unsigned char*>(pKey.c_str()), context);
+            aes_encrypt_key256(reinterpret_cast<const uint8_t*>(pKey.c_str()), context);
             
-            unsigned char outBuffer[blockLength] = {0};
-            unsigned char iv[blockLength];
+            uint8_t outBuffer[blockLength] = {0};
+            uint8_t iv[blockLength];
             memcpy(iv, pIV.c_str(), blockLength);
             result.reserve(pDataSize);
             
@@ -659,9 +659,9 @@ namespace crypto
         return result;
     }
     
-    std::vector<unsigned char> encrypt(const unsigned char* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV, ECryptoMode pMode)
+    std::vector<uint8_t> encrypt(const uint8_t* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV, ECryptoMode pMode)
     {
-        std::vector<unsigned char> result;
+        std::vector<uint8_t> result;
         const size_t blockLength = 16;
         
         if (pKey.size() == 32 && pIV.size() == 16 && pDataSize >= blockLength)
@@ -688,9 +688,9 @@ namespace crypto
         return result;
     }
     
-    std::vector<unsigned char> decrypt(const unsigned char* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV, ECryptoMode pMode)
+    std::vector<uint8_t> decrypt(const uint8_t* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV, ECryptoMode pMode)
     {
-        std::vector<unsigned char> result;
+        std::vector<uint8_t> result;
         const size_t blockLength = 16;
         
         if (pKey.size() == 32 && pIV.size() == 16 && pDataSize >= blockLength)
@@ -719,30 +719,26 @@ namespace crypto
     
     std::string encrypt(const std::string& pData, const std::string& pKey, const std::string& pIV, ECryptoMode pMode)
     {
-        auto result = encrypt(reinterpret_cast<const unsigned char*>(pData.data()), pData.size(), pKey, pIV, pMode);
-        return std::string(reinterpret_cast<char*>(result.data()), result.size());
+        auto data = encrypt(reinterpret_cast<const uint8_t*>(pData.data()), pData.size(), pKey, pIV, pMode);
+        return std::string(reinterpret_cast<char*>(data.data()), data.size());
     }
     
-    DataBuffer encrypt(const DataBuffer& pData, const std::string& pKey, const std::string& pIV, ECryptoMode pMode)
+    std::vector<uint8_t> encrypt(const std::vector<uint8_t>& pBuffer, const std::string& pKey, const std::string& pIV, ECryptoMode pMode)
     {
-        auto result = encrypt(reinterpret_cast<const unsigned char*>(pData.data()), pData.size(), pKey, pIV, pMode);
-        DataBuffer buffer;
-        buffer.push_back(result.data(), result.size());
-        return buffer;
+        auto data = encrypt(pBuffer.data(), pBuffer.size(), pKey, pIV, pMode);        
+        return std::vector<uint8_t>(data.begin(), data.end());
     }
     
     std::string decrypt(const std::string& pData, const std::string& pKey, const std::string& pIV, ECryptoMode pMode)
     {
-        auto result = decrypt(reinterpret_cast<const unsigned char*>(pData.data()), pData.size(), pKey, pIV, pMode);
-        return std::string(reinterpret_cast<char*>(result.data()), result.size());
+        auto data = decrypt(reinterpret_cast<const uint8_t*>(pData.data()), pData.size(), pKey, pIV, pMode);
+        return std::string(reinterpret_cast<char*>(data.data()), data.size());
     }
     
-    DataBuffer decrypt(const DataBuffer& pData, const std::string& pKey, const std::string& pIV, ECryptoMode pMode)
+    std::vector<uint8_t> decrypt(const std::vector<uint8_t>& pBuffer, const std::string& pKey, const std::string& pIV, ECryptoMode pMode)
     {
-        auto result = decrypt(reinterpret_cast<const unsigned char*>(pData.data()), pData.size(), pKey, pIV, pMode);
-        DataBuffer buffer;
-        buffer.push_back(result.data(), result.size());
-        return buffer;
+        auto data = decrypt(pBuffer.data(), pBuffer.size(), pKey, pIV, pMode);
+        return std::vector<uint8_t>(data.begin(), data.end());
     }
 }
 }

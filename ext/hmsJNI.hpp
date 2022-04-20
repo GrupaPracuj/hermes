@@ -9,16 +9,16 @@
 
 #include <array>
 #include <cassert>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_ext_jni_ObjectNative_nativeDestroy(JNIEnv* pEnvironment, jobject pObject, jlong pPointer);
 
 namespace hms
 {
-    class DataBuffer;
-
 namespace ext
 {
     class ModuleShared;
@@ -691,9 +691,21 @@ namespace jni
         }
 
         template <typename C = Utility, typename T>
-        static jbyteArray convert(JNIEnv* pEnvironment, T&& pValue, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, hms::DataBuffer>>* = nullptr)
+        static jbyteArray convert(JNIEnv* pEnvironment, const std::vector<T>& pValue, typename std::enable_if_t<sizeof(T) == sizeof(jbyte) && (std::is_same_v<T, jbyte> || std::is_same_v<T, int8_t> || std::is_same_v<T, uint8_t> || std::is_enum_v<T>)>* = nullptr)
         {
-            return convertHmsDataBuffer(pEnvironment, pValue);
+            jbyteArray jArray = pEnvironment->NewByteArray(static_cast<jsize>(pValue.size()));
+            pEnvironment->SetByteArrayRegion(jArray, 0, static_cast<jsize>(pValue.size()), reinterpret_cast<const jbyte*>(pValue.data()));
+
+            return jArray;
+        }
+
+        template <typename C = Utility, typename T>
+        static jshortArray convert(JNIEnv* pEnvironment, const std::vector<T>& pValue, typename std::enable_if_t<sizeof(T) == sizeof(jshort) && (std::is_same_v<T, jshort> || std::is_same_v<T, int16_t> || std::is_same_v<T, uint16_t> || std::is_enum_v<T>)>* = nullptr)
+        {
+            jshortArray jArray = pEnvironment->NewShortArray(static_cast<jsize>(pValue.size()));
+            pEnvironment->SetShortArrayRegion(jArray, 0, static_cast<jsize>(pValue.size()), static_cast<const jshort*>(pValue.data()));
+
+            return jArray;
         }
 
         template <typename C = Utility, typename T>
@@ -715,14 +727,14 @@ namespace jni
         }
 
         template <typename C = Utility, typename T>
-        static jobjectArray convert(JNIEnv* pEnvironment, std::vector<T>&& pValue, typename std::enable_if_t<std::is_same_v<T, std::string> || std::is_same_v<T, hms::DataBuffer> || is_pair<T>::value || is_tuple<T>::value>* = nullptr)
+        static jobjectArray convert(JNIEnv* pEnvironment, std::vector<T>&& pValue, typename std::enable_if_t<std::is_same_v<T, std::string> || std::is_same_v<T, std::vector<int8_t>> || std::is_same_v<T, std::vector<uint8_t>> || is_pair<T>::value || is_tuple<T>::value>* = nullptr)
         {
             jclass jClass = nullptr;
             if constexpr(std::is_same<T, std::string>::value)
             {
                 jClass = mClasses[static_cast<size_t>(EClass::java_lang_String)].first;
             }
-            else if constexpr(std::is_same<T, hms::DataBuffer>::value)
+            else if constexpr(std::is_same<T, std::vector<int8_t>>::value || std::is_same<T, std::vector<uint8_t>>::value)
             {
                 jClass = mClasses[static_cast<size_t>(EClass::java_lang_arrayByte)].first;
             }
@@ -756,14 +768,14 @@ namespace jni
         }
 
         template <typename C = Utility, typename T>
-        static jobjectArray convert(JNIEnv* pEnvironment, const std::vector<T>& pValue, typename std::enable_if_t<std::is_same_v<T, std::string> || std::is_same_v<T, hms::DataBuffer> || is_pair<T>::value || is_tuple<T>::value>* = nullptr)
+        static jobjectArray convert(JNIEnv* pEnvironment, const std::vector<T>& pValue, typename std::enable_if_t<std::is_same_v<T, std::string> || std::is_same_v<T, std::vector<int8_t>> || std::is_same_v<T, std::vector<uint8_t>> || is_pair<T>::value || is_tuple<T>::value>* = nullptr)
         {
             jclass jClass = nullptr;
             if constexpr(std::is_same<T, std::string>::value)
             {
                 jClass = mClasses[static_cast<size_t>(EClass::java_lang_String)].first;
             }
-            else if constexpr(std::is_same<T, hms::DataBuffer>::value)
+            else if constexpr(std::is_same<T, std::vector<int8_t>>::value || std::is_same<T, std::vector<uint8_t>>::value)
             {
                 jClass = mClasses[static_cast<size_t>(EClass::java_lang_arrayByte)].first;
             }
@@ -1034,8 +1046,6 @@ namespace jni
             pEnvironment->CallVoidMethod(pObject, pMethod, std::forward<T>(pParameters)...);
             (void)std::initializer_list<int32_t>{(localRefDelete(pEnvironment, std::forward<T>(pParameters)), 0)...};
         }
-
-        static jbyteArray convertHmsDataBuffer(JNIEnv* pEnvironment, const hms::DataBuffer& pValue);
 
     private:
         enum class EClass : size_t

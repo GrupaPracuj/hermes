@@ -2,8 +2,8 @@
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
-#ifndef _DATA_HPP_
-#define _DATA_HPP_
+#ifndef _HMS_DATA_HPP_
+#define _HMS_DATA_HPP_
 
 #include <algorithm>
 #include <cassert>
@@ -17,8 +17,6 @@
 
 namespace hms
 {
-    class DataManager;
-    
     namespace crypto
     {
         enum class ECryptoMode : int;
@@ -28,56 +26,6 @@ namespace hms
     {
         Text = 0,
         Binary
-    };
-
-    class DataBuffer
-    {
-    public:
-        DataBuffer(size_t pCapacity = 0);
-        DataBuffer(const DataBuffer& pOther);
-        DataBuffer(DataBuffer&& pOther);
-        ~DataBuffer();
-
-        DataBuffer& operator=(DataBuffer pOther);
-        
-        friend void swap(DataBuffer& pBufferA, DataBuffer& pBufferB) noexcept
-        {
-            using std::swap;
-            
-            swap(pBufferA.mCapacity, pBufferB.mCapacity);
-            swap(pBufferA.mSize, pBufferB.mSize);
-            swap(pBufferA.mData, pBufferB.mData);
-        }
-        
-        void clear();
-        
-        const void* data() const;
-        
-        template <typename T>
-        void push_back(const T* pData, size_t pCount)
-        {
-            if (pData != nullptr && pCount > 0)
-            {
-                const size_t count = sizeof(T) * pCount;
-            
-                if (mCapacity < mSize + count)
-                    reallocate(std::max(mSize + count, mCapacity * 2));
-
-                std::copy(pData, pData + pCount, mData + mSize);
-                mSize += count;
-            }
-        }
-        
-        void pop_back(size_t pCount, bool pShrinkToFit = false);
-        
-        size_t size() const;
-        
-    private:
-        void reallocate(size_t pCapacity);
-        
-        size_t mCapacity;
-        size_t mSize;
-        unsigned char* mData;
     };
     
     class DataShared
@@ -103,7 +51,7 @@ namespace hms
         
         virtual size_t write(const void* pBuffer, size_t pSize) = 0;
         virtual size_t write(const std::string& pText) = 0;
-        virtual size_t write(const DataBuffer& pBuffer) = 0;
+        virtual size_t write(const std::vector<uint8_t>& pBuffer) = 0;
         
         virtual bool seek(int64_t pPosition, bool pRelative = false) = 0;
         virtual bool flush() = 0;
@@ -124,7 +72,7 @@ namespace hms
         
         virtual size_t write(const void* pBuffer, size_t pSize) override;
         virtual size_t write(const std::string& pText) override;
-        virtual size_t write(const DataBuffer& pBuffer) override;
+        virtual size_t write(const std::vector<uint8_t>& pBuffer) override;
         
         virtual bool seek(int64_t pPosition, bool pRelative = false) override;
         virtual bool flush() override;
@@ -146,7 +94,7 @@ namespace hms
         
         virtual size_t write(const void* pBuffer, size_t pSize) override;
         virtual size_t write(const std::string& pText) override;
-        virtual size_t write(const DataBuffer& pBuffer) override;
+        virtual size_t write(const std::vector<uint8_t>& pBuffer) override;
         
         virtual bool seek(int64_t pPosition, bool pRelative = false) override;
         virtual bool flush() override;
@@ -170,8 +118,8 @@ namespace hms
         virtual size_t read(void* pBuffer, size_t pSize) = 0;
         virtual void read(std::string& pText) = 0;
         virtual void read(std::string& pText, size_t pSize) = 0;
-        virtual void read(DataBuffer& pBuffer) = 0;
-        virtual void read(DataBuffer& pBuffer, size_t pSize) = 0;
+        virtual void read(std::vector<uint8_t>& pBuffer) = 0;
+        virtual void read(std::vector<uint8_t>& pBuffer, size_t pSize) = 0;
         
         virtual bool seek(int64_t pPosition, bool pRelative = false) = 0;
         
@@ -194,8 +142,8 @@ namespace hms
         virtual size_t read(void* pBuffer, size_t pSize) override;
         virtual void read(std::string& pText) override;
         virtual void read(std::string& pText, size_t pSize) override;
-        virtual void read(DataBuffer& pBuffer) override;
-        virtual void read(DataBuffer& pBuffer, size_t pSize) override;
+        virtual void read(std::vector<uint8_t>& pBuffer) override;
+        virtual void read(std::vector<uint8_t>& pBuffer, size_t pSize) override;
         
         virtual bool seek(int64_t pPosition, bool pRelative = false) override;
         
@@ -219,8 +167,8 @@ namespace hms
         virtual size_t read(void* pBuffer, size_t pSize) override;
         virtual void read(std::string& pText) override;
         virtual void read(std::string& pText, size_t pSize) override;
-        virtual void read(DataBuffer& pBuffer) override;
-        virtual void read(DataBuffer& pBuffer, size_t pSize) override;
+        virtual void read(std::vector<uint8_t>& pBuffer) override;
+        virtual void read(std::vector<uint8_t>& pBuffer, size_t pSize) override;
         
         virtual bool seek(int64_t pPosition, bool pRelative = false) override;
         
@@ -292,10 +240,10 @@ namespace hms
         std::string getWorkingDirectory() const;
 
         bool readFile(const std::string& pFileName, std::string& pText, crypto::ECryptoMode pCryptoMode = static_cast<crypto::ECryptoMode>(0)) const;
-        bool readFile(const std::string& pFileName, DataBuffer& pDataBuffer, crypto::ECryptoMode pCryptoMode = static_cast<crypto::ECryptoMode>(0)) const;
+        bool readFile(const std::string& pFileName, std::vector<uint8_t>& pDataBuffer, crypto::ECryptoMode pCryptoMode = static_cast<crypto::ECryptoMode>(0)) const;
 
         bool writeFile(const std::string& pFileName, const std::string& pText, crypto::ECryptoMode pCryptoMode = static_cast<crypto::ECryptoMode>(0), bool pClearContent = true) const;
-        bool writeFile(const std::string& pFileName, const DataBuffer& pDataBuffer, crypto::ECryptoMode pCryptoMode = static_cast<crypto::ECryptoMode>(0), bool pClearContent = true) const;
+        bool writeFile(const std::string& pFileName, const std::vector<uint8_t>& pDataBuffer, crypto::ECryptoMode pCryptoMode = static_cast<crypto::ECryptoMode>(0), bool pClearContent = true) const;
         
         std::unique_ptr<DataReader> getDataReader(const std::string& pFileName) const;
         std::unique_ptr<DataWriter> getDataWriter(const std::string& pFileName, bool pAppend = false) const;

@@ -2,8 +2,8 @@
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
-#ifndef _TASK_HPP_
-#define _TASK_HPP_
+#ifndef _HMS_TASK_HPP_
+#define _HMS_TASK_HPP_
 
 #include <functional>
 #include <queue>

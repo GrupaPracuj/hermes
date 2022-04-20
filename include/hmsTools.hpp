@@ -2,15 +2,15 @@
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
-#ifndef _TOOLS_HPP_
-#define _TOOLS_HPP_
+#ifndef _HMS_TOOLS_HPP_
+#define _HMS_TOOLS_HPP_
 
+#include <cstdint>
 #include <string>
+#include <vector>
 
 namespace hms
 {
-    class DataBuffer;
-    
 namespace tools
 {
     uint16_t byteSwap16(uint16_t pX);
@@ -69,7 +69,7 @@ namespace crypto
         AES_256_CBC
     };
     
-    std::string encodeBase64(unsigned char const* bytes_to_encode, size_t in_len);
+    std::string encodeBase64(uint8_t const* bytes_to_encode, size_t in_len);
     std::string decodeBase64(std::string const& encoded_string);
         
     std::string getSHA1Digest(const std::string& pData, bool pNetworkOrder = true);
@@ -77,9 +77,9 @@ namespace crypto
         
 
     std::string encrypt(const std::string& pData, const std::string& pKey, const std::string& pIV, ECryptoMode pMode);
-    DataBuffer encrypt(const DataBuffer& pData, const std::string& pKey, const std::string& pIV, ECryptoMode pMode);
+    std::vector<uint8_t> encrypt(const std::vector<uint8_t>& pBuffer, const std::string& pKey, const std::string& pIV, ECryptoMode pMode);
     std::string decrypt(const std::string& pData, const std::string& pKey, const std::string& pIV, ECryptoMode pMode);
-    DataBuffer decrypt(const DataBuffer& pData, const std::string& pKey, const std::string& pIV, ECryptoMode pMode);
+    std::vector<uint8_t> decrypt(const std::vector<uint8_t>& pBuffer, const std::string& pKey, const std::string& pIV, ECryptoMode pMode);
 }
 }
 

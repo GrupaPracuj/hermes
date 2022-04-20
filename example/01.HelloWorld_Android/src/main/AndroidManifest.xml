@@ -3,7 +3,7 @@
     package="pl.grupapracuj.hermes.helloworld">
     <uses-permission android:name="android.permission.INTERNET" />
     <application android:label="01.HelloWorld" android:launchMode="singleInstance">
-        <activity android:name="pl.grupapracuj.hermes.helloworld.ActivityMain" android:configChanges="keyboardHidden|orientation|screenSize" android:screenOrientation="portrait">
+        <activity android:name="pl.grupapracuj.hermes.helloworld.ActivityMain" android:configChanges="keyboardHidden|orientation|screenSize" android:exported="true" android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

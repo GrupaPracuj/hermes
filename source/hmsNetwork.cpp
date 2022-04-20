@@ -53,11 +53,9 @@ namespace hms
                 };
                 
                 std::pair<std::string, std::string> destination = {"", ""};
-                
                 std::istringstream ss(lpSource);
-                
                 std::string component = "";
-                
+
                 while (std::getline(ss, component, ':'))
                 {
                     if (!component.empty())
@@ -76,16 +74,12 @@ namespace hms
                 }
             };
             
-            std::string data(pData, pCount * pSize);
-            
-            std::pair<std::string, std::string> element("", "");
-            
+            std::string data(pData, pCount * pSize);            
+            std::pair<std::string, std::string> element("", "");            
             separate(data, element);
 
             if (element.first.size() > 0 && element.second.size() > 0)
-            {
                 pUserData->push_back(element);
-            }
             
             return static_cast<int>(pCount * pSize);
         }
@@ -97,22 +91,19 @@ namespace hms
     {
         if (pData != nullptr)
         {
-            pUserData->append(pData, pCount * pSize);
-            
+            pUserData->append(pData, pCount * pSize);            
             return static_cast<int>(pCount * pSize);
         }
         
         return 0;
     }
     
-    static int CURL_WRITER_RAWDATA_CALLBACK(char* pData, size_t pCount, size_t pSize, DataBuffer* pUserData)
+    static int CURL_WRITER_RAWDATA_CALLBACK(char* pData, size_t pCount, size_t pSize, std::vector<uint8_t>* pUserData)
     {
         if (pData != nullptr)
         {
             const size_t dataSize = pCount * pSize;
-
-            pUserData->push_back<char>(pData, dataSize);
-
+            pUserData->insert(pUserData->end(), pData, pData + dataSize);
             return static_cast<int>(dataSize);
         }
         
@@ -1289,7 +1280,7 @@ namespace hms
                 long httpCode = -1;
                 std::vector<std::pair<std::string, std::string>> responseHeader;
                 std::string responseMessage = "";
-                DataBuffer responseRawData;
+                std::vector<uint8_t> responseRawData;
                 
                 auto uniqueHeader = strongThis->createUniqueHeader(lpParam.mHeader);
                 curl_slist* header = nullptr;
@@ -1860,7 +1851,7 @@ namespace hms
         return header;
     }
 
-    void NetworkManager::configureHandle(void* pHandle, ENetworkRequest pRequestType, ENetworkResponse pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody, std::string* pResponseMessage, DataBuffer* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader, int64_t pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer) const
+    void NetworkManager::configureHandle(void* pHandle, ENetworkRequest pRequestType, ENetworkResponse pResponseType, const std::string& pRequestUrl, const std::string& pRequestBody, std::string* pResponseMessage, std::vector<uint8_t>* pResponseRawData, std::vector<std::pair<std::string, std::string>>* pResponseHeader, curl_slist* pHeader, int64_t pTimeout, std::array<bool, static_cast<size_t>(ENetworkFlag::Count)> pFlag, ProgressData* pProgressData, char* pErrorBuffer) const
     {
         switch (pRequestType)
         {
@@ -2140,8 +2131,8 @@ namespace hms
                     }
                     else
                     {
-                        std::string content = ss.str();
-                        response.mRawData.push_back(content.data(), content.size());
+                        const std::string& content = ss.str();
+                        response.mRawData = std::vector<uint8_t>(content.begin(), content.end());
                     }
                     
                     response.mCode = ENetworkCode::OK;
