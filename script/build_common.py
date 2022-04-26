@@ -9,6 +9,7 @@ class Settings:
     def __init__(self):
         self.mRootDir = ''
         self.mLibDir = ''
+        self.mBuildArch = ''
         self.mBuildTarget = ''
         self.mBuildVariant = ''
         self.mAndroidApi = ''
@@ -208,7 +209,9 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
         return False
 
     for i in range(1, len(sys.argv) - 1):
-        if sys.argv[i] == '-target':
+        if sys.argv[i] == '-arch':
+            pSettings.mBuildArch = sys.argv[i + 1].lower()
+        elif sys.argv[i] == '-target':
             pSettings.mBuildTarget = sys.argv[i + 1].lower()
         elif sys.argv[i] == '-variant':
             pSettings.mBuildVariant = sys.argv[i + 1].lower()
@@ -228,6 +231,10 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
     if pSettings.mBuildTarget == 'android':
         hostDetected = False
         
+        if len(pSettings.mBuildArch) > 0 and pSettings.mBuildArch != 'armeabi-v7a' and pSettings.mBuildArch != 'arm64-v8a' and pSettings.mBuildArch != 'x86' and pSettings.mBuildArch != 'x86_64':
+            print('Warning: Wrong build architecture. Following architectures of target "' + pSettings.mBuildTarget + '" are supported: "armeabi-v7a", "arm64-v8a", "x86", "x86_64".');
+            pSettings.mBuildArch = ''
+
         if (platformName == 'linux' or platformName == 'darwin' or platformName == 'windows') and platform.machine().endswith('64'):
             hostDetected = True
 
@@ -318,6 +325,10 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
     elif pSettings.mBuildTarget == 'linux':
         hostDetected = False
         
+        if len(pSettings.mBuildArch) > 0 and pSettings.mBuildArch != 'x86' and pSettings.mBuildArch != 'x86_64':
+            print('Warning: Wrong build architecture. Following architectures of target "' + pSettings.mBuildTarget + '" are supported: "x86", "x86_64".');
+            pSettings.mBuildArch = ''
+
         if platformName == 'linux' and platform.machine().endswith('64'):
             hostDetected = True
             
@@ -351,6 +362,10 @@ def configure(pSettings, pRelativeRootDir, pRelativeLibDir = ''):
     elif pSettings.mBuildTarget == 'apple':
         hostDetected = False
         
+        if len(pSettings.mBuildArch) > 0 and pSettings.mBuildArch != 'arm64' and pSettings.mBuildArch != 'x86_64':
+            print('Warning: Wrong build architecture. Following architectures of target "' + pSettings.mBuildTarget + '" are supported: "arm64", "x86_64".');
+            pSettings.mBuildArch = ''
+
         if len(pSettings.mBuildVariant) > 0 and pSettings.mBuildVariant != 'ios' and pSettings.mBuildVariant != 'macos':
             print('Warning: Wrong build variant. Following variants of target "' + pSettings.mBuildTarget + '" are supported: "ios", "macos".');
             pSettings.mBuildVariant = ''
@@ -510,46 +525,53 @@ def buildCMake(pLibraryName, pSettings, pCMakeFlag, pDSYM, pOutputDir, pOutputLi
                 if os.path.isfile(libraryFilepath):
                     os.remove(libraryFilepath)
 
-        os.makedirs(buildDir)
-        os.chdir(buildDir)
-
-        cmakeFlag = pCMakeFlag
-        if len(pSettings.mArchFlagASM[i]) > 0:
-            cmakeFlag += ' \"-DCMAKE_ASM_FLAGS=' + pSettings.mArchFlagASM[i] + '\"'
-        if len(pSettings.mArchFlagC[i]) > 0:
-            cmakeFlag += ' \"-DCMAKE_C_FLAGS=' + pSettings.mArchFlagC[i] + '\"'
-        if len(pSettings.mArchFlagCXX[i]) > 0:
-            cmakeFlag += ' \"-DCMAKE_CXX_FLAGS=' + pSettings.mArchFlagCXX[i] + '\"'
-        
         buildSuccess = False
-        if pSettings.mBuildTarget == 'android':
-            buildSuccess = buildCMakeAndroid(i, pSettings, cmakeFlag)
-        elif pSettings.mBuildTarget == 'linux':
-            buildSuccess = buildCMakeLinux(i, pSettings, cmakeFlag)
-        elif pSettings.mBuildTarget == 'apple':
-            buildSuccess = buildCMakeApple(i, pSettings, cmakeFlag)
-        
-        if buildSuccess:
-            buildCommand = pSettings.mCMake + ' --build . --config ' + configType
-            if platformName == 'linux' or platformName == 'darwin':
-                buildSuccess = executeShellCommand(buildCommand) == 0
-            elif platformName == 'windows':
-                buildSuccess = executeCmdCommand(buildCommand, buildDir) == 0
+        buildStatus = 'Skipped'
 
-            if (len(pLibraryName) == len(pOutputLibraryName)):
-                for j in range(0, len(pLibraryName)):
-                    try:
-                        shutil.copy2(os.path.join(buildDir, pLibraryName[j] if len(pOutputDir) == 0 else pOutputDir, 'lib' + pOutputLibraryName[j] + '.a'), os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a'))
-                    except FileNotFoundError:
-                        print('Error: system couldn\'t copy library')
-                        pass
-            else:
-                print('Error: system couldn\'t copy library')
+        if len(pSettings.mBuildArch) == 0 or pSettings.mArchName[i] == pSettings.mBuildArch:
+            os.makedirs(buildDir)
+            os.chdir(buildDir)
 
-        os.chdir('..')
-        remove(buildDir)
+            cmakeFlag = pCMakeFlag
+            if len(pSettings.mArchFlagASM[i]) > 0:
+                cmakeFlag += ' \"-DCMAKE_ASM_FLAGS=' + pSettings.mArchFlagASM[i] + '\"'
+            if len(pSettings.mArchFlagC[i]) > 0:
+                cmakeFlag += ' \"-DCMAKE_C_FLAGS=' + pSettings.mArchFlagC[i] + '\"'
+            if len(pSettings.mArchFlagCXX[i]) > 0:
+                cmakeFlag += ' \"-DCMAKE_CXX_FLAGS=' + pSettings.mArchFlagCXX[i] + '\"'
+
+            if pSettings.mBuildTarget == 'android':
+                buildSuccess = buildCMakeAndroid(i, pSettings, cmakeFlag)
+                buildStatus = 'Succeeded' if buildSuccess else 'Failed'
+            elif pSettings.mBuildTarget == 'linux':
+                buildSuccess = buildCMakeLinux(i, pSettings, cmakeFlag)
+                buildStatus = 'Succeeded' if buildSuccess else 'Failed'
+            elif pSettings.mBuildTarget == 'apple':
+                if ((pSettings.mPlatformName[i] == 'ios' or pSettings.mPlatformName[i] == 'ios-simulator') and pSettings.mBuildVariant != 'macos') or (pSettings.mPlatformName[i] == 'macos' and pSettings.mBuildVariant != 'ios'):
+                    buildSuccess = buildCMakeApple(i, pSettings, cmakeFlag)
+                    buildStatus = 'Succeeded' if buildSuccess else 'Failed'
+
+            if buildSuccess:
+                buildCommand = pSettings.mCMake + ' --build . --config ' + configType
+                if platformName == 'linux' or platformName == 'darwin':
+                    buildSuccess = executeShellCommand(buildCommand) == 0
+                elif platformName == 'windows':
+                    buildSuccess = executeCmdCommand(buildCommand, buildDir) == 0
+
+                if (len(pLibraryName) == len(pOutputLibraryName)):
+                    for j in range(0, len(pLibraryName)):
+                        try:
+                            shutil.copy2(os.path.join(buildDir, pLibraryName[j] if len(pOutputDir) == 0 else pOutputDir, 'lib' + pOutputLibraryName[j] + '.a'), os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a'))
+                        except FileNotFoundError:
+                            print('Error: system couldn\'t copy library')
+                            pass
+                else:
+                    print('Error: system couldn\'t copy library')
+
+            os.chdir('..')
+            remove(buildDir)
             
-        print('\nBuild status for ' + pSettings.mArchName[i] + (' (' + pSettings.mPlatformName[i] + ')' if len(pSettings.mPlatformName[i]) > 0 else '') + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
+        print('\nBuild status for ' + pSettings.mArchName[i] + (' (' + pSettings.mPlatformName[i] + ')' if len(pSettings.mPlatformName[i]) > 0 else '') + ': ' + buildStatus + '\n')
         
         status |= buildSuccess
 
@@ -598,13 +620,13 @@ def buildCMakeApple(pIndex, pSettings, pCMakeFlag):
     platformName = platform.system().lower()
 
     cmakeCommand = ''
-    if (pSettings.mPlatformName[pIndex] == 'ios' or pSettings.mPlatformName[pIndex] == 'ios-simulator') and pSettings.mBuildVariant != 'macos':
+    if pSettings.mPlatformName[pIndex] == 'ios' or pSettings.mPlatformName[pIndex] == 'ios-simulator':
         toolchainPath = os.path.join(pSettings.mRootDir, 'script', 'ios.toolchain.cmake')
         executableDir = os.path.join(pSettings.mAppleSdkDir, 'Toolchains', 'XcodeDefault.xctoolchain', 'usr', 'bin')
         sysrootDir = os.path.join(pSettings.mAppleSdkDir, 'Platforms', pSettings.mTargetSdk[pIndex] + '.platform', 'Developer', 'SDKs', pSettings.mTargetSdk[pIndex] + '.sdk')
         if os.path.isfile(toolchainPath) and os.path.isdir(executableDir) and os.path.isdir(sysrootDir):
             cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -DHMS_XCODE_PATH=' + pSettings.mAppleSdkDir + ' -DHMS_TARGET=' + pSettings.mTargetSdk[pIndex] + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
-    elif pSettings.mPlatformName[pIndex] == 'macos' and pSettings.mBuildVariant != 'ios':
+    elif pSettings.mPlatformName[pIndex] == 'macos':
         toolchainPath = os.path.join(pSettings.mRootDir, 'script', 'macos.toolchain.cmake')
         if os.path.isfile(toolchainPath):
             cmakeCommand = pSettings.mCMake + ' ' + pCMakeFlag + ' -DCMAKE_TOOLCHAIN_FILE=' + toolchainPath + ' -DHMS_ARCH=' + pSettings.mArch[pIndex] + ' -GNinja -DCMAKE_MAKE_PROGRAM=' + pSettings.mNinja + ' ..'
@@ -648,34 +670,41 @@ def buildMake(pLibraryName, pSettings, pMakeFlag):
                 if os.path.isfile(libraryFilepath):
                     os.remove(libraryFilepath)
 
-        os.environ['CFLAGS'] = pSettings.mArchFlagC[i]
-        os.environ['CXXFLAGS'] = pSettings.mArchFlagCXX[i]
-
         buildSuccess = False
-        if pSettings.mBuildTarget == 'android':
-            buildSuccess = buildMakeAndroid(i, pLibraryName, pSettings, pMakeFlag)
-        elif pSettings.mBuildTarget == 'linux':
-            buildSuccess = buildMakeLinux(i, pLibraryName, pSettings, pMakeFlag)
-        elif pSettings.mBuildTarget == 'apple':
-            buildSuccess = buildMakeApple(i, pLibraryName, pSettings, pMakeFlag)
+        buildStatus = 'Skipped'
 
-        del os.environ['CFLAGS']
-        del os.environ['CXXFLAGS']
+        if len(pSettings.mBuildArch) == 0 or pSettings.mArchName[i] == pSettings.mBuildArch:
+            os.environ['CFLAGS'] = pSettings.mArchFlagC[i]
+            os.environ['CXXFLAGS'] = pSettings.mArchFlagCXX[i]
 
-        if buildSuccess:
-            for j in range(0, len(pLibraryName)):
-                try:
-                    shutil.copy2(os.path.join(workingDir, 'lib' + pLibraryName[j] + '.a'), os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a'))
-                except FileNotFoundError:
-                    print('Error: system couldn\'t copy library')
-                    pass
+            if pSettings.mBuildTarget == 'android':
+                buildSuccess = buildMakeAndroid(i, pLibraryName, pSettings, pMakeFlag)
+                buildStatus = 'Succeeded' if buildSuccess else 'Failed'
+            elif pSettings.mBuildTarget == 'linux':
+                buildSuccess = buildMakeLinux(i, pLibraryName, pSettings, pMakeFlag)
+                buildStatus = 'Succeeded' if buildSuccess else 'Failed'
+            elif pSettings.mBuildTarget == 'apple':
+                if ((pSettings.mPlatformName[i] == 'ios' or pSettings.mPlatformName[i] == 'ios-simulator') and pSettings.mBuildVariant != 'macos') or (pSettings.mPlatformName[i] == 'macos' and pSettings.mBuildVariant != 'ios'):
+                    buildSuccess = buildMakeApple(i, pLibraryName, pSettings, pMakeFlag)
+                    buildStatus = 'Succeeded' if buildSuccess else 'Failed'
 
-        if platformName == 'linux' or platformName == 'darwin':
-            executeShellCommand(pSettings.mMake + ' clean')
-        elif platformName == 'windows':
-            executeCmdCommand(pSettings.mMake + ' clean', workingDir)
+            del os.environ['CFLAGS']
+            del os.environ['CXXFLAGS']
 
-        print('\nBuild status for ' + pSettings.mArchName[i] + (' (' + pSettings.mPlatformName[i] + ')' if len(pSettings.mPlatformName[i]) > 0 else '') + ': ' + ('Succeeded' if buildSuccess else 'Failed') + '\n')
+            if buildSuccess:
+                for j in range(0, len(pLibraryName)):
+                    try:
+                        shutil.copy2(os.path.join(workingDir, 'lib' + pLibraryName[j] + '.a'), os.path.join(libraryDir, 'lib' + pLibraryName[j] + '.a'))
+                    except FileNotFoundError:
+                        print('Error: system couldn\'t copy library')
+                        pass
+
+            if platformName == 'linux' or platformName == 'darwin':
+                executeShellCommand(pSettings.mMake + ' clean')
+            elif platformName == 'windows':
+                executeCmdCommand(pSettings.mMake + ' clean', workingDir)
+
+        print('\nBuild status for ' + pSettings.mArchName[i] + (' (' + pSettings.mPlatformName[i] + ')' if len(pSettings.mPlatformName[i]) > 0 else '') + ': ' + buildStatus + '\n')
         
         status |= buildSuccess
 
@@ -723,7 +752,7 @@ def buildMakeAndroid(pIndex, pLibraryName, pSettings, pMakeFlag):
         os.environ['CC'] = clangPrefix + androidApi + ccSuffix
 
         makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
-        
+
         for j in range(0, len(pLibraryName)):
             makeCommand += ' lib' + pLibraryName[j] + '.a'
 
@@ -756,7 +785,7 @@ def buildMakeLinux(pIndex, pLibraryName, pSettings, pMakeFlag):
     platformName = platform.system().lower()
 
     makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
-    
+
     for j in range(0, len(pLibraryName)):
         makeCommand += ' lib' + pLibraryName[j] + '.a'
 
@@ -776,8 +805,7 @@ def buildMakeApple(pIndex, pLibraryName, pSettings, pMakeFlag):
     status = False
     platformName = platform.system().lower()
 
-    makeExecute = False
-    if (pSettings.mPlatformName[pIndex] == 'ios' or pSettings.mPlatformName[pIndex] == 'ios-simulator') and pSettings.mBuildVariant != 'macos':
+    if pSettings.mPlatformName[pIndex] == 'ios' or pSettings.mPlatformName[pIndex] == 'ios-simulator':
         executableDir = os.path.join(pSettings.mAppleSdkDir, 'Toolchains', 'XcodeDefault.xctoolchain', 'usr', 'bin')
         sysrootDir = os.path.join(pSettings.mAppleSdkDir, 'Platforms', pSettings.mTargetSdk[pIndex] + '.platform', 'Developer', 'SDKs', pSettings.mTargetSdk[pIndex] + '.sdk')
         if os.path.isdir(executableDir) and os.path.isdir(sysrootDir):
@@ -789,32 +817,28 @@ def buildMakeApple(pIndex, pLibraryName, pSettings, pMakeFlag):
             os.environ['STRIP'] = os.path.join(executableDir, 'strip')
             os.environ['CFLAGS'] = os.environ['CFLAGS'] + ' -isysroot ' + sysrootDir
             os.environ['CXXFLAGS'] = os.environ['CXXFLAGS'] + ' -isysroot ' + sysrootDir
-            makeExecute = True
-    if pSettings.mPlatformName[pIndex] == 'macos' and pSettings.mBuildVariant != 'ios':
-        makeExecute = True
 
-    if makeExecute:
-        makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
-        
-        for j in range(0, len(pLibraryName)):
-            makeCommand += ' lib' + pLibraryName[j] + '.a'
+    makeCommand = pSettings.mMake + ' -j' + pSettings.mCoreCount
 
-        if len(pSettings.mMakeFlag[pIndex]) > 0:
-            makeCommand += ' ' + pSettings.mMakeFlag[pIndex]
+    for j in range(0, len(pLibraryName)):
+        makeCommand += ' lib' + pLibraryName[j] + '.a'
 
-        if len(pMakeFlag) > 0:
-            makeCommand += ' ' + pMakeFlag
+    if len(pSettings.mMakeFlag[pIndex]) > 0:
+        makeCommand += ' ' + pSettings.mMakeFlag[pIndex]
 
-        if platformName == 'darwin' and makeExecute:
-            status = executeShellCommand(makeCommand) == 0
+    if len(pMakeFlag) > 0:
+        makeCommand += ' ' + pMakeFlag
 
-        if pSettings.mPlatformName[pIndex] == 'ios' or pSettings.mPlatformName[pIndex] == 'ios-simulator':
-            del os.environ['CC']
-            del os.environ['CXX']
-            del os.environ['LD']
-            del os.environ['AR']
-            del os.environ['RANLIB']
-            del os.environ['STRIP']
+    if platformName == 'darwin':
+        status = executeShellCommand(makeCommand) == 0
+
+    if pSettings.mPlatformName[pIndex] == 'ios' or pSettings.mPlatformName[pIndex] == 'ios-simulator':
+        del os.environ['CC']
+        del os.environ['CXX']
+        del os.environ['LD']
+        del os.environ['AR']
+        del os.environ['RANLIB']
+        del os.environ['STRIP']
         
     return status
 
