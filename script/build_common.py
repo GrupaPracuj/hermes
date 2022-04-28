@@ -63,15 +63,13 @@ def downloadAndExtract(pURL, pDestinationDir, pFileName, pExtractDir):
     return status
 
 def checkCMake(pDestinationDir):
-    from distutils.dir_util import copy_tree
-
     print('Check \'CMake\'...')
 
     platformName = platform.system().lower()
     if (platformName == 'linux' or platformName == 'darwin') and checkShellCommand('cmake --version'):
         return 'cmake'
 
-    packageVersion = '3.22.3'
+    packageVersion = '3.23.1'
     packageName = 'cmake-' + packageVersion
     packageExtension = ''
     applicationName = ''
@@ -107,7 +105,7 @@ def checkCMake(pDestinationDir):
     if os.path.isfile(applicationDestinationPath):
         result = applicationDestinationPath
     elif downloadAndExtract('https://github.com/Kitware/CMake/releases/download/v' + packageVersion + '/' + packageName + packageExtension, destinationDir, packageName + packageExtension, '') and os.path.isfile(applicationSourcePath):
-        copy_tree(sourceDir, destinationDir)
+        shutil.copytree(sourceDir, destinationDir, dirs_exist_ok=True)
         shutil.rmtree(sourceDir)
         result = applicationDestinationPath
     elif os.path.isdir(destinationDir):
