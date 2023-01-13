@@ -70,7 +70,7 @@
 
     __weak UILabel* label = mLabel;
     __weak UIButton* button = mButton;
-    mHelloWorld->execute([label, button](std::string lpOutputText) -> void
+    mHelloWorld->execute([label, button](const std::string& lpOutputText) -> void
     {
         button.enabled = YES;
         label.text = [NSString stringWithUTF8String:lpOutputText.c_str()];

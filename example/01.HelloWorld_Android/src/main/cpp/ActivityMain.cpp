@@ -24,9 +24,9 @@ extern "C" JNIEXPORT void JNICALL Java_pl_grupapracuj_hermes_helloworld_Activity
     auto helloWorld = hms::ext::jni::ObjectNative::get<std::shared_ptr<HelloWorld>>(pHelloWorldPointer);
 
     auto objectWeakRef = std::make_shared<hms::ext::jni::ReferenceWeak>(pObject, pEnvironment);
-    helloWorld->execute([objectWeakRef](std::string lpOutputText) -> void
+    helloWorld->execute([objectWeakRef](const std::string& lpOutputText) -> void
     {
-        hms::ext::jni::Utility::methodVoid(objectWeakRef, "callbackExecute", "(Ljava/lang/String;)V", std::move(lpOutputText));
+        hms::ext::jni::Utility::methodVoid(objectWeakRef, "callbackExecute", "(Ljava/lang/String;)V", lpOutputText);
     }, static_cast<int32_t>(pRequestIndex));
 }
 

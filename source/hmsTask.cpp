@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2022 Grupa Pracuj S.A.
+// Copyright (C) 2017-2023 Grupa Pracuj S.A.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -224,7 +224,7 @@ namespace hms
         terminate();
     }
 
-    bool TaskManager::initialize(const std::vector<std::pair<int, size_t>> pThreadPool, std::function<void(std::function<void()>)> pMainThreadHandler)
+    bool TaskManager::initialize(const std::vector<std::pair<int32_t, size_t>>& pThreadPool, std::function<void(std::function<void()>)> pMainThreadHandler)
     {
         if (mInitialized != 0)
             return false;

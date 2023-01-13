@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2022 Grupa Pracuj S.A.
+// Copyright (C) 2017-2023 Grupa Pracuj S.A.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -134,7 +134,6 @@ namespace jni
         const size_t size = getSize();
         const size_t position = getPosition();
         const size_t readCount = position + pSize > size ? size - position : pSize;
-        const size_t offset = pBuffer.size();  
         const size_t readMaxSize = 1024;
     
         char buff[readMaxSize];

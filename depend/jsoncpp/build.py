@@ -1,5 +1,8 @@
 import os
 import shutil
+import sys
+sys.path.append(os.path.join('..', '..', 'script'))
+from build_common import *
 
 libraryVersion = '1.9.5'
 libraryName = 'jsoncpp-' + libraryVersion

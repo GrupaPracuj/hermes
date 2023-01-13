@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2022 Grupa Pracuj S.A.
+// Copyright (C) 2017-2023 Grupa Pracuj S.A.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -27,8 +27,8 @@ namespace tools
     class URLTool
     {
     public:
-        URLTool(const std::string& pURL);
-        URLTool(const URLTool& pTool) : URLTool(pTool.getURL()) {}
+        explicit URLTool(const std::string& pURL);
+        explicit URLTool(const URLTool& pTool) : URLTool(pTool.getURL()) {}
         ~URLTool() { mProtocol = mHost = mPath = mParameter = nullptr; }
         
         const std::string& getURL() const;

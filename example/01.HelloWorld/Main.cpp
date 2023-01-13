@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2022 Grupa Pracuj S.A.
+// Copyright (C) 2017-2023 Grupa Pracuj S.A.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -44,7 +44,7 @@ int main(int pArgumentsCount, char* pArguments[])
     for (int32_t i = 1; i < 8; ++i)
     {
         bool wait = true;
-        helloWorld.execute([&wait](std::string lpOutputText) -> void
+        helloWorld.execute([&wait](const std::string& lpOutputText) -> void
         {
             wait = false;
         }, i);

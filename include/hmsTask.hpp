@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2022 Grupa Pracuj S.A.
+// Copyright (C) 2017-2023 Grupa Pracuj S.A.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -33,7 +33,7 @@ namespace hms
     class TaskManager
     {
     public:
-        bool initialize(const std::vector<std::pair<int32_t, size_t>> pThreadPool, std::function<void(std::function<void()>)> pMainThreadHandler = nullptr);
+        bool initialize(const std::vector<std::pair<int32_t, size_t>>& pThreadPool, std::function<void(std::function<void()>)> pMainThreadHandler = nullptr);
         bool terminate();
 
         void flush(int32_t pThreadPoolId, std::function<void()> pCallback);
@@ -108,9 +108,11 @@ namespace hms
             {
             }
 
-            AtomicWrapper &operator=(const AtomicWrapper& pOther)
+            AtomicWrapper& operator=(const AtomicWrapper& pOther)
             {
                 mValue.store(pOther.mValue.load());
+
+                return *this;
             }
             
             std::atomic<T> mValue;

@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2022 Grupa Pracuj S.A.
+// Copyright (C) 2017-2023 Grupa Pracuj S.A.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -31,7 +31,7 @@ namespace hms
     class DataShared
     {
     public:
-        DataShared(size_t pId);
+        explicit DataShared(size_t pId);
         virtual ~DataShared();
 
         size_t getId() const;
@@ -67,7 +67,7 @@ namespace hms
     class FileWriter : public DataWriter
     {
     public:
-        FileWriter(const std::string& pFilePath, bool pAppend = false);
+        explicit FileWriter(const std::string& pFilePath, bool pAppend = false);
         virtual ~FileWriter() = default;
         
         virtual size_t write(const void* pBuffer, size_t pSize) override;
@@ -135,7 +135,7 @@ namespace hms
     class FileReader : public DataReader
     {
     public:
-        FileReader(const std::string& pFilePath);
+        explicit FileReader(const std::string& pFilePath);
         virtual ~FileReader() = default;
         
         virtual size_t read(void* pBuffer) override;

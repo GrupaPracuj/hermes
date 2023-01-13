@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2022 Grupa Pracuj S.A.
+// Copyright (C) 2017-2023 Grupa Pracuj S.A.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -37,7 +37,7 @@ HelloWorld::~HelloWorld()
     hms::Hermes::getInstance()->getLogger()->terminate();
 }
 
-void HelloWorld::execute(std::function<void(std::string)> pCallback, int32_t pRequestIndex)
+void HelloWorld::execute(std::function<void(const std::string&)> pCallback, int32_t pRequestIndex)
 {
     using namespace std::string_literals;
 
@@ -70,7 +70,7 @@ void HelloWorld::execute(std::function<void(std::string)> pCallback, int32_t pRe
         }
 
         if (pCallback != nullptr)
-            pCallback(std::move(outputText));
+            pCallback(outputText);
     };
 
     hms::Hermes::getInstance()->getNetworkManager()->get(static_cast<size_t>(ENetworkAPI::JsonPlaceholder))->request(std::move(request));

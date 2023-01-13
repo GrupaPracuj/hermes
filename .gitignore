@@ -6,5 +6,6 @@ download
 hermes.xcodeproj/project.xcworkspace/xcuserdata/*
 hermes.xcodeproj/xcuserdata/*
 hermes.xcworkspace/xcuserdata/*
+script/__pycache__
 *.o
 *.d

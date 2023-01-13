@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2022 Grupa Pracuj S.A.
+// Copyright (C) 2017-2023 Grupa Pracuj S.A.
 // This file is part of the "Hermes" library.
 // For conditions of distribution and use, see copyright notice in license.txt.
 
@@ -30,7 +30,7 @@ public:
         std::string mZipCode;
     };
 
-    UserData(size_t pId);
+    explicit UserData(size_t pId);
 
     int32_t mId = -1;
     std::string mName;
@@ -66,7 +66,7 @@ public:
     HelloWorld(std::function<void(std::function<void()>)> pMainThreadHandler, std::function<std::pair<hms::ENetworkCertificate, std::string>()> pCertificateProvider);
     ~HelloWorld();
 
-    void execute(std::function<void(std::string)> pCallback, int32_t pRequestIndex);
+    void execute(std::function<void(const std::string&)> pCallback, int32_t pRequestIndex);
 };
 
 #endif
