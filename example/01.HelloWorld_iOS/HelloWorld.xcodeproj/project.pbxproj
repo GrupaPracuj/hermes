@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		552494A729751FD800C4C812 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 552494A629751FD800C4C812 /* SystemConfiguration.framework */; };
 		55468AE72655B3D6001514BB /* aes.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55468AE62655B3D6001514BB /* aes.xcframework */; };
 		55468AEF2655BABD001514BB /* jsoncpp.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55468AE82655BABD001514BB /* jsoncpp.xcframework */; };
 		55468AF02655BABD001514BB /* hmsextmodule.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55468AE92655BABD001514BB /* hmsextmodule.xcframework */; };
@@ -24,6 +25,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		552494A629751FD800C4C812 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		552BE89C239169AA00D38E84 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = resources/Info.plist; sourceTree = "<group>"; };
 		552BE89E239169AA00D38E84 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = resources/Assets.xcassets; sourceTree = "<group>"; };
 		55468AE62655B3D6001514BB /* aes.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = aes.xcframework; path = ../../lib/apple/aes.xcframework; sourceTree = "<group>"; };
@@ -59,6 +61,7 @@
 				55468AF22655BABD001514BB /* zlib.xcframework in Frameworks */,
 				55BD9A9C2391559200DA16C7 /* CoreFoundation.framework in Frameworks */,
 				5560EBA5239AA2EB0097C159 /* Security.framework in Frameworks */,
+				552494A729751FD800C4C812 /* SystemConfiguration.framework in Frameworks */,
 				55BD9A9E239155B400DA16C7 /* UIKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -109,6 +112,7 @@
 				55468AEB2655BABD001514BB /* zlib.xcframework */,
 				55BD9A9B2391559200DA16C7 /* CoreFoundation.framework */,
 				5560EBA4239AA2EB0097C159 /* Security.framework */,
+				552494A629751FD800C4C812 /* SystemConfiguration.framework */,
 				55BD9A9D239155B400DA16C7 /* UIKit.framework */,
 			);
 			name = Frameworks;

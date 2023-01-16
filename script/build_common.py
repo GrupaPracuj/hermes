@@ -69,7 +69,7 @@ def checkCMake(pDestinationDir):
     if (platformName == 'linux' or platformName == 'darwin') and checkShellCommand('cmake --version'):
         return 'cmake'
 
-    packageVersion = '3.23.1'
+    packageVersion = '3.25.1'
     packageName = 'cmake-' + packageVersion
     packageExtension = ''
     applicationName = ''
@@ -159,7 +159,7 @@ def checkNinja(pDestinationDir):
     if (platformName == 'linux' or platformName == 'darwin') and checkShellCommand('ninja --version'):
         return 'ninja'
 
-    packageVersion = '1.10.2'
+    packageVersion = '1.11.1'
     packageName = 'ninja'
     packageExtension = ''
     applicationName = ''

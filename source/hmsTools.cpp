@@ -583,7 +583,7 @@ namespace crypto
         return result;
     }
     
-    std::vector<uint8_t> cbc_decrypt(const uint8_t* pData, size_t pDataSize, const std::string& pKey, const std::string pIV)
+    std::vector<uint8_t> cbc_decrypt(const uint8_t* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV)
     {
         std::vector<uint8_t> result;
         const size_t blockLength = 16;
@@ -618,7 +618,7 @@ namespace crypto
         return result;
     }
     
-    std::vector<uint8_t> ofb_crypt(const uint8_t* pData, size_t pDataSize, const std::string& pKey, const std::string pIV)
+    std::vector<uint8_t> ofb_crypt(const uint8_t* pData, size_t pDataSize, const std::string& pKey, const std::string& pIV)
     {
         std::vector<uint8_t> result;
         const size_t blockLength = 16;

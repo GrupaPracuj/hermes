@@ -21,7 +21,7 @@ ifneq ($(OS),Windows_NT)
 			-L../../lib/apple/hermes.xcframework/macos-arm64_x86_64 -L../../lib/apple/hmsextgzipreader.xcframework/macos-arm64_x86_64 \
 			-L../../lib/apple/hmsextmodule.xcframework/macos-arm64_x86_64 -L../../lib/apple/hmsextserializer.xcframework/macos-arm64_x86_64 \
 			-L../../lib/apple/jsoncpp.xcframework/macos-arm64_x86_64 -L../../lib/apple/zlib.xcframework/macos-arm64_x86_64 \
-			-framework CoreFoundation -framework Cocoa -framework Security -lhmsextserializer -lhermes -laes -lcurl -ljsoncpp -lzlib
+			-framework Cocoa -framework CoreFoundation -framework Security -framework SystemConfiguration -lhmsextserializer -lhermes -laes -lcurl -ljsoncpp -lzlib
     endif
 endif
 
