@@ -11,7 +11,7 @@ Hermes::Hermes()
 {
     mVersion[0] = 1;
     mVersion[1] = 3;
-    mVersion[2] = 1;
+    mVersion[2] = 2;
     
     mDataManager = new DataManager();
     mNetworkManager = std::shared_ptr<NetworkManager>(new NetworkManager(), std::bind(&Hermes::invokeDelete<NetworkManager>, std::placeholders::_1));
