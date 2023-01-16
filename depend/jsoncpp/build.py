@@ -7,9 +7,6 @@ from build_common import *
 libraryVersion = '1.9.5'
 libraryName = 'jsoncpp-' + libraryVersion
 
-buildCommonFile = os.path.join('..', '..', 'script', 'build_common.py')
-exec(compile(source = open(buildCommonFile).read(), filename = buildCommonFile, mode = 'exec'))
-
 settings = Settings()
 
 if configure(settings, os.path.join('..', '..')):
