@@ -1,3 +1,4 @@
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/6ca21e186892400b9d857c207b2cbece)](https://www.codacy.com/gh/GrupaPracuj/hermes/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=GrupaPracuj/hermes&amp;utm_campaign=Badge_Grade)
 
 
 			 _    _ ______ _____  __  __ ______  _____ 
