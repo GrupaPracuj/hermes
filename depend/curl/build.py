@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.path.join('..', '..', 'script'))
 from build_common import *
 
-libraryVersion = '7.87.0'
+libraryVersion = '7.86.0'
 libraryName = 'curl-' + libraryVersion
 
 settings = Settings()
